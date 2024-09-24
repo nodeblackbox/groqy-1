@@ -1,4 +1,4 @@
-// File: C:\Users\nasan\Downloads\groqyGit\groqy\frontend\src\app\layout.js
+// File: D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\frontend\src\app\layout.js
 import * as entry from '../../../src/app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
