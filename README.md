@@ -1,16 +1,16 @@
 # Groqy Quantum Nexus
 Welcome to the Groqy Quantum Nexus! This project aims to revolutionize the deployment of agentic experts through cutting-edge technology.
 
+<img
+src="frontend/strawberry_groqy_4.png"
+  style="display: inline-block; margin: 0 auto; max-width: 500px">
+
 ## Overview
 The Groqy Quantum Nexus brings agentic experts to the next level of deployment via the Gravity RAG Infinite Streaming Context and the GOD Matrix API Hub for infinite tooling deployment possibilities.
 
 ## Features
 Gravity RAG Infinite Streaming Context: Seamlessly integrates and streams context for enhanced deployment.
 GOD Matrix API Hub: Provides a robust API hub for limitless tooling deployment.
-
-<img
-src="frontend/strawberry_groqy_4.png"
-  style="display: inline-block; margin: 0 auto; max-width: 500px">
 
 ## Getting Started
 
