@@ -540,7 +540,7 @@ const ACEAgentNode = ({ agent, index, moveAgent, removeAgent, updateAgent }) => 
     );
 };
 
-// Chat Message Component with Markdown support
+// Chat Message Component with Markdown support 
 const ChatMessage = ({ message, isUser }) => {
     const renderLatex = (text) => {
         if (typeof text !== 'string') return text;
