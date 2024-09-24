@@ -139,16 +139,16 @@ export default function Dashboard() {
     const currentChat = state.chats.find((chat) => chat.id === state.currentChatId) || null
 
     const handleSubmit = async (e) => {
-        e.preventDefault()
-        if (!input.trim() || !currentChat || (state.settings.useGroq && !state.apiKey)) return
+        e.preventDefault();
+        if (!input.trim() || !currentChat) return;
 
         const newMessage = {
             id: Date.now().toString(),
             role: 'user',
             content: input,
             timestamp: Date.now(),
-        }
-        const updatedMessages = [...currentChat.messages, newMessage]
+        };
+        const updatedMessages = [...currentChat.messages, newMessage];
 
         setState((prev) => ({
             ...prev,
@@ -157,11 +157,13 @@ export default function Dashboard() {
                     ? { ...chat, messages: updatedMessages, updatedAt: Date.now() }
                     : chat
             ),
-        }))
-        setInput('')
-        setIsLoading(true)
+        }));
+        setInput('');
+        setIsLoading(true);
 
         try {
+
+
             chatApi.setUseGroq(state.settings.useGroq)
             if (state.settings.useGroq) {
                 chatApi.setApiKey(state.apiKey)

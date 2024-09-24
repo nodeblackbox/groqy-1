@@ -1297,3 +1297,224 @@ src/
 By following this comprehensive guide, you've successfully integrated advanced functionalities into your Chatbot UI, including project analysis, file uploading, workflow building, and tooling configurations. This modular approach ensures scalability and maintainability, allowing you to add more features seamlessly in the future. Ensure consistent theming and robust API integration to provide users with a cohesive and intuitive experience.
 
 Feel free to reach out if you need further assistance or specific enhancements!
+
+
+Thank you for providing the additional information about the Ollama API and the issues you're facing. I'll address each of your concerns and provide suggestions on how to implement the necessary changes to get the chat functionality working, integrate Ollama models, and fix the GROQ API integration.
+
+1. Fetching available models:
+
+To fetch the available models from Ollama, you'll need to create a new API endpoint in your backend (if you haven't already) that calls the Ollama API. Then, update the frontend to fetch this information. Here's how you can modify the `Dashboard` component:
+
+
+
+```javascript
+import { useState, useEffect, useRef } from 'react';
+// ... other imports
+
+const AVAILABLE_MODELS = {
+    ollama: [], // This will be populated dynamically
+    groq: [
+        { label: 'llama3-groq-70b-8192-tool-use-preview', value: 'llama3-groq-70b-8192-tool-use-preview' },
+    ],
+};
+
+export default function Dashboard() {
+    // ... other state variables
+    const [ollamaModels, setOllamaModels] = useState([]);
+
+    useEffect(() => {
+        fetchOllamaModels();
+    }, []);
+
+    const fetchOllamaModels = async () => {
+        try {
+            const response = await fetch('/api/ollama-models'); // You need to create this endpoint
+            const data = await response.json();
+            const formattedModels = data.models.map(model => ({
+                label: model.name,
+                value: model.name
+            }));
+            setOllamaModels(formattedModels);
+            AVAILABLE_MODELS.ollama = formattedModels;
+        } catch (error) {
+            console.error('Error fetching Ollama models:', error);
+            showNotification('Failed to fetch Ollama models', 'error');
+        }
+    };
+
+    // ... rest of the component
+}
+
+```
+
+You'll need to create an API endpoint in your backend that fetches the models from Ollama and returns them to the frontend.
+
+2. Creating new chats:
+
+To enable creating new chats, you need to add a button in the sidebar and implement the `createNewChat` function. Here's how you can modify the sidebar:
+
+
+
+```javascript
+export default function Dashboard() {
+    // ... other state and functions
+    const createNewChat = async () => {
+        const newChat = {
+            id: Date.now().toString(),
+            name: `New Chat ${state.chats.length + 1}`,
+            messages: [],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        };
+
+        setState((prev) => ({
+            ...prev,
+            chats: [...prev.chats, newChat],
+            currentChatId: newChat.id,
+        }));
+
+        showNotification(`New chat "${newChat.name}" created!`, 'success');
+    };
+
+    return (
+        <div className={`flex h-screen w-full ${state.settings.darkMode ? 'dark' : ''}`}>
+            {/* ... other components */}
+            <aside className="w-64 bg-gray-100 dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col">
+                <div className="p-4 border-b dark:border-gray-800">
+                    <h1 className="text-2xl font-bold">Quantum Nexus</h1>
+                </div>
+                <nav className="flex-1 overflow-y-auto p-4">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={createNewChat}
+                        className="w-full mb-2"
+                    >
+                        <Plus className="mr-2 h-4 w-4" /> New Chat
+                    </Button>
+                    {/* ... existing chat list */}
+                </nav>
+                {/* ... other sidebar content */}
+            </aside>
+            {/* ... main content */}
+        </div>
+    );
+}
+
+```
+
+3. Fixing GROQ API integration:
+
+To fix the GROQ API integration, you need to ensure that the API key is being properly set and used when making requests. Here's how you can modify the `handleSubmit` function:
+
+
+
+```javascript
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || !currentChat) return;
+
+    const newMessage = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: input,
+        timestamp: Date.now(),
+    };
+    const updatedMessages = [...currentChat.messages, newMessage];
+
+    setState((prev) => ({
+        ...prev,
+        chats: prev.chats.map((chat) =>
+            chat.id === currentChat.id
+                ? { ...chat, messages: updatedMessages, updatedAt: Date.now() }
+                : chat
+        ),
+    }));
+    setInput('');
+    setIsLoading(true);
+
+    try {
+        let response;
+        if (state.settings.api === 'groq') {
+            if (!state.apiKey) {
+                throw new Error('GROQ API key is not set');
+            }
+            // Make a request to your backend API that will handle the GROQ API call
+            response = await fetch('/api/chat-groq', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${state.apiKey}`
+                },
+                body: JSON.stringify({
+                    messages: updatedMessages,
+                    model: state.settings.model,
+                    temperature: state.settings.temperature,
+                    max_tokens: state.settings.maxTokens,
+                    stream: state.settings.stream
+                })
+            });
+        } else {
+            // Existing Ollama API call
+            chatApi.setUseGroq(false);
+            chatApi.setModel(state.settings.model);
+            chatApi.setSystemPrompt(state.systemPrompt);
+            chatApi.setTemperature(state.settings.temperature);
+            chatApi.setMaxTokens(state.settings.maxTokens);
+            chatApi.setTopP(state.settings.topP);
+            chatApi.setTopK(state.settings.topK);
+            chatApi.setStream(state.settings.stream);
+            response = await chatApi.sendMessage(updatedMessages);
+        }
+
+        // Handle the response (you may need to adjust this based on the actual response format)
+        if (state.settings.stream) {
+            // ... existing streaming logic
+        } else {
+            const botMessage = await response.json();
+            setState((prev) => ({
+                ...prev,
+                chats: prev.chats.map((chat) =>
+                    chat.id === currentChat.id
+                        ? {
+                            ...chat,
+                            messages: [
+                                ...updatedMessages,
+                                {
+                                    id: 'assistant-' + Date.now().toString(),
+                                    role: 'assistant',
+                                    content: botMessage.content,
+                                    timestamp: Date.now(),
+                                },
+                            ],
+                            updatedAt: Date.now(),
+                        }
+                        : chat
+                ),
+            }));
+        }
+    } catch (error) {
+        console.error('Error calling API:', error);
+        showNotification('Error communicating with the chatbot. Please try again.', 'error');
+    } finally {
+        setIsLoading(false);
+    }
+};
+
+```
+
+You'll need to create a backend API endpoint (e.g., `/api/chat-groq`) that handles the GROQ API requests, including authentication and proper error handling.
+
+4. Implementing these changes:
+
+To implement these changes, you'll need to:
+
+1. Update the `Dashboard` component with the new state for Ollama models and the `fetchOllamaModels` function.
+2. Create a backend API endpoint to fetch Ollama models.
+3. Add the "New Chat" button to the sidebar and implement the `createNewChat` function.
+4. Update the `handleSubmit` function to properly handle both Ollama and GROQ API requests.
+5. Create a backend API endpoint to handle GROQ API requests.
+
+Make sure to test each of these changes thoroughly, especially the API integrations. You may need to adjust the code based on your specific backend implementation and API response formats.
+
+Is there anything specific you'd like me to elaborate on or any other features you'd like to implement?

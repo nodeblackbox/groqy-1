@@ -1,31 +1,35 @@
+// src/components/WorkflowBuilder.jsx
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Trash2, Plus } from 'lucide-react';
+import { useNotification } from '@/components/ui/NotificationProvider';
 
 const WorkflowBuilder = () => {
     const [tools, setTools] = useState([]);
     const [availableTools, setAvailableTools] = useState([]);
     const [workflowName, setWorkflowName] = useState('');
     const [selectedTool, setSelectedTool] = useState('');
+    const addNotification = useNotification();
 
     useEffect(() => {
         // Fetch available tools from API
         async function fetchAvailableTools() {
             try {
-                const response = await fetch('/api/tools'); // Replace with actual API endpoint
+                const response = await fetch('/api/tools'); // Ensure this endpoint is correctly implemented
                 const data = await response.json();
                 setAvailableTools(data);
             } catch (error) {
                 console.error('Error fetching tools:', error);
+                addNotification('Failed to fetch available tools.', 'error');
             }
         }
 
         fetchAvailableTools();
-    }, []);
+    }, [addNotification]);
 
     const handleAddTool = () => {
         if (selectedTool) {
@@ -42,7 +46,7 @@ const WorkflowBuilder = () => {
 
     const handleSaveWorkflow = async () => {
         if (!workflowName || tools.length === 0) {
-            alert('Please provide a workflow name and add at least one tool.');
+            addNotification('Please provide a workflow name and add at least one tool.', 'warning');
             return;
         }
 
@@ -52,22 +56,22 @@ const WorkflowBuilder = () => {
         };
 
         try {
-            const response = await fetch('/api/workflows', { // Replace with actual API endpoint
+            const response = await fetch('/api/workflows', { // Ensure this endpoint is correctly implemented
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(workflow),
             });
 
             if (response.ok) {
-                alert('Workflow saved successfully!');
+                addNotification('Workflow saved successfully!', 'success');
                 setWorkflowName('');
                 setTools([]);
             } else {
-                alert('Failed to save workflow.');
+                addNotification('Failed to save workflow.', 'error');
             }
         } catch (error) {
             console.error('Error saving workflow:', error);
-            alert('An error occurred while saving the workflow.');
+            addNotification('An error occurred while saving the workflow.', 'error');
         }
     };
 
@@ -99,6 +103,7 @@ const WorkflowBuilder = () => {
                                     {tool.name}
                                 </SelectItem>
                             ))}
+                            {availableTools.length === 0 && <SelectItem disabled>No tools available</SelectItem>}
                         </SelectContent>
                     </Select>
                     <Button onClick={handleAddTool} disabled={!selectedTool}>

@@ -1,3 +1,7 @@
+// C:\Users\nasan\Downloads\groqyGit\groqy\frontend\src\components\ChatView.jsx
+
+// src/components/ChatView.jsx
+
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

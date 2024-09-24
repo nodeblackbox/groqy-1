@@ -1,3 +1,5 @@
+// src/components/ToolingConfiguration.jsx
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +14,7 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { useNotification } from '@/components/ui/NotificationProvider';
 
 const AVAILABLE_MODELS = {
     ollama: [
@@ -25,6 +28,8 @@ const AVAILABLE_MODELS = {
 };
 
 const ToolingConfiguration = ({ state, setState, saveApiKey, setSystemPrompt, resetSettings }) => {
+    const addNotification = useNotification();
+
     const handleApiChange = (value) => {
         const useGroq = value === 'groq';
         setState((prev) => ({
@@ -120,7 +125,7 @@ const ToolingConfiguration = ({ state, setState, saveApiKey, setSystemPrompt, re
                                 <SelectItem key={model.value} value={model.value}>
                                     {model.label}
                                 </SelectItem>
-                            )) || <p>No models available</p>}
+                            )) || <SelectItem disabled>No models available</SelectItem>}
                         </SelectContent>
                     </Select>
                 </div>

@@ -1,12 +1,16 @@
+// src/components/FileUploader.jsx
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload } from 'lucide-react';
+import { useNotification } from '@/components/ui/NotificationProvider';
 
 const FileUploader = () => {
     const [files, setFiles] = useState([]);
     const [uploadStatus, setUploadStatus] = useState('');
+    const addNotification = useNotification();
 
     const handleFileChange = (e) => {
         setFiles(e.target.files);
@@ -14,7 +18,7 @@ const FileUploader = () => {
 
     const handleFileUpload = async () => {
         if (files.length === 0) {
-            alert('Please select at least one file to upload.');
+            addNotification('Please select at least one file to upload.', 'warning');
             return;
         }
 
@@ -24,7 +28,7 @@ const FileUploader = () => {
         }
 
         try {
-            const response = await fetch('/api/upload', { // Replace with actual API endpoint
+            const response = await fetch('/api/upload', { // Ensure this endpoint is correctly implemented
                 method: 'POST',
                 body: formData,
             });
@@ -32,12 +36,15 @@ const FileUploader = () => {
             if (response.ok) {
                 setUploadStatus('Files uploaded successfully!');
                 setFiles([]);
+                addNotification('Files uploaded successfully!', 'success');
             } else {
                 setUploadStatus('Failed to upload files.');
+                addNotification('Failed to upload files.', 'error');
             }
         } catch (error) {
             console.error('Error uploading files:', error);
             setUploadStatus('An error occurred during file upload.');
+            addNotification('An error occurred during file upload.', 'error');
         }
     };
 
