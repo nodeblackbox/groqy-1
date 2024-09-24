@@ -1,5 +1,0 @@
-fastapi
-uvicorn
-qdrant-client
-sentence-transformers
-cachetools
