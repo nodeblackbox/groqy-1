@@ -30,6 +30,17 @@ kitchen = DatasetKitchen(config)
 
 @app.route('/prepare_dataset', methods=['POST'])
 def prepare_dataset():
+    """
+    api usage payload:
+    
+    {
+    "source": "<source_data>",
+    "template": "<template_name>",
+    "num_samples": 100,
+    "output_file": "<output_file_path>"
+    }
+    
+    """
     data = request.json
     source = data.get('source')
     template_name = data.get('template')
@@ -54,6 +65,14 @@ def prepare_dataset():
 
 @app.route('/generate_paraphrases', methods=['POST'])
 def generate_paraphrases():
+    """
+    api usage payload:
+    {
+    "seed_file": "<path_to_seed_file>",
+    "num_samples": 1,
+    "system_prompt": "<optional_system_prompt>"
+    }
+    """
     data = request.json
     seed_file = data.get('seed_file')
     num_samples = data.get('num_samples', 1)
@@ -71,6 +90,12 @@ def generate_paraphrases():
 
 @app.route('/augment_data', methods=['POST'])
 def augment_data():
+    """
+    api usage payload:
+    {
+    "seed_parquet": "<path_to_seed_parquet>"
+    }
+    """
     data = request.json
     seed_parquet = data.get('seed_parquet')
 
@@ -87,6 +112,14 @@ def augment_data():
 
 @app.route('/parse_text_to_parquet', methods=['POST'])
 def parse_text_to_parquet():
+    """
+    api usage payload:
+    {
+    "text_content": "<your_text_content>",
+    "template_name": "<template_name>",
+    "filename": "<output_filename>"
+    }
+    """
     data = request.json
     text_content = data.get('text_content')
     template_name = data.get('template_name')
@@ -109,6 +142,13 @@ def parse_text_to_parquet():
 
 @app.route('/convert_parquet', methods=['POST'])
 def convert_parquet():
+    """
+    api usage payload:
+    {
+    "parquet_file": "<path_to_parquet_file>",
+    "output_formats": ["csv", "jsonl"]
+    }
+    """
     data = request.json
     parquet_file = data.get('parquet_file')
     output_formats = data.get('output_formats', ['csv', 'jsonl'])
