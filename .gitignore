@@ -1,2 +1,4 @@
-/node_modules/
+/frontend/node_modules/
 /.next/
+/frontend/.env/
+/backend/app/.venv/
