@@ -4,7 +4,7 @@ from flask import Flask
 from api.file_structure import FileStructureAPI
 from api.file_insights import FileInsightsAPI
 from api.file_contents import FileContentsAPI
-from api.comprehensive_insights import ComprehensiveInsightsAPI
+from api.comprehensive_file_insights import ComprehensiveInsightsAPI
 
 app = Flask(__name__)
 
