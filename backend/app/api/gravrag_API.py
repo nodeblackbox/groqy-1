@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
-from .gravrag import MemoryInput, Memory
+from ..gravrag import Knowledge  # Assuming Knowledge object is defined in gravrag
 
+# Create FastAPI router
 router = APIRouter()
 
 # Pydantic model for input data
@@ -19,16 +20,11 @@ class MemoryInputModel(BaseModel):
     visual_data: Optional[str] = None
     is_basal_reference: bool = False
 
-# Instantiate memory
-Knowledge = Memory()
-
+# API endpoint to create a memory
 @router.post("/memory/create")
-async def create_memory_api(memory_input: MemoryInputModel):
-    """
-    API endpoint to create a memory.
-    """
+async def create_memory(memory_input: MemoryInputModel):
     try:
-        memory_data = MemoryInput(
+        await Knowledge.create_memory(
             session_id=memory_input.session_id,
             role=memory_input.role,
             content=memory_input.content,
@@ -41,17 +37,14 @@ async def create_memory_api(memory_input: MemoryInputModel):
             visual_data=memory_input.visual_data,
             is_basal_reference=memory_input.is_basal_reference
         )
-        await Knowledge.create_memory(memory_data)
         return {"message": "Memory created successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# API endpoint to recall a memory
 @router.get("/memory/recall/{session_id}")
-async def recall_memory_api(session_id: str, query: str, top_k: int = 5):
-    """
-    API endpoint to recall memory based on session_id and query.
-    """
+async def recall_memory(session_id: str, query: str, top_k: int = 5):
     try:
         results = await Knowledge.recall_memory(session_id, query, top_k)
         return {"results": results}
@@ -59,11 +52,9 @@ async def recall_memory_api(session_id: str, query: str, top_k: int = 5):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# API endpoint to delete a memory
 @router.delete("/memory/delete/{session_id}")
-async def delete_memory_api(session_id: str):
-    """
-    API endpoint to delete a memory for a session.
-    """
+async def delete_memory(session_id: str):
     try:
         await Knowledge.delete_session_data(session_id)
         return {"message": f"Memory for session {session_id} deleted successfully"}
@@ -71,11 +62,9 @@ async def delete_memory_api(session_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# API endpoint to get the context window for a session
 @router.get("/memory/context/{session_id}")
-async def get_context_window_api(session_id: str):
-    """
-    API endpoint to get the context window for a session.
-    """
+async def get_context_window(session_id: str):
     try:
         context = await Knowledge.get_context_window(session_id)
         return {"context": context}
@@ -83,11 +72,9 @@ async def get_context_window_api(session_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# API endpoint to optimize the Qdrant index
 @router.post("/optimize")
-async def optimize_index_api():
-    """
-    API endpoint to optimize the Qdrant index.
-    """
+async def optimize_index():
     try:
         await Knowledge.optimize_index()
         return {"message": "Index optimized successfully"}
@@ -95,11 +82,9 @@ async def optimize_index_api():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# API endpoint for semantic search
 @router.post("/semantic-search")
-async def semantic_search_api(query: str, filter_conditions: Optional[dict] = None, top_k: int = 10):
-    """
-    API endpoint for performing a semantic search.
-    """
+async def semantic_search(query: str, filter_conditions: Optional[dict] = None, top_k: int = 10):
     try:
         results = await Knowledge.semantic_search(query, filter_conditions, top_k)
         return {"results": results}
@@ -107,11 +92,9 @@ async def semantic_search_api(query: str, filter_conditions: Optional[dict] = No
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# API endpoint to export memory data to a file
 @router.post("/export")
-async def export_data_api(file_path: str):
-    """
-    API endpoint to export data to a file.
-    """
+async def export_data(file_path: str):
     try:
         await Knowledge.export_data(file_path)
         return {"message": "Data exported successfully"}
@@ -119,11 +102,9 @@ async def export_data_api(file_path: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# API endpoint to import memory data from a file
 @router.post("/import")
-async def import_data_api(file_path: str):
-    """
-    API endpoint to import data from a file.
-    """
+async def import_data(file_path: str):
     try:
         await Knowledge.import_data(file_path)
         return {"message": "Data imported successfully"}
@@ -131,11 +112,9 @@ async def import_data_api(file_path: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# API endpoint to analyze the system's performance
 @router.get("/performance/analyze")
-async def analyze_performance_api():
-    """
-    API endpoint to analyze the system's performance.
-    """
+async def analyze_performance():
     try:
         performance_data = await Knowledge.analyze_performance()
         return {"performance": performance_data}
