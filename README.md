@@ -9,8 +9,8 @@ Gravity RAG Infinite Streaming Context: Seamlessly integrates and streams contex
 GOD Matrix API Hub: Provides a robust API hub for limitless tooling deployment.
 
 <img
-src="backend/strawberry_groqy_4.png"
-  style="display: inline-block; margin: 0 auto; max-width: 50px">
+src="frontend/strawberry_groqy_4.png"
+  style="display: inline-block; margin: 0 auto; max-width: 500px">
 
 ## Getting Started
 
