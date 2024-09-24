@@ -10,7 +10,10 @@ The Groqy Quantum Nexus brings agentic experts to the next level of deployment v
 
 ## Features
 Gravity RAG Infinite Streaming Context: Seamlessly integrates and streams context for enhanced deployment.
+
 GOD Matrix API Hub: Provides a robust API hub for limitless tooling deployment.
+
+Agent Swarm UI generation and deployment for ollama, openai api, anthropic api, groqapi, and more.
 
 ## Getting Started
 
