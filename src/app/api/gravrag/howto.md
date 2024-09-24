@@ -1,4 +1,4 @@
-To integrate your Python-based FastAPI service with your JavaScript project, you need to set up communication between the frontend and the FastAPI backend. Here's a guide that will help you incorporate the FastAPI backend into your JavaScript project, focusing on handling API calls effectively.
+<!-- To integrate your Python-based FastAPI service with your JavaScript project, you need to set up communication between the frontend and the FastAPI backend. Here's a guide that will help you incorporate the FastAPI backend into your JavaScript project, focusing on handling API calls effectively.
 
 ### 1. **Project Structure**
 Here's a recommended project structure for managing both your FastAPI backend and JavaScript frontend in a single project.
@@ -238,4 +238,4 @@ If you want to manage both services using Docker, you can set up a `docker-compo
 
 ---
 
-This integration guide provides a clean, maintainable structure for connecting a FastAPI-based Python backend to a JavaScript (React, Vue, etc.) frontend, enabling seamless API interaction.
+This integration guide provides a clean, maintainable structure for connecting a FastAPI-based Python backend to a JavaScript (React, Vue, etc.) frontend, enabling seamless API interaction. -->
