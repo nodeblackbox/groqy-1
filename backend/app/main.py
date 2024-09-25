@@ -7,7 +7,8 @@ import asyncio
 import sys
 import os
 
-from api.agentchef_resources import OpenAILLM, OllamaLLM
+from api.agentchef_api import app as agentchef_app
+from api.gravrag_API import app as gravrag_app
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -29,6 +30,12 @@ config = {
         'api_base': 'http://localhost:11434'  # Ollama API endpoint
     }
 }
+
+# Include AgentChef routes
+agentchef_fastapi.include_router(agentchef_app, tags=["agentchef"])
+
+# Include GravRAG routes
+gravrag_fastapi.include_router(gravrag_app, tags=["gravrag"])
 
 # Function to run a server asynchronously
 async def run_server(app, host, port):

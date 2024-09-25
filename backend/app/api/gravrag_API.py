@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
-from ..gravrag import Knowledge
+from gravrag import Knowledge
 
 app = FastAPI()
 
