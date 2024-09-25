@@ -8,15 +8,20 @@ import os, json, urllib.parse, tarfile, gzip, shutil, requests, random, re, time
 from typing import List, Dict, Any, Optional
 import logging
 
+from anthropic import Anthropic
+import openai
+from groq import Groq
+
 init(autoreset=True)
 
-from langchain.document_loaders import (
+from langchain_community.document_loaders import (
     WebBaseLoader, PyPDFLoader, TextLoader, Docx2txtLoader,
     UnstructuredPowerPointLoader, WikipediaLoader, ArxivLoader,
     UnstructuredEPubLoader, JSONLoader, CSVLoader
 )
 
-from api.ai_api_providers import LLMManager
+
+from api.agentchef_resources import LLMManager, OllamaLLM
 
 from huggingface_hub import snapshot_download, HfApi, hf_hub_download
 from github import Github
@@ -114,10 +119,10 @@ class AIProviderFactory:
     @staticmethod
     def get_provider(provider_name: str, **kwargs):
         providers = {
-            'ollama': OllamaProvider,
-            'openai': OpenAIProvider,
-            'groq': GroqProvider,
-            'anthropic': AnthropicProvider
+            'ollama': OllamaLLM,
+            'openai': openai,
+            'groq': Groq,
+            'anthropic': Anthropic
         }
         if provider_name not in providers:
             raise ValueError(f"Unsupported AI provider: {provider_name}")
@@ -278,11 +283,11 @@ class TemplateManager:
         return self.templates[template_name]
     
 class DatasetManager:
-    def __init__(self, llm_manager: LLMManager, template_manager: TemplateManager, file_handler: FileHandler, prompt_manager: PromptManager):
+    def __init__(self, llm_manager: LLMManager, template_manager: TemplateManager, prompt_manager: PromptManager):
         self.llm_manager = llm_manager
         self.template_manager = template_manager
-        self.file_handler = file_handler
         self.prompt_manager = prompt_manager
+        self.file_handler = FileHandler
 
     def prepare_dataset(self, source: str, template_name: str, num_samples: int, augmentation_config: Dict[str, Any], output_file: str) -> pd.DataFrame:
         # Step 1: Collect and structure data

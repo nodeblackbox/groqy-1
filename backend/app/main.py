@@ -1,23 +1,22 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
-# from agentChef import DatasetKitchen, TemplateManager, FileHandler
-# from gravrag import Knowledge
+from fastapi import FastAPI
+from api.agentChef_api import app as agentchef_app
+from api.gravrag_API import app as gravrag_app
+from api.ai_api_providers import router as llm_router
 import uvicorn
 import asyncio
+import sys
+import os
 
-# Import the AgentChef API
-# We're importing the entire app and specific models that we might need
-from api.agentChef_api import app as agentchef_app, LLMConfig, CustomAgentConfig, PrepareDatasetRequest, GenerateParaphrasesRequest, AugmentDataRequest
+from api.agentchef_resources import OpenAILLM, OllamaLLM
 
-# Import the GravRAG API
-# Similarly, we import the GravRAG app and its MemoryInputModel
-from api.gravrag_API import app as gravrag_app, MemoryInputModel
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Create separate FastAPI instances for AgentChef and GravRAG
-# This allows us to run two separate APIs on different ports
 agentchef_fastapi = FastAPI()
 gravrag_fastapi = FastAPI()
+
+agentchef_fastapi.include_router(llm_router, prefix="/llm", tags=["llm"])
+agentchef_fastapi.include_router(agentchef_app, tags=["agentchef"])
+gravrag_fastapi.include_router(gravrag_app, tags=["gravrag"])
 
 # Configuration for AgentChef
 # This dictionary contains all the necessary settings for AgentChef
@@ -31,27 +30,6 @@ config = {
     }
 }
 
-# Initialize AgentChef components
-# These objects will be used to interact with various parts of AgentChef
-# Initialize AgentChef components
-kitchen = agentchef_app.DatasetKitchen(config)
-template_manager = agentchef_app.TemplateManager(config['templates_dir'])
-file_handler = agentchef_app.FileHandler(config['input_dir'], config['output_dir'])
-chef_llm_manager = agentchef_app.LLMManager()
-
-grav_llm_manager = gravrag_app.LLMManager()
-chef_llm_manager = agentchef_app.LLMManager()
-
-document_loader = agentchef_app.DocumentLoader()
-
-# Include AgentChef routes
-# This adds all the routes from the AgentChef API to our FastAPI instance
-agentchef_fastapi.include_router(agentchef_app, tags=["agentchef"])
-
-# Include GravRAG routes
-# This adds all the routes from the GravRAG API to our FastAPI instance
-gravrag_fastapi.include_router(gravrag_app, tags=["gravrag"])
-
 # Function to run a server asynchronously
 async def run_server(app, host, port):
     config = uvicorn.Config(app, host=host, port=port)
@@ -60,16 +38,13 @@ async def run_server(app, host, port):
 
 # Main execution block
 if __name__ == "__main__":
-    # Get the event loop
     loop = asyncio.get_event_loop()
     
-    # Define tasks for running both servers
     tasks = [
-        run_server(agentchef_fastapi, "0.0.0.0", 8888),  # AgentChef API on port 8888
-        run_server(gravrag_fastapi, "0.0.0.0", 6369),    # GravRAG API on port 6369
+        run_server(agentchef_fastapi, "0.0.0.0", 8888),
+        run_server(gravrag_fastapi, "0.0.0.0", 6369),
     ]
     
-    # Run both servers concurrently
     loop.run_until_complete(asyncio.gather(*tasks))
 
 # How to use this API:

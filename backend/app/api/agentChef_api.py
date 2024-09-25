@@ -1,16 +1,24 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import uvicorn
-from cutlery import DatasetManager, TemplateManager, FileHandler, DocumentLoader
+
+from cutlery import DatasetManager, TemplateManager, FileHandler, DocumentLoader, PromptManager
 from chef import DatasetKitchen, DataCollectionAgent, DataDigestionAgent, DataGenerationAgent, DataCleaningAgent, DataAugmentationAgent
-from cutlery import PromptManager
-from ai_api_providers import LLMManager
+
+from api.agentchef_resources import LLMManager, OllamaLLM
 from huggingface_hub import HfApi
 import uvicorn
 import pandas as pd
 import json
 import os
+
+# Initialize necessary objects
+llm_manager = LLMManager()
+template_manager = TemplateManager('./templates')
+file_handler = FileHandler('./input', './output')
+document_loader = DocumentLoader()
+prompt_manager = PromptManager()
 
 app = FastAPI(title="AgentChef API", description="API for data processing and dataset creation")
 
@@ -25,6 +33,26 @@ app = FastAPI(title="AgentChef API", description="API for data processing and da
 #     }
 # }
 
+class LLMConfig(BaseModel):
+    model: str
+    api_base: str
+
+class CustomAgentConfig(BaseModel):
+    agent_name: str
+    config: Dict[str, Any]
+
+class PrepareDatasetRequest(BaseModel):
+    source: str
+    template_name: str
+    num_samples: int
+    augmentation_config: Optional[Dict[str, Any]] = None
+    output_file: str
+
+class GenerateParaphrasesRequest(BaseModel):
+    seed_file: str
+    num_samples: int = 1
+    system_prompt: Optional[str] = None
+    
 # Pydantic models for request bodies
 class DataSourceRequest(BaseModel):
     source_type: str

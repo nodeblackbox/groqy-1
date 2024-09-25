@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Dict, Any, List
-from ..neural_resources import LLMManager, model_data  # Assuming the previous code is in llm_manager.py
+from api.agentchef_resources import LLMManager, model_data, OpenAILLM, OllamaLLM
 
 router = APIRouter()
 
@@ -15,12 +15,16 @@ class APIKeyUpdate(BaseModel):
     provider: str
     api_key: str
 
-# Dependency to get the LLMManager instance
 def get_llm_manager():
-    return llm_manager
+    from backend.app.api.agentchef_resources import LLMManager
+    return LLMManager()
+
+# Dependency to get the LLMManager instance
+def get_llm_manager_dependency():
+    return get_llm_manager()
 
 @router.post("/route_query")
-async def route_query(message: Message, manager: LLMManager = Depends(get_llm_manager)):
+async def route_query(message: Message, manager: Any = Depends(get_llm_manager_dependency)):
     response = manager.route_query(message.content)
     if "error" in response:
         raise HTTPException(status_code=500, detail=response["error"])
