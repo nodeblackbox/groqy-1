@@ -1,15 +1,8 @@
-<<<<<<< HEAD
-# main.py - Tutorial for AgentChef and GravRAG API Integration
-
-# Import necessary libraries and modules
-from fastapi import FastAPI
-=======
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 # from agentChef import DatasetKitchen, TemplateManager, FileHandler
-from gravrag import Knowledge
->>>>>>> 40ce8a893bcb7de655659770c34631c8ac2e2a6e
+# from gravrag import Knowledge
 import uvicorn
 import asyncio
 
@@ -39,18 +32,12 @@ config = {
 }
 
 # Initialize AgentChef components
-<<<<<<< HEAD
 # These objects will be used to interact with various parts of AgentChef
 # Initialize AgentChef components
 kitchen = agentchef_app.DatasetKitchen(config)
 template_manager = agentchef_app.TemplateManager(config['templates_dir'])
 file_handler = agentchef_app.FileHandler(config['input_dir'], config['output_dir'])
 chef_llm_manager = agentchef_app.LLMManager()
-=======
-# kitchen = DatasetKitchen(config)
-# template_manager = TemplateManager(config['templates_dir'])
-# file_handler = FileHandler(config['input_dir'], config['output_dir'])
->>>>>>> 40ce8a893bcb7de655659770c34631c8ac2e2a6e
 
 grav_llm_manager = gravrag_app.LLMManager()
 chef_llm_manager = agentchef_app.LLMManager()
@@ -61,131 +48,9 @@ document_loader = agentchef_app.DocumentLoader()
 # This adds all the routes from the AgentChef API to our FastAPI instance
 agentchef_fastapi.include_router(agentchef_app, tags=["agentchef"])
 
-<<<<<<< HEAD
 # Include GravRAG routes
 # This adds all the routes from the GravRAG API to our FastAPI instance
 gravrag_fastapi.include_router(gravrag_app, tags=["gravrag"])
-=======
-class ParseTextToParquetRequest(BaseModel):
-    text_content: str
-    template_name: str
-    filename: str
-
-class ConvertParquetRequest(BaseModel):
-    parquet_file: str
-    output_formats: List[str] = ['csv', 'jsonl']
-
-class CreateTemplateRequest(BaseModel):
-    template_name: str
-    template_fields: List[str]
-
-# GravRAG API models
-class MemoryInputModel(BaseModel):
-    content: str
-    metadata: Optional[Dict[str, Any]] = {}
-
-# # AgentChef API endpoints
-# @app.post("/agentchef/prepare_dataset")
-# async def prepare_dataset(request: PrepareDatasetRequest):
-#     try:
-#         dataset = kitchen.prepare_dataset(
-#             source=request.source,
-#             template_name=request.template,
-#             num_samples=request.num_samples,
-#             augmentation_config={},
-#             output_file=request.output_file
-#         )
-#         return {"message": f"Dataset prepared and saved to {request.output_file}"}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @app.post("/agentchef/generate_paraphrases")
-# async def generate_paraphrases(request: GenerateParaphrasesRequest):
-#     try:
-#         output_files = kitchen.generate_paraphrases(
-#             seed_file=request.seed_file,
-#             num_samples=request.num_samples,
-#             system_prompt=request.system_prompt
-#         )
-#         return {"message": f"Paraphrased content saved to: {', '.join(output_files)}"}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @app.post("/agentchef/augment_data")
-# async def augment_data(request: AugmentDataRequest):
-#     try:
-#         augmentation_config = {}
-#         output_file = kitchen.augment_data(seed_parquet=request.seed_parquet, augmentation_config=augmentation_config)
-#         return {"message": f"Augmented data saved to: {output_file}"}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @app.post("/agentchef/parse_text_to_parquet")
-# async def parse_text_to_parquet(request: ParseTextToParquetRequest):
-#     try:
-#         df, json_file, parquet_file = kitchen.dataset_manager.parse_text_to_parquet(
-#             request.text_content,
-#             request.template_name,
-#             request.filename
-#         )
-#         return {
-#             "message": "Parsing completed successfully",
-#             "json_file": json_file,
-#             "parquet_file": parquet_file,
-#             "dataframe_shape": df.shape
-#         }
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @app.post("/agentchef/convert_parquet")
-# async def convert_parquet(request: ConvertParquetRequest):
-#     try:
-#         kitchen.dataset_manager.convert_parquet(request.parquet_file, request.output_formats)
-#         return {"message": f"Parquet file converted to {', '.join(request.output_formats)}"}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @app.get("/agentchef/get_templates")
-# async def get_templates():
-#     try:
-#         templates = template_manager.get_templates()
-#         return {"templates": templates}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @app.post("/agentchef/create_template")
-# async def create_template(request: CreateTemplateRequest):
-#     try:
-#         new_template = template_manager.create_template(request.template_name, request.template_fields)
-#         return {"message": f"Template '{request.template_name}' created successfully", "template": new_template}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# GravRAG API endpoints
-@app.post("/gravrag/memory/create")
-async def create_memory(memory_input: MemoryInputModel):
-    try:
-        await Knowledge.create_memory(memory_input.content, memory_input.metadata)
-        return {"message": "Memory created successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {e}")
-
-@app.get("/gravrag/memory/recall")
-async def recall_memory(query: str, top_k: int = 5):
-    try:
-        results = await Knowledge.recall_memory(query, top_k)
-        return {"results": results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {e}")
-
-@app.post("/gravrag/memory/prune")
-async def prune_memories():
-    try:
-        await Knowledge.prune_memories()
-        return {"message": "Pruning complete"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {e}")
->>>>>>> 40ce8a893bcb7de655659770c34631c8ac2e2a6e
 
 # Function to run a server asynchronously
 async def run_server(app, host, port):

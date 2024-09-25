@@ -7,7 +7,7 @@ from anthropic import Anthropic
 import openai
 from groq import Groq
 from fastapi import FastAPI
-from api.neural_resources_api import router as llm_router
+from api.ai_api_providers import router as llm_router
 
 app = FastAPI()
 
