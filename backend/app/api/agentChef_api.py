@@ -6,7 +6,7 @@ import uvicorn
 from cutlery import DatasetManager, TemplateManager, FileHandler, DocumentLoader, PromptManager
 from chef import DatasetKitchen, DataCollectionAgent, DataDigestionAgent, DataGenerationAgent, DataCleaningAgent, DataAugmentationAgent
 
-from agentchef_resources import LLMManager, OllamaLLM
+from backend.app.agentchef_resources import LLMManager, OllamaLLM
 from huggingface_hub import HfApi
 import uvicorn
 import pandas as pd
@@ -23,18 +23,15 @@ prompt_manager = PromptManager()
 app = FastAPI(title="AgentChef API", description="API for data processing and dataset creation")
 
 # Configuration for AgentChef
-config = {
-    'templates_dir': './templates',
-    'input_dir': './input',
-    'output_dir': './output',
-    'ollama_config': {
-        'model': 'phi3',
-        'api_base': 'http://localhost:11434'
-    }
-}
-
-# Instantiate the kitchen
-kitchen = DatasetKitchen(config)
+# config = {
+#     'templates_dir': './templates',
+#     'input_dir': './input',
+#     'output_dir': './output',
+#     'ollama_config': {
+#         'model': 'phi3',
+#         'api_base': 'http://localhost:11434'
+#     }
+# }
 
 class LLMConfig(BaseModel):
     model: str
