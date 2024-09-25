@@ -6,11 +6,9 @@ import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
 import * as t from '@babel/types';
 
-
-
-export async function POST(req) {
+export async function POST(request) {
     try {
-        const { filePath } = await req.json();
+        const { filePath } = await request.json();
         const fullPath = path.join(process.cwd(), filePath);
 
         const content = await fs.readFile(fullPath, 'utf8');
@@ -21,22 +19,6 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Error analyzing file', details: error.message }, { status: 500 });
     }
 }
-
-export default async function handler(req, res) {
-    const { filePath } = req.body;
-    try {
-        const fullPath = path.join(process.cwd(), filePath);
-        const fileContent = await fs.readFile(fullPath, 'utf8');
-        const insights = analyzeFile(fileContent, filePath);
-        res.status(200).json({ ...insights, fileContent });
-    } catch (error) {
-        console.error('Error analyzing file:', error);
-        res.status(500).json({ error: 'Error analyzing file' });
-    }
-}
-
-
-
 
 function analyzeFile(content, filePath) {
     const ast = parse(content, {
@@ -62,10 +44,10 @@ function analyzeFile(content, filePath) {
     traverse(ast, {
         Identifier(path) {
             const name = path.node.name;
-            if (insights.components[name]) {
+            if (insights.components[name] && Array.isArray(insights.components[name].usages)) {
                 insights.components[name].usages.push(getLocationInfo(path));
             }
-            if (insights.functions[name]) {
+            if (insights.functions[name] && Array.isArray(insights.functions[name].usages)) {
                 insights.functions[name].usages.push(getLocationInfo(path));
             }
         },
@@ -102,7 +84,7 @@ function analyzeFile(content, filePath) {
                     childComponents: [],
                     hooks: [],
                     code: content.slice(path.node.start, path.node.end),
-                    usages: [], // We'll populate this later
+                    usages: [], // Initialized as an empty array
                 };
                 analyzeComponent(path, componentName, insights);
             }
@@ -203,13 +185,16 @@ function analyzeFunctionDetails(path, functionName, insights, content) {
         },
     });
 }
+
 function getLocationInfo(path) {
     const loc = path.node.loc;
+    if (!loc) return { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } };
     return {
         start: { line: loc.start.line, column: loc.start.column },
         end: { line: loc.end.line, column: loc.end.column },
     };
 }
+
 function analyzeFileReferences(content, currentFilePath) {
     const fileReferences = [];
     const regex = /from\s+['"]([^'"]+)['"]/g;

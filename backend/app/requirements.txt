@@ -2,6 +2,7 @@ fastapi
 uvicorn
 qdrant-client
 sentence-transformers
+sentence_transformers
 cachetools
 Flask==2.0.1
 gunicorn==20.1.0
