@@ -1,73 +1,173 @@
-import unittest
-from fastapi.testclient import TestClient
-from main import app  # Import your FastAPI app
-import json
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
+from agentChef import DatasetKitchen, TemplateManager, FileHandler
+from gravrag import Knowledge
+import uvicorn
+import asyncio
 
-class TestAgentChefAPI(unittest.TestCase):
-    def setUp(self):
-        self.client = TestClient(app)
+app = FastAPI()
 
-    def test_prepare_dataset(self):
-        payload = {
-            "source": "test_data.csv",
-            "template": "default_template",
-            "num_samples": 50,
-            "output_file": "test_output.parquet"
+# Configuration for AgentChef
+config = {
+    'templates_dir': './templates',
+    'input_dir': './input',
+    'output_dir': './output',
+    'ollama_config': {
+        'model': 'phi3',
+        'api_base': 'http://localhost:11434'
+    }
+}
+
+# Initialize AgentChef components
+kitchen = DatasetKitchen(config)
+template_manager = TemplateManager(config['templates_dir'])
+file_handler = FileHandler(config['input_dir'], config['output_dir'])
+
+# AgentChef API models
+class PrepareDatasetRequest(BaseModel):
+    source: str
+    template: str
+    num_samples: int = 100
+    output_file: str
+
+class GenerateParaphrasesRequest(BaseModel):
+    seed_file: str
+    num_samples: int = 1
+    system_prompt: Optional[str] = None
+
+class AugmentDataRequest(BaseModel):
+    seed_parquet: str
+
+class ParseTextToParquetRequest(BaseModel):
+    text_content: str
+    template_name: str
+    filename: str
+
+class ConvertParquetRequest(BaseModel):
+    parquet_file: str
+    output_formats: List[str] = ['csv', 'jsonl']
+
+class CreateTemplateRequest(BaseModel):
+    template_name: str
+    template_fields: List[str]
+
+# GravRAG API models
+class MemoryInputModel(BaseModel):
+    content: str
+    metadata: Optional[Dict[str, Any]] = {}
+
+# AgentChef API endpoints
+@app.post("/agentchef/prepare_dataset")
+async def prepare_dataset(request: PrepareDatasetRequest):
+    try:
+        dataset = kitchen.prepare_dataset(
+            source=request.source,
+            template_name=request.template,
+            num_samples=request.num_samples,
+            augmentation_config={},
+            output_file=request.output_file
+        )
+        return {"message": f"Dataset prepared and saved to {request.output_file}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/agentchef/generate_paraphrases")
+async def generate_paraphrases(request: GenerateParaphrasesRequest):
+    try:
+        output_files = kitchen.generate_paraphrases(
+            seed_file=request.seed_file,
+            num_samples=request.num_samples,
+            system_prompt=request.system_prompt
+        )
+        return {"message": f"Paraphrased content saved to: {', '.join(output_files)}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/agentchef/augment_data")
+async def augment_data(request: AugmentDataRequest):
+    try:
+        augmentation_config = {}
+        output_file = kitchen.augment_data(seed_parquet=request.seed_parquet, augmentation_config=augmentation_config)
+        return {"message": f"Augmented data saved to: {output_file}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/agentchef/parse_text_to_parquet")
+async def parse_text_to_parquet(request: ParseTextToParquetRequest):
+    try:
+        df, json_file, parquet_file = kitchen.dataset_manager.parse_text_to_parquet(
+            request.text_content,
+            request.template_name,
+            request.filename
+        )
+        return {
+            "message": "Parsing completed successfully",
+            "json_file": json_file,
+            "parquet_file": parquet_file,
+            "dataframe_shape": df.shape
         }
-        response = self.client.post("/prepare_dataset", json=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Dataset prepared and saved", response.json()["message"])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    def test_generate_paraphrases(self):
-        payload = {
-            "seed_file": "test_seed.txt",
-            "num_samples": 2,
-            "system_prompt": "Generate casual paraphrases"
-        }
-        response = self.client.post("/generate_paraphrases", json=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Paraphrased content saved", response.json()["message"])
+@app.post("/agentchef/convert_parquet")
+async def convert_parquet(request: ConvertParquetRequest):
+    try:
+        kitchen.dataset_manager.convert_parquet(request.parquet_file, request.output_formats)
+        return {"message": f"Parquet file converted to {', '.join(request.output_formats)}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    def test_augment_data(self):
-        payload = {
-            "seed_parquet": "test_seed.parquet"
-        }
-        response = self.client.post("/augment_data", json=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Augmented data saved", response.json()["message"])
+@app.get("/agentchef/get_templates")
+async def get_templates():
+    try:
+        templates = template_manager.get_templates()
+        return {"templates": templates}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    def test_parse_text_to_parquet(self):
-        payload = {
-            "text_content": "Sample text content for parsing",
-            "template_name": "default_template",
-            "filename": "test_parsed"
-        }
-        response = self.client.post("/parse_text_to_parquet", json=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Parsing completed successfully", response.json()["message"])
+@app.post("/agentchef/create_template")
+async def create_template(request: CreateTemplateRequest):
+    try:
+        new_template = template_manager.create_template(request.template_name, request.template_fields)
+        return {"message": f"Template '{request.template_name}' created successfully", "template": new_template}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    def test_convert_parquet(self):
-        payload = {
-            "parquet_file": "test_input.parquet",
-            "output_formats": ["csv", "jsonl"]
-        }
-        response = self.client.post("/convert_parquet", json=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Parquet file converted", response.json()["message"])
+# GravRAG API endpoints
+@app.post("/gravrag/memory/create")
+async def create_memory(memory_input: MemoryInputModel):
+    try:
+        await Knowledge.create_memory(memory_input.content, memory_input.metadata)
+        return {"message": "Memory created successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
 
-    def test_get_templates(self):
-        response = self.client.get("/get_templates")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("templates", response.json())
+@app.get("/gravrag/memory/recall")
+async def recall_memory(query: str, top_k: int = 5):
+    try:
+        results = await Knowledge.recall_memory(query, top_k)
+        return {"results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
 
-    def test_create_template(self):
-        payload = {
-            "template_name": "new_test_template",
-            "template_fields": ["field1", "field2", "field3"]
-        }
-        response = self.client.post("/create_template", json=payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Template 'new_test_template' created successfully", response.json()["message"])
+@app.post("/gravrag/memory/prune")
+async def prune_memories():
+    try:
+        await Knowledge.prune_memories()
+        return {"message": "Pruning complete"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
+
+async def run_server(app, host, port):
+    config = uvicorn.Config(app, host=host, port=port)
+    server = uvicorn.Server(config)
+    await server.serve()
 
 if __name__ == "__main__":
-    unittest.main()
+    loop = asyncio.get_event_loop()
+    tasks = [
+        run_server(app, "0.0.0.0", 8888),  # AgentChef API
+        run_server(app, "0.0.0.0", 6333)   # GravRAG API
+    ]
+    loop.run_until_complete(asyncio.gather(*tasks))
