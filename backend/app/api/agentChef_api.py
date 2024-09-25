@@ -23,15 +23,18 @@ prompt_manager = PromptManager()
 app = FastAPI(title="AgentChef API", description="API for data processing and dataset creation")
 
 # Configuration for AgentChef
-# config = {
-#     'templates_dir': './templates',
-#     'input_dir': './input',
-#     'output_dir': './output',
-#     'ollama_config': {
-#         'model': 'phi3',
-#         'api_base': 'http://localhost:11434'
-#     }
-# }
+config = {
+    'templates_dir': './templates',
+    'input_dir': './input',
+    'output_dir': './output',
+    'ollama_config': {
+        'model': 'phi3',
+        'api_base': 'http://localhost:11434'
+    }
+}
+
+# Instantiate the kitchen
+kitchen = DatasetKitchen(config)
 
 class LLMConfig(BaseModel):
     model: str
