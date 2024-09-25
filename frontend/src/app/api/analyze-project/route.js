@@ -3,13 +3,13 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
     try {
-        const { prompt, selectedItems, knowledgeBase, promptType } = await request.json();
+        const { prompt, selectedItems, knowledgeBase, promptType, model } = await request.json();
 
         if (!prompt) {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
         }
 
-        const GROQ_API_KEY = process.env.GROQ_API_KEY;
+        const GROQ_API_KEY = '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';
 
         if (!GROQ_API_KEY) {
             console.error('GROQ_API_KEY is not set');
@@ -19,9 +19,9 @@ export async function POST(request) {
         console.log('Preparing to send request to Groq API');
 
         const systemPrompt = `You are a helpful assistant that analyzes project structures and provides improvement suggestions. 
-    Focus on the following items: ${selectedItems.join(', ')}. 
-    Consider this project-specific knowledge: ${knowledgeBase}
-    The user is requesting a ${promptType} analysis.`;
+Focus on the following items: ${selectedItems.join(', ')}. 
+Consider this project-specific knowledge: ${knowledgeBase}
+The user is requesting a ${promptType} analysis.`;
 
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -34,9 +34,9 @@ export async function POST(request) {
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: prompt }
                 ],
-                model: 'llama-3.1-70b-versatile',
+                model: model || 'llama-3.1-70b-versatile', // Use the provided model or default
                 temperature: 0.7,
-                max_tokens: 2048,
+                max_tokens: 8000,
             }),
         });
 
