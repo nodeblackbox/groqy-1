@@ -2,7 +2,7 @@ from typing import List, Dict, Any
 import json
 from colorama import Fore, Style
 import click
-#from config import ConfigManager
+from config import ConfigManager
 from cutlery import DatasetManager, TemplateManager, PromptManager, FileHandler, DocumentLoader
 import pandas as pd
 from api.ai_api_providers import LLMManager
