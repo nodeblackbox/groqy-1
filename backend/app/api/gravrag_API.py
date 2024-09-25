@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from typing import List, Dict
+from typing import List, Dict, Any
 from pydantic import BaseModel
 from gravrag import Knowledge
 
