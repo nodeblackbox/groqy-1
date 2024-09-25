@@ -1,0 +1,1365 @@
+# Import necessary libraries (assuming they're all needed)
+import pandas as pd
+from tqdm import tqdm
+from datasets import load_dataset
+import numpy as np
+from colorama import Fore, Style, init
+import os, json, urllib.parse, tarfile, gzip, shutil, requests, random, re, time, logging, glob
+from typing import List, Dict, Any, Optional
+import logging
+
+init(autoreset=True)
+
+from langchain.document_loaders import (
+    WebBaseLoader, PyPDFLoader, TextLoader, Docx2txtLoader,
+    UnstructuredPowerPointLoader, WikipediaLoader, ArxivLoader,
+    UnstructuredEPubLoader, JSONLoader, CSVLoader
+)
+
+from api.ai_api_providers import LLMManager
+
+from huggingface_hub import snapshot_download, HfApi, hf_hub_download
+from github import Github
+init(autoreset=True)
+
+import requests
+from abc import ABC, abstractmethod
+from typing import List, Dict, Any
+
+import os
+import json
+from typing import Dict, Any
+
+class DataAgent(ABC):
+    @abstractmethod
+    def fetch_data(self, query: str) -> List[Dict[str, Any]]:
+        pass
+
+    @abstractmethod
+    def get_source_name(self) -> str:
+        pass
+
+class ArxivAgent(DataAgent):
+    def fetch_data(self, query: str) -> List[Dict[str, Any]]:
+        # Implement arXiv API logic here
+        # Return a list of dictionaries containing paper information
+        pass
+
+    def get_source_name(self) -> str:
+        return "arXiv"
+
+class WikipediaAgent(DataAgent):
+    def fetch_data(self, query: str) -> List[Dict[str, Any]]:
+        # Implement Wikipedia API logic here
+        # Return a list of dictionaries containing article information
+        pass
+
+    def get_source_name(self) -> str:
+        return "Wikipedia"
+
+class HuggingFaceAgent(DataAgent):
+    def fetch_data(self, query: str) -> List[Dict[str, Any]]:
+        # Implement Hugging Face API logic here
+        # Return a list of dictionaries containing model or dataset information
+        pass
+
+    def get_source_name(self) -> str:
+        return "Hugging Face"
+
+class GitHubAgent(DataAgent):
+    def __init__(self, access_token: str):
+        self.access_token = access_token
+
+    def fetch_data(self, query: str) -> List[Dict[str, Any]]:
+        # Implement GitHub API logic here
+        # Return a list of dictionaries containing repository information
+        pass
+
+    def get_source_name(self) -> str:
+        return "GitHub"
+
+def get_data_agent(source: str, **kwargs) -> DataAgent:
+    agents = {
+        "arxiv": ArxivAgent,
+        "wikipedia": WikipediaAgent,
+        "huggingface": HuggingFaceAgent,
+        "github": lambda: GitHubAgent(kwargs.get("access_token", "")),
+    }
+    return agents[source.lower()]()
+
+class CustomAgentBase(ABC):
+    def __init__(self, llm_manager, template_manager, file_handler, prompt_manager, document_loader):
+        self.llm_manager = llm_manager
+        self.template_manager = template_manager
+        self.file_handler = file_handler
+        self.prompt_manager = prompt_manager
+        self.document_loader = document_loader
+
+    @abstractmethod
+    def process_data(self, data: Any) -> pd.DataFrame:
+        """Process the data specific to this agent"""
+        pass
+
+    @abstractmethod
+    def scrape_data(self, source: str) -> Any:
+        """Scrape data from the given source"""
+        pass
+
+    def run(self, source: str) -> pd.DataFrame:
+        """Run the agent's data processing pipeline"""
+        raw_data = self.scrape_data(source)
+        return self.process_data(raw_data)
+    
+class AIProviderFactory:
+    @staticmethod
+    def get_provider(provider_name: str, **kwargs):
+        providers = {
+            'ollama': OllamaProvider,
+            'openai': OpenAIProvider,
+            'groq': GroqProvider,
+            'anthropic': AnthropicProvider
+        }
+        if provider_name not in providers:
+            raise ValueError(f"Unsupported AI provider: {provider_name}")
+        return providers[provider_name](**kwargs)
+    
+class DataAgentFactory:
+    @staticmethod
+    def get_agent(agent_name: str, **kwargs):
+        agents = {
+            'arxiv': ArxivAgent,
+            'wikipedia': WikipediaAgent,
+            'huggingface': HuggingFaceAgent,
+            'github': GitHubAgent
+        }
+        if agent_name not in agents:
+            raise ValueError(f"Unsupported data agent: {agent_name}")
+        return agents[agent_name](**kwargs)
+
+class SystemPrompts:
+    @staticmethod
+    def get_dataset_generation_prompt():
+        return """
+        You are a dataset generation assistant. Your task is to generate diverse,
+        high-quality data while maintaining consistency with the provided context
+        and reference values.
+        """
+
+    @staticmethod
+    def get_dataset_augmentation_prompt():
+        return """
+        You are a dataset augmentation assistant. Your task is to enrich and expand
+        the given dataset while preserving its original structure and meaning.
+        """
+        
+class PromptManager:
+    def __init__(self):
+        self.prompts = {
+            'system': "You are a dataset generation assistant. Your task is to generate diverse, high-quality data while maintaining consistency with the provided context and reference values.",
+            'paraphrase': {
+                'system': "You are a paraphrasing assistant. Your task is to rephrase the given text while maintaining its original meaning and incorporating any provided reference values.",
+                'user': "Original text: {text}\nReference values: {reference_values}\n\nPlease rephrase the text, maintaining its core meaning and incorporating the reference values where appropriate. Ensure the rephrased text is coherent and contextually relevant."
+            },
+            'verify': {
+                'system': "You are a verification assistant. Your task is to ensure that the generated content maintains the original meaning, format, and incorporates any reference values correctly.",
+                'user': "Original: {original}\nGenerated: {generated}\nReference values: {reference}\nIs question: {is_question}\n\nVerify that the generated content maintains the original meaning, format, and correctly incorporates the reference values. If it does, return the generated content. If not, provide a corrected version."
+            },
+            'dynamicColumns': {}
+        }
+
+    def get_prompt(self, prompt_type, sub_type=None, column=None):
+        if column and prompt_type == 'dynamicColumns':
+            return self.prompts['dynamicColumns'].get(column, {}).get(sub_type, "")
+        elif sub_type:
+            return self.prompts.get(prompt_type, {}).get(sub_type, "")
+        return self.prompts.get(prompt_type, "")
+
+    def set_prompt(self, prompt_type, prompt_text, sub_type=None, column=None):
+        if column and prompt_type == 'dynamicColumns':
+            if column not in self.prompts['dynamicColumns']:
+                self.prompts['dynamicColumns'][column] = {}
+            self.prompts['dynamicColumns'][column][sub_type] = prompt_text
+        elif sub_type:
+            if prompt_type not in self.prompts:
+                self.prompts[prompt_type] = {}
+            self.prompts[prompt_type][sub_type] = prompt_text
+        else:
+            self.prompts[prompt_type] = prompt_text
+
+    def get_all_prompts(self):
+        return self.prompts
+
+class TemplateManager:
+    def __init__(self, input_dir):
+        self.input_dir = input_dir
+        self.templates_file = os.path.join(input_dir, 'templates.json')
+        self.logger = logging.getLogger(__name__)
+        self.logger.info(f"Templates file path: {self.templates_file}")
+        self.templates = self.load_templates()
+
+    def load_templates(self):
+        try:
+            if os.path.exists(self.templates_file):
+                with open(self.templates_file, 'r') as f:
+                    templates = json.load(f)
+                self.logger.info(f"Successfully loaded templates from {self.templates_file}")
+            else:
+                self.logger.warning(f"Templates file not found at {self.templates_file}. Creating default templates.")
+                templates = self.create_default_templates()
+                self.save_templates(templates)
+            
+            # Ensure all template values are lists
+            for key, value in templates.items():
+                if not isinstance(value, list):
+                    templates[key] = list(value) if isinstance(value, (tuple, set)) else [str(value)]
+            
+            return templates
+        except Exception as e:
+            self.logger.error(f"Error loading templates: {str(e)}")
+            return self.create_default_templates()
+
+    def create_default_templates(self):
+        return {
+            "chat": ["instruction", "input", "output"],
+            "chat_task": ["task", "instruction", "input", "output"],
+            "chat_modeltag": ["instruction", "input", "output"],
+            "instruct": ["task", "instruction", "input", "output", "generationModel"],
+            "instruct_modeltag": ["task", "instruction", "input", "output"],
+            "commander": ["task", "instruction", "input", "output", "command"],
+            "commander_modeltag": ["task", "instruction", "input", "output", "command", "generationModel"],                
+            "commander_testset": ["task", "instruction", "input", "command"],
+            "commander_testset_modeltag": ["task", "instruction", "input", "command", "generationModel"],
+            "duo_swarm": ["agent_instruct_one", "input", "output", "agent_instruct_two", "input", "output"],
+            "duo_swarm_tag": ["agent_instruct_one", "input", "output", "agent_instruct_two", "input", "output", "generator"],
+            "trio_swarm": ["agent_instruct_one", "input", "output", "agent_instruct_two", "input", "output", "agent_instruct_three", "input", "output", "generator"],
+            "trio_swarm_tag": ["agent_instruct_one", "input", "output", "agent_instruct_two", "input", "output", "agent_instruct_three", "input", "output"],
+            "aiConcept_instruct": ["task", "instruction", "input", "output", "concept", "definition", "useCase", "example"],   
+            "latexSeries": ["task", "instruction", "input", "output", "formula", "solution"],
+            "latexTheory": ["task", "instruction", "input", "output", "theory", "explanation"],
+            "latexMath" : ["task", "instruction", "input", "output", "formula", "solution", "theory", "explanation"],
+            "ontology1": ["task", "instruction", "input", "output", "ontology", "description"],
+            "ontology2": ["task", "instruction", "input", "output", "ontology", "description", "chainOfThought"],
+            "ontology3": ["task", "instruction", "input", "output", "ontology", "description", "application", "actions", "chainOfThought","self_prompts"],
+            "mathPythonFusion": ["task", "instruction", "input", "output", "formula", "solution", "python", "example"],
+            "pythonBase": ["task", "instruction", "input", "output", "code", "description", "args", "returns"],
+            "pythonOllama": ["task", "instruction", "input", "output", "code", "description", "args", "returns", "actions", "chainOfThought", "prompts"],   
+        }
+
+    def save_templates(self, templates):
+        try:
+            os.makedirs(os.path.dirname(self.templates_file), exist_ok=True)
+            with open(self.templates_file, 'w') as f:
+                json.dump(templates, f, indent=2)
+            self.logger.info(f"Successfully saved templates to {self.templates_file}")
+        except Exception as e:
+            self.logger.error(f"Error saving templates: {str(e)}")
+
+    def get_templates(self):
+        return self.templates
+
+    def create_template(self, template_name, template_fields):
+        if template_name in self.templates:
+            raise ValueError(f"Template '{template_name}' already exists")
+        self.templates[template_name] = template_fields
+        self.save_templates(self.templates)
+        return self.templates[template_name]
+
+    def get_template(self, template_name):
+        template = self.templates.get(template_name)
+        if template is None:
+            self.logger.warning(f"Template '{template_name}' not found")
+        return template
+
+    def add_template(self, template_name, template_fields):
+        if template_name in self.templates:
+            raise ValueError(f"Template '{template_name}' already exists")
+        self.templates[template_name] = template_fields
+        self.save_templates(self.templates)
+        return self.templates[template_name]
+    
+class DatasetManager:
+    def __init__(self, llm_manager: LLMManager, template_manager: TemplateManager, file_handler: FileHandler, prompt_manager: PromptManager):
+        self.llm_manager = llm_manager
+        self.template_manager = template_manager
+        self.file_handler = file_handler
+        self.prompt_manager = prompt_manager
+
+    def prepare_dataset(self, source: str, template_name: str, num_samples: int, augmentation_config: Dict[str, Any], output_file: str) -> pd.DataFrame:
+        # Step 1: Collect and structure data
+        structured_data = self.collect_and_structure_data(source, template_name)
+        
+        # Step 2: Digest data
+        digested_data = self.digest_data(structured_data, template_name)
+
+        # Step 3: Clean data
+        cleaned_data = self.clean_data(digested_data)
+        
+        # Step 4: Augment data (if configured)
+        if augmentation_config:
+            augmented_data = self.augment_data(cleaned_data, augmentation_config)
+        else:
+            augmented_data = cleaned_data
+        
+        # Step 5: Generate synthetic data
+        synthetic_data = self.generate_synthetic_data(augmented_data, num_samples, augmentation_config)
+        
+        # Step 6: Clean data again
+        final_cleaned_data = self.clean_data(synthetic_data)
+        
+        # Save the final dataset
+        self.file_handler.save_to_parquet(final_cleaned_data, output_file)
+        
+        return final_cleaned_data
+
+    def generate_paraphrased_txt(self, seed_file, num_samples=1, system_prompt=None):
+        try:
+            seed_data = self.file_handler.load_seed_data(seed_file)
+            if seed_data is None:
+                raise FileNotFoundError(f"Seed file not found: {seed_file}")
+            
+            paraphrased_content = self.generation_agent.generate_paraphrases(
+                seed_data, 
+                num_samples, 
+                system_prompt
+            )
+            
+            output_files = self.file_handler.save_paraphrased_content(paraphrased_content, seed_file)
+            
+            return output_files
+        except Exception as e:
+            logging.exception(f"Error in generate_paraphrased_txt: {str(e)}")
+            raise
+
+    def augment_data(self, seed_parquet, augmentation_config):
+        try:
+            seed_data = self.file_handler.load_seed_data(seed_parquet)
+            if seed_data is None:
+                raise FileNotFoundError(f"Seed file not found: {seed_parquet}")
+            
+            augmented_data = self.generation_agent.augment_data(seed_data, augmentation_config)
+            
+            output_file = self.file_handler.save_to_parquet(augmented_data, f"augmented_{os.path.basename(seed_parquet)}")
+            
+            return output_file
+        except Exception as e:
+            logging.exception(f"Error in augment_data: {str(e)}")
+            raise
+        
+    def parquet_to_txt(self, parquet_file):
+        try:
+            logging.info(f"Converting parquet file to text: {parquet_file}")
+            
+            parquet_file_path = os.path.join(self.input_dir, parquet_file)
+            if not os.path.exists(parquet_file_path):
+                raise FileNotFoundError(f"Parquet file not found: {parquet_file_path}")
+            
+            df = pd.read_parquet(parquet_file_path)
+            
+            txt_content = []
+            for _, row in df.iterrows():
+                for column in df.columns:
+                    txt_content.append(f'$("{row[column]}")')
+                txt_content.append('')  # Add an empty line between rows
+            
+            txt_filename = f"{os.path.splitext(parquet_file)[0]}.txt"
+            txt_file_path = os.path.join(self.input_dir, txt_filename)
+            
+            with open(txt_file_path, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(txt_content))
+            
+            logging.info(f"Created text file: {txt_filename}")
+            return txt_filename
+        except Exception as e:
+            logging.exception(f"Error in parquet_to_txt: {str(e)}")
+            raise
+    
+    def generate_paraphrased_txt(self, seed_file, num_samples=1, system_prompt=None):
+        try:
+            logging.info(f"Generating paraphrased text from seed file: {seed_file}")
+            
+            seed_file_path = os.path.join(self.input_dir, seed_file)
+            if not os.path.exists(seed_file_path):
+                raise FileNotFoundError(f"Seed file not found: {seed_file_path}")
+            
+            with open(seed_file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            pattern = re.compile(r'\$\("((?:(?!\$\(").|\n)*?)"\)', re.DOTALL)
+            matches = pattern.findall(content)
+            
+            paraphrased_content = []
+            for _ in range(num_samples):
+                sample_content = []
+                for group in tqdm(matches, desc="Paraphrasing groups"):
+                    paraphrased_group = self.enhanced_generator.generate_paraphrases(group, n=1, system_prompt=system_prompt)[0]
+                    sample_content.append(f'$("{paraphrased_group}")')
+                paraphrased_content.append('\n\n'.join(sample_content))
+            
+            # Save paraphrased content to new text files
+            output_files = []
+            for i, sample in enumerate(paraphrased_content):
+                output_filename = f"{os.path.splitext(seed_file)[0]}_paraphrased_{i+1}.txt"
+                output_path = os.path.join(self.output_dir, output_filename)
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(sample)
+                output_files.append(output_filename)
+            
+            logging.info(f"Generated {len(output_files)} paraphrased text files")
+            return output_files
+        except Exception as e:
+            logging.exception(f"Error in generate_paraphrased_txt: {str(e)}")
+            raise
+
+    def txt_to_parquet(self, txt_file):
+        try:
+            logging.info(f"Converting text file to parquet: {txt_file}")
+            
+            txt_file_path = os.path.join(self.output_dir, txt_file)
+            if not os.path.exists(txt_file_path):
+                raise FileNotFoundError(f"Text file not found: {txt_file_path}")
+            
+            with open(txt_file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            pattern = re.compile(r'\$\("((?:(?!\$\(").|\n)*?)"\)', re.DOTALL)
+            matches = pattern.findall(content)
+            
+            data = []
+            for i in range(0, len(matches), 5):  # Assuming 5 columns based on your template
+                row = matches[i:i+5]
+                if len(row) == 5:
+                    data.append(row)
+            
+            df = pd.DataFrame(data, columns=['task', 'instruction', 'input', 'output', 'command'])
+            
+            parquet_filename = f"{os.path.splitext(txt_file)[0]}.parquet"
+            parquet_path = os.path.join(self.output_dir, parquet_filename)
+            df.to_parquet(parquet_path, engine='pyarrow')
+            
+            logging.info(f"Created parquet file: {parquet_filename}")
+            return parquet_filename
+        except Exception as e:
+            logging.exception(f"Error in txt_to_parquet: {str(e)}")
+            raise
+        
+    def read_data(self, file_path):
+        """Read data from parquet, json, or txt file."""
+        base_name, ext = os.path.splitext(file_path)
+        
+        if ext.lower() == '.parquet':
+            try:
+                return pd.read_parquet(file_path)
+            except Exception as e:
+                self.logger.warning(f"Failed to read parquet file: {e}")
+        
+        # Try JSON
+        json_path = f"{base_name}.json"
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, 'r') as f:
+                    data = json.load(f)
+                return pd.DataFrame(data)
+            except Exception as e:
+                self.logger.warning(f"Failed to read JSON file: {e}")
+        
+        # Try TXT
+        txt_path = f"{base_name}.txt"
+        if os.path.exists(txt_path):
+            try:
+                with open(txt_path, 'r') as f:
+                    lines = f.readlines()
+                # Assuming tab-separated values, adjust if needed
+                data = [line.strip().split('\t') for line in lines]
+                return pd.DataFrame(data[1:], columns=data[0])
+            except Exception as e:
+                self.logger.warning(f"Failed to read TXT file: {e}")
+        
+        raise ValueError(f"Unable to read data from {file_path} or its JSON/TXT alternatives")
+    
+    def generate_synthetic_data(self, seed_file, sample_rate, paraphrases_per_sample, column_types, use_all_samples=True, custom_prompts={}, **kwargs):
+        try:
+            seed_data = self.file_handler.load_seed_data(seed_file)
+            if seed_data is None:
+                raise FileNotFoundError(f"Seed file not found: {seed_file}")
+            
+            num_samples = len(seed_data) if use_all_samples else int(len(seed_data) * (sample_rate / 100))
+            
+            samples_to_use = seed_data if use_all_samples else seed_data.sample(n=num_samples, replace=False)
+
+            total_samples = num_samples * paraphrases_per_sample
+            
+            print(f"{Fore.CYAN}Starting synthetic data generation:{Style.RESET_ALL}")
+            print(f"Seed file: {seed_file}")
+            print(f"Total samples to generate: {total_samples}")
+            print(f"Sample rate: {sample_rate}%")
+            print(f"Paraphrases per sample: {paraphrases_per_sample}")
+            print(f"Use all samples: {use_all_samples}")
+            
+            result_df = self.enhanced_generator.generate_enhanced_synthetic_data(
+                samples_to_use, 
+                total_samples, 
+                column_types, 
+                custom_prompts
+            )
+            
+            print(f"{Fore.GREEN}Synthetic data generation completed successfully{Style.RESET_ALL}")
+            return result_df
+        except Exception as e:
+            error_msg = f"Error in generate_synthetic_data: {str(e)}"
+            print(f"{Fore.RED}{error_msg}{Style.RESET_ALL}")
+            logging.exception(error_msg)
+            raise
+        
+    def paraphrase_text(self, text):
+        if not text.strip():
+            return text
+
+        system_prompt = """You are a paraphrasing assistant for Ollama Agent Roll Cage. 
+        Generate a diverse paraphrase that maintains the original meaning but varies in structure and wording. 
+        Do not include any meta-text or explanations in your response, just provide the paraphrased content."""
+        
+        user_prompt = f"""Paraphrase the following text, maintaining its core meaning but varying the structure and wording:
+        {text}
+        Provide only the paraphrased text in your response, without any additional explanations or meta-text."""
+
+        response = self.ollama_interface.chat(messages=[
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': user_prompt}
+        ])
+        
+        paraphrased_text = response['message']['content'].strip()
+        return self.clean_paraphrased_text(paraphrased_text)
+
+    def combine_parquets(self, seed_parquet_dir):
+        try:
+            # Get all parquet files in the directory
+            parquet_files = glob.glob(os.path.join(seed_parquet_dir, '*.parquet'))
+            logging.info(f"Found {len(parquet_files)} parquet files in {seed_parquet_dir}")
+            
+            # Read and combine all parquet files
+            dfs = []
+            for file in parquet_files:
+                try:
+                    df = pd.read_parquet(file)
+                    dfs.append(df)
+                    logging.info(f"Successfully read {file}. Shape: {df.shape}")
+                except Exception as e:
+                    logging.error(f"Error reading {file}: {str(e)}")
+            
+            if not dfs:
+                raise ValueError("No valid parquet files found")
+            
+            combined_df = pd.concat(dfs, ignore_index=True)
+            logging.info(f"Successfully combined parquet files. Final shape: {combined_df.shape}")
+            
+            return combined_df
+        except Exception as e:
+            logging.exception(f"Error in combine_parquets: {str(e)}")
+            return pd.DataFrame()
+
+    def augment_data(self, seed_parquet):
+        try:
+            logging.info(f"Attempting to augment data from: {seed_parquet}")
+            # Load the seed data
+            seed_data = pd.read_parquet(seed_parquet)
+            logging.info(f"Successfully read seed parquet. Shape: {seed_data.shape}")
+            
+            # Implement data augmentation logic
+            augmented_data = seed_data.copy()
+            for column in seed_data.columns:
+                if seed_data[column].dtype == 'object':  # Text data
+                    augmented_data[column] = augmented_data[column].apply(lambda x: f"{x} (augmented)")
+                elif seed_data[column].dtype in ['int64', 'float64']:  # Numeric data
+                    augmented_data[column] = augmented_data[column] * (1 + np.random.uniform(-0.1, 0.1, len(seed_data)))
+            
+            logging.info(f"Successfully augmented data. Shape: {augmented_data.shape}")
+            return augmented_data
+        except Exception as e:
+            logging.exception(f"Error in augment_data: {str(e)}")
+            return pd.DataFrame()
+
+    def paraphrase_input(self, text, reference_values):
+        system_prompt = """You are an assistant for Ollama Agent Roll Cage. Your task is to rephrase the given input as a question about the command specified in the reference values. Ensure the question is clear, concise, and directly related to the command's function."""
+        
+        user_prompt = f"""Original input: {text}
+        Command: {reference_values.get('command', '')}
+        
+        Please rephrase the input as a clear question about the specified command's function. The question should be concise and directly related to what the command does."""
+
+        response = self.ollama_interface.chat(messages=[
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': user_prompt}
+        ])
+        
+        paraphrased_text = response['message']['content'].strip()
+        return self.clean_paraphrased_text(paraphrased_text)
+
+    def parse_text_to_parquet(self, text_content, template_name, filename):
+        template = self.template_manager.get_template(template_name)
+        if not template:
+            raise ValueError(f"Template '{template_name}' not found")
+
+        self.logger.info(f"Parsing text content using template: {template_name}")
+        
+        # Save the original text content to a txt file
+        txt_file = self.file_handler.save_text_content(filename, text_content)
+        self.logger.info(f"Saved original text content to {txt_file}")
+
+        # Parse the content using manual formatting
+        parsed_data = self.parse_manual_formatting(text_content, template)
+
+        # Create DataFrame from parsed data
+        df = pd.DataFrame(parsed_data)
+        self.logger.info(f"Created DataFrame with shape: {df.shape}")
+
+        # Save as JSON and Parquet
+        json_file = self.file_handler.save_to_json(df, filename)
+        parquet_file = self.file_handler.save_to_parquet(df, filename)
+
+        self.logger.info(f"Saved JSON file: {json_file}")
+        self.logger.info(f"Saved Parquet file: {parquet_file}")
+
+        return df, json_file, parquet_file
+    
+    def fallback_json_structure(self, text_content, template):
+        # Split the content into lines
+        lines = text_content.split('\n')
+        
+        # Initialize the structured data
+        structured_data = {column: [] for column in template}
+        
+        # Assign each line to a column in a round-robin fashion
+        for i, line in enumerate(lines):
+            if line.strip():  # Skip empty lines
+                column = template[i % len(template)]
+                structured_data[column].append(line.strip())
+        
+        return structured_data
+    
+    def parse_dataset(self, content, template_name, mode='manual'):
+        template = self.template_manager.get_template(template_name)
+        if not template:
+            raise ValueError(f"Template '{template_name}' not found")
+
+        if mode == 'manual':
+            parsed_data = self.parse_manual_formatting(content, template)
+        elif mode == 'automatic':
+            formatted_content = self.apply_automatic_formatting(content, template)
+            parsed_data = self.parse_manual_formatting(formatted_content, template)
+        else:
+            raise ValueError(f"Invalid parsing mode: {mode}")
+
+        df = pd.DataFrame(parsed_data)
+        return df
+    
+    def parse_manual_formatting(self, content, template):
+        parsed_data = {column: [] for column in template}
+        pattern = re.compile(r'\$\("((?:(?!\$\(").|\n)*?)"\)', re.DOTALL)
+        matches = pattern.findall(content)
+
+        num_columns = len(template)
+        for i, match in enumerate(matches):
+            column_index = i % num_columns
+            column = template[column_index]
+            # Remove any leading/trailing whitespace, but preserve internal formatting
+            parsed_data[column].append(match.strip())
+
+        # Ensure all columns have the same number of entries
+        max_length = max(len(column_data) for column_data in parsed_data.values())
+        for column in parsed_data:
+            parsed_data[column] += [''] * (max_length - len(parsed_data[column]))
+
+        return parsed_data
+    
+    def apply_automatic_formatting(self, content, template):
+        prompt = f"""Format the following text using $("") symbols according to these categories: {', '.join(template)}. 
+        Follow these rules strictly:
+        1. Each $("") group should correspond to a single category in order, cycling through the categories as needed.
+        2. Everything between $("") should be treated as a single unit, even if it spans multiple lines.
+        3. Do not split content within $("") groups.
+        4. Ignore any content that is not enclosed in $("") delimiters.
+        5. Preserve all formatting, including newlines, within the $("") groups.
+
+        Text to format:
+        {content}"""
+        
+        response = self.ollama_interface.chat(messages=[
+            {'role': 'system', 'content': "You are a data formatting assistant. Format the given text using $('') symbols for the specified categories, following the rules provided strictly."},
+            {'role': 'user', 'content': prompt}
+        ])
+
+        return response['message']['content']
+    
+    def build_parquet(self, data, output_file, schema=None):
+        """
+        Build a Parquet file from the given data.
+        
+        :param data: DataFrame or dictionary of data to save as Parquet
+        :param output_file: Path to save the Parquet file
+        :param schema: Optional PyArrow schema to use
+        """
+        if isinstance(data, pd.DataFrame):
+            if schema:
+                table = pa.Table.from_pandas(data, schema=schema)
+                pq.write_table(table, output_file)
+            else:
+                data.to_parquet(output_file, engine='pyarrow')
+        elif isinstance(data, dict):
+            df = pd.DataFrame(data)
+            if schema:
+                table = pa.Table.from_pandas(df, schema=schema)
+                pq.write_table(table, output_file)
+            else:
+                df.to_parquet(output_file, engine='pyarrow')
+        else:
+            raise ValueError("Data must be a pandas DataFrame or a dictionary")
+        
+        print(f"Parquet file saved to: {output_file}")
+
+    def parquet_to_csv(self, parquet_file, csv_file):
+        """
+        Convert a Parquet file to CSV format.
+        
+        :param parquet_file: Path to the input Parquet file
+        :param csv_file: Path to save the output CSV file
+        """
+        df = pd.read_parquet(parquet_file)
+        df.to_csv(csv_file, index=False)
+        print(f"CSV file saved to: {csv_file}")
+
+    def parquet_to_jsonl(self, parquet_file, jsonl_file):
+        """
+        Convert a Parquet file to JSONL format.
+        
+        :param parquet_file: Path to the input Parquet file
+        :param jsonl_file: Path to save the output JSONL file
+        """
+        df = pd.read_parquet(parquet_file)
+        df.to_json(jsonl_file, orient='records', lines=True)
+        print(f"JSONL file saved to: {jsonl_file}")
+
+    def convert_parquet(self, parquet_file, output_formats=['csv', 'jsonl']):
+        """
+        Convert a Parquet file to specified formats.
+        
+        :param parquet_file: Path to the input Parquet file
+        :param output_formats: List of formats to convert to ('csv', 'jsonl', or both)
+        """
+        base_name = os.path.splitext(parquet_file)[0]
+        
+        if 'csv' in output_formats:
+            csv_file = f"{base_name}.csv"
+            self.parquet_to_csv(parquet_file, csv_file)
+        
+        if 'jsonl' in output_formats:
+            jsonl_file = f"{base_name}.jsonl"
+            self.parquet_to_jsonl(parquet_file, jsonl_file)
+
+    def txt_to_multi_turn_parquet(self, txt_file, output_file, template_name):
+        """
+        Convert a formatted txt file to a multi-turn parquet file based on the template.
+        
+        :param txt_file: Path to the input txt file
+        :param output_file: Path to save the output parquet file
+        :param template_name: Name of the template to use for parsing
+        """
+        template = self.template_manager.get_template(template_name)
+        if not template:
+            raise ValueError(f"Template '{template_name}' not found")
+
+        with open(txt_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        pattern = re.compile(r'\$\("((?:(?!\$\(").|\n)*?)"\)', re.DOTALL)
+        matches = pattern.findall(content)
+
+        data = []
+        num_fields = len(template)
+        
+        for i in range(0, len(matches), num_fields):
+            turn = {}
+            for j, field in enumerate(template):
+                if i + j < len(matches):
+                    turn[field] = matches[i + j]
+                else:
+                    turn[field] = ""  # Handle cases where there might be missing fields
+            data.append(turn)
+
+        # For multi-turn formats like "duo_swarm", we need to structure the data differently
+        if template_name == "duo_swarm":
+            structured_data = []
+            for i in range(0, len(data), 2):
+                if i + 1 < len(data):
+                    structured_turn = {
+                        "agent_one": {
+                            "instruction": data[i]["agent_instruct_one"],
+                            "input": data[i]["input"],
+                            "output": data[i]["output"]
+                        },
+                        "agent_two": {
+                            "instruction": data[i+1]["agent_instruct_two"],
+                            "input": data[i+1]["input"],
+                            "output": data[i+1]["output"]
+                        }
+                    }
+                    structured_data.append(structured_turn)
+            data = structured_data
+
+        df = pd.DataFrame(data)
+        df.to_parquet(output_file, engine='pyarrow')
+        print(f"Multi-turn parquet file saved to: {output_file}")
+
+    def parse_text_to_parquet(self, text_content, template_name, filename):
+        template = self.template_manager.get_template(template_name)
+        if not template:
+            raise ValueError(f"Template '{template_name}' not found")
+
+        self.logger.info(f"Parsing text content using template: {template_name}")
+        
+        # Save the original text content to a txt file
+        txt_file = os.path.join(self.input_dir, f"{filename}.txt")
+        with open(txt_file, 'w', encoding='utf-8') as f:
+            f.write(text_content)
+        self.logger.info(f"Saved original text content to {txt_file}")
+
+        # Parse the content using manual formatting
+        parsed_data = self.parse_manual_formatting(text_content, template)
+
+        # Create DataFrame from parsed data
+        df = pd.DataFrame(parsed_data)
+        self.logger.info(f"Created DataFrame with shape: {df.shape}")
+
+        # Save as JSON
+        json_file = os.path.join(self.input_dir, f"{filename}.json")
+        df.to_json(json_file, orient='records', indent=2)
+        self.logger.info(f"Saved JSON file: {json_file}")
+
+        # Save as multi-turn Parquet
+        parquet_file = os.path.join(self.input_dir, f"{filename}.parquet")
+        self.txt_to_multi_turn_parquet(txt_file, parquet_file, template_name)
+        self.logger.info(f"Saved multi-turn Parquet file: {parquet_file}")
+
+        return df, json_file, parquet_file
+
+    def convert_parquet(self, parquet_file, output_formats=['csv', 'jsonl']):
+        """
+        Convert a multi-turn parquet file to specified formats.
+        
+        :param parquet_file: Path to the input multi-turn parquet file
+        :param output_formats: List of formats to convert to ('csv', 'jsonl', or both)
+        """
+        df = pd.read_parquet(parquet_file)
+        base_name = os.path.splitext(parquet_file)[0]
+        
+        if 'csv' in output_formats:
+            csv_file = f"{base_name}.csv"
+            df.to_csv(csv_file, index=False)
+            print(f"CSV file saved to: {csv_file}")
+        
+        if 'jsonl' in output_formats:
+            jsonl_file = f"{base_name}.jsonl"
+            df.to_json(jsonl_file, orient='records', lines=True)
+            print(f"JSONL file saved to: {jsonl_file}")
+
+class FileHandler:
+    def __init__(self, input_dir, output_dir):
+        self.input_dir = input_dir
+        self.output_dir = output_dir
+        logging.basicConfig(level=logging.INFO)
+
+    def save_to_parquet(self, dataset, filename='dataset.parquet'):
+        file_path = os.path.join(self.output_dir, filename)
+        dataset.to_parquet(file_path, engine='pyarrow')
+        logging.info(f"Saved dataset to Parquet: {file_path}")
+        return file_path
+
+    def load_parquet(self, filename):
+        file_path = os.path.join(self.input_dir, filename)
+        if os.path.exists(file_path):
+            return pd.read_parquet(file_path)
+        else:
+            logging.error(f"Parquet file {filename} not found in the input directory.")
+            return None
+
+    def load_seed_data(self, seed_file):
+        if seed_file and os.path.exists(os.path.join(self.input_dir, seed_file)):
+            return pd.read_parquet(os.path.join(self.input_dir, seed_file))
+        else:
+            logging.error(f"Seed file {seed_file} not found in the ingredients directory.")
+            return None
+
+    def save_to_json(self, df, filename):
+        json_file = os.path.join(self.input_dir, f"{filename}.json")
+        df.to_json(json_file, orient='records', indent=2)
+        return json_file
+
+    def save_text_content(self, filename, content):
+        txt_file = os.path.join(self.input_dir, f"{filename}.txt")
+        with open(txt_file, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return txt_file
+
+    def convert_json_to_parquet(self, json_file):
+        json_path = os.path.join(self.input_dir, json_file)
+        if os.path.exists(json_path):
+            with open(json_path, 'r') as f:
+                data = json.load(f)
+            df = pd.DataFrame(data)
+            parquet_file = os.path.join(self.output_dir, f"{os.path.splitext(json_file)[0]}.parquet")
+            df.to_parquet(parquet_file, engine='pyarrow')
+            logging.info(f"Converted JSON to Parquet: {parquet_file}")
+            return parquet_file
+        else:
+            logging.error(f"JSON file {json_file} not found in the input directory.")
+            return None
+        
+class DocumentLoader:
+    def __init__(self):
+        self.hf_api = HfApi()
+
+    def load_from_huggingface(self, dataset_name: str, config_name: str = None, split: str = None):
+        try:
+            dataset = load_dataset(dataset_name, config_name, split=split)
+            return self.load_hf_dataset(dataset_name)
+        except Exception as e:
+            print(f"Error loading dataset from Hugging Face: {str(e)}")
+            return None
+
+    def load_from_github(self, repo_name: str, branch: str = "main"):
+        import requests
+        from bs4 import BeautifulSoup
+
+        base_url = f"https://github.com/{repo_name}/tree/{branch}"
+        response = requests.get(base_url)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        files = []
+        for item in soup.find_all('a', {'class': 'js-navigation-open'}):
+            file_path = item.get('href')
+            if file_path.startswith(f"/{repo_name}/blob/{branch}/"):
+                file_name = file_path.split('/')[-1]
+                raw_url = f"https://raw.githubusercontent.com/{repo_name}/{branch}/{file_name}"
+                content = requests.get(raw_url).text
+                files.append({
+                    "name": file_name,
+                    "path": file_path,
+                    "content": content
+                })
+        return files
+
+    def load_from_wikipedia(self, query: str, lang: str = "en", max_results: int = 1):
+        wikipedia.set_lang(lang)
+        try:
+            page = wikipedia.page(query)
+            return {
+                "title": page.title,
+                "content": page.content,
+                "url": page.url
+            }
+        except wikipedia.exceptions.DisambiguationError as e:
+            print(f"Ambiguous query. Possible matches: {e.options}")
+            return None
+        except wikipedia.exceptions.PageError:
+            print(f"Page not found for query: {query}")
+            return None
+
+    def load_from_arxiv(self, query: str, max_results: int = 5):
+        search = arxiv.Search(
+            query = query,
+            max_results = max_results,
+            sort_by = arxiv.SortCriterion.Relevance
+        )
+        results = []
+        for result in search.results():
+            results.append({
+                "title": result.title,
+                "authors": [author.name for author in result.authors],
+                "summary": result.summary,
+                "pdf_url": result.pdf_url
+            })
+        return results
+
+    # URL
+    def is_url(self, string):
+        try:
+            result = urllib.parse.urlparse(string)
+            return all([result.scheme, result.netloc])
+        except ValueError:
+            return False
+
+    def is_huggingface_url(self, url):
+        return 'huggingface.co/' in url.lower()
+
+    def is_wikipedia_url(self, url):
+        parsed_url = urllib.parse.urlparse(url)
+        return parsed_url.netloc.endswith('wikipedia.org') and '/wiki/' in parsed_url.path
+
+    def is_arxiv_url(self, url):
+        return 'arxiv.org' in url.lower()
+
+    def is_github_url(self, url):
+        return 'github.com' in url.lower()
+
+    def load_web_page(self, url):
+        loader = WebBaseLoader(url)
+        return loader.load()
+
+    # WIKIPEDIA   
+    def extract_wikipedia_title(self, url):
+        parsed_url = urllib.parse.urlparse(url)
+        title = parsed_url.path.split('/wiki/', 1)[-1]
+        return urllib.parse.unquote(title).replace('_', ' ')
+
+    def load_wikipedia(self, query, load_max_docs=5):
+        loader = WikipediaLoader(query, load_max_docs=load_max_docs)
+        return loader.load()
+
+    # ARXIV
+    def extract_arxiv_id(self, url):
+        arxiv_id = url.rstrip('/').split('/')[-1]
+        return arxiv_id
+
+    def _download_latex_source(self, arxiv_id, output_dir):
+        try:
+            source_url = f"https://arxiv.org/e-print/{arxiv_id}"
+            filename = f"{arxiv_id.split('v')[0]}_source"
+            filepath = os.path.join(output_dir, filename)
+            response = requests.get(source_url)
+            response.raise_for_status()
+
+            with open(filepath, 'wb') as f:
+                f.write(response.content)
+
+            if tarfile.is_tarfile(filepath):
+                with tarfile.open(filepath, 'r') as tar:
+                    tar.extractall(path=filepath + '_extracted')
+                os.remove(filepath)
+                return f"LaTeX source extracted to: {filepath}_extracted"
+            elif filepath.endswith('.gz'):
+                with gzip.open(filepath, 'rb') as f_in:
+                    with open(filepath[:-3], 'wb') as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                os.remove(filepath)
+                return f"LaTeX source extracted to: {filepath[:-3]}"
+            else:
+                return f"Source file downloaded to: {filepath}"
+        except Exception as e:
+            return f"Error downloading LaTeX source: {str(e)}"
+
+    def load_arxiv(self, query, load_max_docs=5):
+        loader = ArxivLoader(query, load_max_docs=load_max_docs)
+        return loader.load()
+
+    # DOCUMENTS
+    def load_pdf(self, file_path):
+        loader = PyPDFLoader(file_path)
+        return loader.load()
+
+    def load_text(self, file_path):
+        loader = TextLoader(file_path)
+        return loader.load()
+
+    def load_docx(self, file_path):
+        loader = Docx2txtLoader(file_path)
+        return loader.load()
+
+    def load_ppt(self, file_path):
+        loader = UnstructuredPowerPointLoader(file_path)
+        return loader.load()
+
+    def load_epub(self, file_path):
+        loader = UnstructuredEPubLoader(file_path)
+        return loader.load()
+
+    def load_csv(self, file_path):
+        loader = CSVLoader(file_path)
+        return loader.load()
+
+    def load_json(self, file_path):
+        loader = JSONLoader(
+            file_path=file_path,
+            jq_schema='.',
+            text_content=False
+        )
+        return loader.load()
+
+    # GITHUB
+    def extract_github_repo_info(self, url):
+        url = url.lower()
+        repo_index = url.find('github.com/')    
+        if repo_index != -1:
+            repo_part = url[repo_index + len('github.com/'):].rstrip('/')
+            parts = repo_part.split('/')        
+            if len(parts) >= 2:
+                repo_name = f"{parts[0]}/{parts[1]}"
+            else:
+                return None, None
+            if 'tree/' in url:
+                branch_index = url.find('tree/')
+                branch_name = url[branch_index + len('tree/'):].split('/')[0]
+            else:
+                branch_name = 'main'
+            return repo_name, branch_name
+        return None, None
+
+    def select_github_files(self, files: List[dict]) -> List[dict]:
+        print("Available files in the repository:")
+        for file in files:
+            print(f"{file['path']}")
+        
+        selected_files = []
+        while True:
+            file_path = input("Enter the path of a file you want to download (or press Enter to finish): ").strip()
+            if not file_path:
+                break
+            matching_files = [f for f in files if f['path'] == file_path]
+            if matching_files:
+                selected_files.extend(matching_files)
+                print(f"Added: {file_path}")
+            else:
+                print(f"File not found: {file_path}")
+        
+        return selected_files
+
+    # HUGGINGFACE
+    def hf_repo(self, repo_id):
+        loader = snapshot_download(repo_id=repo_id)
+        return loader.load()
+
+    def extract_huggingface_repo_id(self, url: str) -> str:
+        parts = url.split('huggingface.co/')
+        if len(parts) > 1:
+            return parts[1].strip('/')
+        return ""
+
+    def list_huggingface_repo_files(self, repo_id: str) -> List[str]:
+        api = HfApi()
+        files = api.list_repo_files(repo_id)
+        return files
+
+    def select_huggingface_files(self, files: List[str]) -> List[str]:
+        print("Available files in the repository:")
+        for file in files:
+            print(f"{file}")
+        
+        selected_files = []
+        while True:
+            file_path = input("Enter the path of a file you want to download (or press Enter to finish): ").strip()
+            if not file_path:
+                break
+            if file_path in files:
+                selected_files.append(file_path)
+                print(f"Added: {file_path}")
+            else:
+                print(f"File not found: {file_path}")
+        
+        return selected_files
+
+    def download_huggingface_files(self, repo_id: str, files: List[str], output_dir: str) -> List[str]:
+        downloaded_files = []
+        for file in files:
+            try:
+                local_file = hf_hub_download(repo_id=repo_id, filename=file, local_dir=output_dir)
+                downloaded_files.append(local_file)
+                print(f"Downloaded: {local_file}")
+            except Exception as e:
+                print(f"Error downloading {file}: {str(e)}")
+        return downloaded_files
+
+    def process_huggingface_repo(self, url: str, output_dir: str) -> List[str]:
+        repo_id = self.extract_huggingface_repo_id(url)
+        if not repo_id:
+            print("Invalid Hugging Face repository URL")
+            return []
+
+        files = self.list_huggingface_repo_files(repo_id)
+        selected_files = self.select_huggingface_files(files)
+        return self.download_huggingface_files(repo_id, selected_files, output_dir)
+    
+    def load_hf_dataset(self, dataset_name):
+        try:
+            dataset = load_dataset(dataset_name)
+            documents = {}
+            for split in dataset.keys():
+                documents[f'default_{split}'] = [item for item in dataset[split]]
+            return documents
+        except ValueError as e:
+            if "Config name is missing" in str(e):
+                configs = str(e).split("among the available configs: ")[1].split("]")[0].replace("[", "").replace("'", "").split(", ")
+                
+                documents = {}
+                for config in configs:
+                    try:
+                        dataset = load_dataset(dataset_name, config)
+                        for split in dataset.keys():
+                            documents[f'{config}_{split}'] = [item for item in dataset[split]]
+                    except Exception as config_error:
+                        print(f"Error loading config '{config}': {str(config_error)}")
+                
+                if documents:
+                    return documents
+            raise
+        except Exception as e:
+            print(f"Error loading dataset: {str(e)}")
+            return {}
+    
+    def is_huggingface_url(self, url):
+        return 'huggingface.co/' in url.lower() and 'datasets/' not in url.lower()
+
+    def is_huggingface_dataset_url(self, url):
+        return 'huggingface.co/datasets/' in url.lower()
+
+    def extract_huggingface_dataset_name(self, url):
+        # Find the index of 'datasets/' in the URL
+        dataset_index = url.lower().find('huggingface.co/datasets/')
+        if dataset_index != -1:
+            # Return everything after 'datasets/'
+            dataset_name = url[dataset_index + len('huggingface.co/datasets/'):].rstrip('/')
+        return dataset_name
+
+    def serialize_dataset_item(self, item):
+        """
+        Serialize a dataset item into a string representation.
+        """
+        return json.dumps(item, ensure_ascii=False, indent=2)
+
+    def ingest_document(self, file_path_or_url: str, output_dir: str = "./output") -> str:
+        """
+        Ingests a single document or web page, extracting text based on its format and saves it as a txt file.
+
+        Args:
+            file_path_or_url (str): Path to the document file or URL.
+            output_dir (str): Directory to save the output txt file.
+
+        Returns:
+            str: Path to the saved txt file.
+        """
+        # Check if it's a URL
+        url_flag = self.is_url(file_path_or_url)
+        
+        # If it's not a URL, check if it could be a URL without the protocol
+        if not url_flag and '/' in file_path_or_url and not os.path.exists(file_path_or_url):
+            file_path_or_url = 'http://' + file_path_or_url
+            url_flag = True
+
+        wikipedia_flag = False
+        arxiv_flag = False
+        huggingface_dataset_flag = False
+        huggingface_repo_flag = False
+        github_flag = False
+        if url_flag:
+            wikipedia_flag = self.is_wikipedia_url(file_path_or_url)
+            arxiv_flag = self.is_arxiv_url(file_path_or_url)
+            huggingface_dataset_flag = self.is_huggingface_dataset_url(file_path_or_url)
+            huggingface_repo_flag = self.is_huggingface_url(file_path_or_url) and not huggingface_dataset_flag
+            github_flag = self.is_github_url(file_path_or_url)
+            if wikipedia_flag:
+                file_name = self.extract_wikipedia_title(file_path_or_url)
+            elif arxiv_flag:
+                arxiv_id = self.extract_arxiv_id(file_path_or_url)
+                file_name = f"arxiv_{arxiv_id}"
+                documents = self.load_arxiv(arxiv_id, load_max_docs=1)
+                latex_source_result = self._download_latex_source(arxiv_id, output_dir)
+            elif huggingface_dataset_flag :
+                file_name = self.extract_huggingface_dataset_name(file_path_or_url).replace('/', '_')
+            elif github_flag:
+                repo_name, branch_name = self.extract_github_repo_info(file_path_or_url)
+                file_name = f"{repo_name.replace('/', '_')}_{branch_name}"
+            else:
+                file_name = urllib.parse.urlparse(file_path_or_url).path.split('/')[-1]
+            if not file_name:
+                file_name = "webpage"
+            output_file_name = f"{file_name}_extracted.txt"
+        else:
+            file_name = os.path.basename(file_path_or_url)
+            output_file_name = f"{os.path.splitext(file_name)[0]}_extracted.txt"
+        
+        # Create the output directory if it doesn't exist
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        else:
+            output_dir = os.getcwd()  # Use current working directory if no output_dir is specified
+        
+        output_path = os.path.join(output_dir, output_file_name)
+        
+        try:
+            if wikipedia_flag:
+                documents = self.load_wikipedia(file_name)
+            elif arxiv_flag:
+                # We've already loaded the documents for arXiv, so we don't need to do it again
+                pass
+            elif huggingface_repo_flag:
+                downloaded_files = self.process_huggingface_repo(file_path_or_url, output_dir)
+                if downloaded_files:
+                    print(f"Downloaded files from Hugging Face repository: {', '.join(downloaded_files)}")
+                    return output_dir  # Return the directory containing all downloaded files
+                else:
+                    print("No files were downloaded from the Hugging Face repository.")
+                    return ""
+            elif huggingface_dataset_flag :
+                dataset_name = self.extract_huggingface_dataset_name(file_path_or_url)
+                documents = self.load_hf_dataset(dataset_name)
+                # Handle multiple configs and splits
+                for config_split, data in documents.items():
+                    config_split_output_file_name = f"{file_name}_{config_split}_extracted.txt"
+                    config_split_output_path = os.path.join(output_dir, config_split_output_file_name)
+                    content = "\n\n".join([self.serialize_dataset_item(doc) for doc in data])
+                    with open(config_split_output_path, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                    print(f"Extracted content for '{config_split}' saved to: {config_split_output_path}")
+                return output_dir  # Return the directory containing all config files
+            elif github_flag:
+                repo_name, branch_name = self.extract_github_repo_info(file_path_or_url)
+                all_files = self.load_github(repo_name, branch_name)
+                selected_files = self.select_github_files(all_files)
+                
+                documents = []
+                for file in selected_files:
+                    file_content = requests.get(file['download_url']).text
+                    documents.append({"page_content": file_content, "metadata": {"source": file['path']}})
+                
+                # Create a directory for GitHub files
+                github_output_dir = os.path.join(output_dir, f"{repo_name.replace('/', '_')}_{branch_name}")
+                os.makedirs(github_output_dir, exist_ok=True)
+                
+                for doc in documents:
+                    file_path = os.path.join(github_output_dir, doc['metadata']['source'])
+                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write(doc['page_content'])
+                    print(f"Saved: {file_path}")
+                
+                return github_output_dir
+            elif url_flag:
+                documents = self.load_web_page(file_path_or_url)
+            else:
+                file_extension = os.path.splitext(file_path_or_url)[1].lower()
+                if file_extension == '.pdf':
+                    documents = self.load_pdf(file_path_or_url)
+                elif file_extension in ['.doc', '.docx']:
+                    documents = self.load_docx(file_path_or_url)
+                elif file_extension == '.csv':
+                    documents = self.load_csv(file_path_or_url)
+                elif file_extension == '.json':
+                    documents = self.load_json(file_path_or_url)
+                elif file_extension == '.txt':
+                    documents = self.load_text(file_path_or_url)
+                elif file_extension == '.epub':
+                    documents = self.load_epub(file_path_or_url)
+                elif file_extension in ['.ppt', '.pptx']:
+                    documents = self.load_ppt(file_path_or_url)
+                else:
+                    # If it's not a recognized file type, assume it's a Wikipedia query
+                    documents = self.load_wikipedia(file_path_or_url)
+            
+            # Handle non-Hugging Face and non-GitHub cases
+            if not huggingface_dataset_flag  and not github_flag:
+                content = "\n\n".join([doc.page_content if hasattr(doc, 'page_content') else str(doc) for doc in documents])
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                print(f"Extracted content saved to: {output_path}")
+                return output_path
+
+        except Exception as e:
+            print(f"Error processing {file_path_or_url}: {str(e)}")
+            return ""

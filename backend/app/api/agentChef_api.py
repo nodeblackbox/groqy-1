@@ -2,174 +2,211 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import uvicorn
-from agentChef.cutlery import DatasetManager, TemplateManager, FileHandler, DocumentLoader
-from agentChef.chef import DatasetKitchen, DataCollectionAgent, DataDigestionAgent, DataGenerationAgent, DataCleaningAgent, DataAugmentationAgent
-from agentChef.utils.prompt_manager import PromptManager
-from agentChef.ai_providers.ollama import OllamaProvider
+from cutlery import DatasetManager, TemplateManager, FileHandler, DocumentLoader
+from chef import DatasetKitchen, DataCollectionAgent, DataDigestionAgent, DataGenerationAgent, DataCleaningAgent, DataAugmentationAgent
+from cutlery import PromptManager
+from ai_api_providers import LLMManager
+from huggingface_hub import HfApi
+import uvicorn
+import pandas as pd
+import json
+import os
 
-app = FastAPI()
+app = FastAPI(title="AgentChef API", description="API for data processing and dataset creation")
 
 # Configuration for AgentChef
-config = {
-    'templates_dir': './templates',
-    'input_dir': './input',
-    'output_dir': './output',
-    'ollama_config': {
-        'model': 'phi3',
-        'api_base': 'http://localhost:11434'
-    }
-}
-
-# Initialize components
-template_manager = TemplateManager(config['templates_dir'])
-file_handler = FileHandler(config['input_dir'], config['output_dir'])
-ollama_interface = OllamaProvider(config['ollama_config'])
-prompt_manager = PromptManager()
-document_loader = DocumentLoader()
-
-# Initialize agents
-collection_agent = DataCollectionAgent(template_manager, file_handler, document_loader)
-digestion_agent = DataDigestionAgent(file_handler, ollama_interface)
-generation_agent = DataGenerationAgent(ollama_interface, template_manager, prompt_manager)
-cleaning_agent = DataCleaningAgent()
-augmentation_agent = DataAugmentationAgent(ollama_interface, prompt_manager)
-
-# Initialize DatasetManager and DatasetKitchen
-dataset_manager = DatasetManager(
-    ollama_interface,
-    template_manager,
-    config['input_dir'],
-    config['output_dir']
-)
-kitchen = DatasetKitchen(config)
+# config = {
+#     'templates_dir': './templates',
+#     'input_dir': './input',
+#     'output_dir': './output',
+#     'ollama_config': {
+#         'model': 'phi3',
+#         'api_base': 'http://localhost:11434'
+#     }
+# }
 
 # Pydantic models for request bodies
-class PrepareDatasetRequest(BaseModel):
-    source: str
-    template: str
-    num_samples: int = 100
-    output_file: str
-    augmentation_config: Dict[str, Any] = {}
+class DataSourceRequest(BaseModel):
+    source_type: str
+    query: str
+    max_results: int = 10
 
-class GenerateParaphrasesRequest(BaseModel):
-    seed_file: str
-    num_samples: int = 1
-    system_prompt: Optional[str] = None
+class StructureDataRequest(BaseModel):
+    data: List[Dict[str, Any]]
+    template_name: str
 
 class AugmentDataRequest(BaseModel):
-    seed_parquet: str
-    augmentation_config: Dict[str, Any] = {}
+    input_file: str
+    num_samples: int = 5
+    agent_name: str
 
-class ParseTextToParquetRequest(BaseModel):
-    text_content: str
-    template_name: str
-    filename: str
+class PushToHuggingFaceRequest(BaseModel):
+    file_path: str
+    repo_id: str
+    token: str
 
-class ConvertParquetRequest(BaseModel):
-    parquet_file: str
-    output_formats: List[str] = ['csv', 'jsonl']
+# Helper function to get LLMManager instance
+def get_llm_manager():
+    return llm_manager
 
-class CreateTemplateRequest(BaseModel):
-    template_name: str
-    template_fields: List[str]
-
-@app.post("/prepare_dataset")
-async def prepare_dataset(request: PrepareDatasetRequest):
+@app.post("/collect_data")
+async def collect_data(request: DataSourceRequest):
+    """
+    Collect data from arXiv, Wikipedia, or Hugging Face datasets.
+    
+    Example payload:
+    {
+        "source_type": "arxiv",
+        "query": "machine learning",
+        "max_results": 10
+    }
+    """
     try:
-        # Step 1: Collect and structure data
-        structured_data = collection_agent.collect_and_structure_data(request.source, request.template)
-        
-        # Step 2: Digest data
-        digested_data = digestion_agent.digest_data(structured_data, request.template)
-
-        # Step 3: Clean data
-        cleaned_data = cleaning_agent.clean_data(digested_data)
-        
-        # Step 4: Augment data (if configured)
-        if request.augmentation_config:
-            augmented_data = augmentation_agent.augment_data(cleaned_data, request.augmentation_config)
+        if request.source_type == "arxiv":
+            data = document_loader.load_from_arxiv(request.query, request.max_results)
+        elif request.source_type == "wikipedia":
+            data = document_loader.load_from_wikipedia(request.query)
+        elif request.source_type == "huggingface":
+            data = document_loader.load_from_huggingface(request.query)
         else:
-            augmented_data = cleaned_data
+            raise HTTPException(status_code=400, detail="Invalid source type")
         
-        # Step 5: Generate synthetic data
-        synthetic_data = generation_agent.generate_synthetic_data(
-            augmented_data, 
-            request.num_samples, 
-            request.augmentation_config
-        )
-        
-        # Step 6: Clean data again
-        final_cleaned_data = cleaning_agent.clean_data(synthetic_data)
-        
-        # Save the final dataset
-        file_handler.save_to_parquet(final_cleaned_data, request.output_file)
-        
-        return {"message": f"Dataset prepared and saved to {request.output_file}"}
+        return {"message": "Data collected successfully", "data": data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/generate_paraphrases")
-async def generate_paraphrases(request: GenerateParaphrasesRequest):
+@app.post("/structure_data")
+async def structure_data(request: StructureDataRequest):
+    """
+    Structure collected data into the instruction-input-output format.
+    
+    Example payload:
+    {
+        "data": [{"title": "Example", "content": "This is a sample content"}],
+        "template_name": "instruction_input_output"
+    }
+    """
     try:
-        seed_data = file_handler.load_seed_data(request.seed_file)
-        paraphrased_content = generation_agent.generate_paraphrases(
-            seed_data, 
-            request.num_samples, 
-            request.system_prompt
-        )
-        output_files = file_handler.save_paraphrased_content(paraphrased_content, request.seed_file)
-        return {"message": f"Paraphrased content saved to: {', '.join(output_files)}"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/augment_data")
-async def augment_data(request: AugmentDataRequest):
-    try:
-        seed_data = file_handler.load_seed_data(request.seed_parquet)
-        augmented_data = augmentation_agent.augment_data(seed_data, request.augmentation_config)
-        output_file = file_handler.save_to_parquet(augmented_data, f"augmented_{request.seed_parquet}")
-        return {"message": f"Augmented data saved to: {output_file}"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/parse_text_to_parquet")
-async def parse_text_to_parquet(request: ParseTextToParquetRequest):
-    try:
-        df, json_file, parquet_file = digestion_agent.parse_text_to_parquet(
-            request.text_content,
-            request.template_name,
-            request.filename
-        )
+        template = template_manager.get_template(request.template_name)
+        if not template:
+            raise HTTPException(status_code=404, detail=f"Template '{request.template_name}' not found")
+        
+        structured_data = []
+        for item in request.data:
+            structured_item = {
+                "instruction": f"Summarize the following text: {item['title']}",
+                "input": item['content'],
+                "output": "This is where the summary would go."
+            }
+            structured_data.append(structured_item)
+        
+        # Save as JSON and Parquet
+        json_file = os.path.join(config['output_dir'], "structured_data.json")
+        with open(json_file, 'w') as f:
+            json.dump(structured_data, f, indent=2)
+        
+        df = pd.DataFrame(structured_data)
+        parquet_file = os.path.join(config['output_dir'], "structured_data.parquet")
+        df.to_parquet(parquet_file, index=False)
+        
         return {
-            "message": "Parsing completed successfully",
+            "message": "Data structured successfully",
             "json_file": json_file,
-            "parquet_file": parquet_file,
-            "dataframe_shape": df.shape
+            "parquet_file": parquet_file
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/convert_parquet")
-async def convert_parquet(request: ConvertParquetRequest):
+@app.post("/augment_data")
+async def augment_data(request: AugmentDataRequest, manager: LLMManager = Depends(get_llm_manager)):
+    """
+    Augment structured data by generating paraphrases, expanding, and cleaning.
+    
+    Example payload:
+    {
+        "input_file": "structured_data.parquet",
+        "num_samples": 5,
+        "agent_name": "openai"
+    }
+    """
     try:
-        file_handler.convert_parquet(request.parquet_file, request.output_formats)
-        return {"message": f"Parquet file converted to {', '.join(request.output_formats)}"}
+        agent = kitchen.get_agent(request.agent_name)
+        if agent is None:
+            raise HTTPException(status_code=404, detail=f"Agent '{request.agent_name}' not found")
+
+        # Load the input data
+        input_data = pd.read_parquet(os.path.join(config['input_dir'], request.input_file))
+
+        # Augment data
+        augmented_data = []
+        for _, row in input_data.iterrows():
+            for _ in range(request.num_samples):
+                augmented_item = {
+                    "instruction": agent.paraphrase_text(row['instruction']),
+                    "input": agent.paraphrase_text(row['input']),
+                    "output": agent.paraphrase_text(row['output'])
+                }
+                augmented_data.append(augmented_item)
+
+        # Clean data
+        cleaned_data = kitchen.clean_data(pd.DataFrame(augmented_data))
+
+        # Save augmented and cleaned data
+        output_file = os.path.join(config['output_dir'], "augmented_data.parquet")
+        cleaned_data.to_parquet(output_file, index=False)
+
+        return {"message": f"Data augmented and saved to: {output_file}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/push_to_huggingface")
+async def push_to_huggingface(request: PushToHuggingFaceRequest):
+    """
+    Push the final dataset to Hugging Face.
+    
+    Example payload:
+    {
+        "file_path": "augmented_data.parquet",
+        "repo_id": "username/dataset-name",
+        "token": "your_huggingface_token"
+    }
+    """
+    try:
+        file_path = os.path.join(config['output_dir'], request.file_path)
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
+
+        api = HfApi()
+        api.upload_file(
+            path_or_fileobj=file_path,
+            path_in_repo=request.file_path,
+            repo_id=request.repo_id,
+            token=request.token
+        )
+
+        return {"message": f"File {request.file_path} pushed to Hugging Face repository: {request.repo_id}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/get_templates")
 async def get_templates():
+    """
+    Retrieve all available templates.
+    """
     try:
         templates = template_manager.get_templates()
         return {"templates": templates}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/create_template")
-async def create_template(request: CreateTemplateRequest):
+@app.get("/get_available_agents")
+async def get_available_agents():
+    """
+    Retrieve all available AI agents.
+    """
     try:
-        new_template = template_manager.create_template(request.template_name, request.template_fields)
-        return {"message": f"Template '{request.template_name}' created successfully", "template": new_template}
+        agents = llm_manager.get_available_models()
+        return {"available_agents": agents}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
