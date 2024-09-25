@@ -2,7 +2,7 @@ from typing import List, Dict, Any
 import json
 from colorama import Fore, Style
 import click
-# from .config import ConfigManager
+#from config import ConfigManager
 from cutlery import DatasetManager, TemplateManager, PromptManager, FileHandler, DocumentLoader
 import pandas as pd
 from api.ai_api_providers import LLMManager
@@ -10,6 +10,7 @@ from agentchef_resources import OpenAILLM, OllamaLLM
 from anthropic import Anthropic
 import openai
 from groq import Groq
+import tqdm
 
 # If ConfigManager is in a separate config.py file next to main.py
 # from config import ConfigManager
