@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
-from agentChef import DatasetKitchen, TemplateManager, FileHandler
+from .agentChef import DatasetKitchen, TemplateManager, FileHandler
 import uvicorn
 
 app = FastAPI()
