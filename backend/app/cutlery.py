@@ -1,5 +1,5 @@
 # Import necessary libraries (assuming they're all needed)
-import pandas as pd
+import pandas as pd, pyarrow as pa, pyarrow.parquet as pq
 from tqdm import tqdm
 from datasets import load_dataset
 import numpy as np
@@ -7,6 +7,9 @@ from colorama import Fore, Style, init
 import os, json, urllib.parse, tarfile, gzip, shutil, requests, random, re, time, logging, glob
 from typing import List, Dict, Any, Optional
 import logging
+import arxiv
+import wikipedia
+import ollama
 
 from anthropic import Anthropic
 import openai
@@ -21,7 +24,7 @@ from langchain_community.document_loaders import (
 )
 
 
-from backend.app.agentchef_resources import LLMManager, OllamaLLM
+from neural_resources import LLMManager
 
 from huggingface_hub import snapshot_download, HfApi, hf_hub_download
 from github import Github
@@ -119,7 +122,7 @@ class AIProviderFactory:
     @staticmethod
     def get_provider(provider_name: str, **kwargs):
         providers = {
-            'ollama': OllamaLLM,
+            'ollama': ollama,
             'openai': openai,
             'groq': Groq,
             'anthropic': Anthropic

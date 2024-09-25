@@ -6,10 +6,11 @@ import click
 from cutlery import DatasetManager, TemplateManager, PromptManager, FileHandler, DocumentLoader
 import pandas as pd
 from api.ai_api_providers import LLMManager
-from backend.app.agentchef_resources import OpenAILLM, OllamaLLM
+from agentchef_resources import OpenAILLM, OllamaLLM
 from anthropic import Anthropic
 import openai
 from groq import Groq
+import tqdm
 
 # If ConfigManager is in a separate config.py file next to main.py
 from config import ConfigManager
@@ -303,7 +304,6 @@ class DatasetKitchen:
         self.dataset_manager = DatasetManager(
             self.llm_manager,
             self.template_manager,
-            self.file_handler,
             self.prompt_manager
         )
         self.collection_agent = DataCollectionAgent(
@@ -318,7 +318,6 @@ class DatasetKitchen:
         self.custom_agents[agent_name] = agent_class(
             self.llm_manager,
             self.template_manager,
-            self.file_handler,
             self.prompt_manager,
             self.document_loader
         )

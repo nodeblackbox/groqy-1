@@ -6,16 +6,15 @@ from typing import List, Dict, Any
 from anthropic import Anthropic
 import openai
 from groq import Groq
-from fastapi import FastAPI
-#TODO POSSIBLE CIRCULAR IMPORT
-from api.neural_resources_api import router as llm_router
 
-app = FastAPI()
+# Get the absolute path of the current file
+current_directory = os.path.dirname(os.path.abspath(__file__))
 
-app.include_router(llm_router, prefix="/llm", tags=["llm"])
+# Create the path to neural_resources.json
+json_path = os.path.join(current_directory, 'neural_resources.json')
 
 # Load model data from JSON file
-with open('neural_resources.json', 'r') as f:
+with open(json_path, 'r') as f:
     model_data = json.load(f)
 
 class AIAsset:
