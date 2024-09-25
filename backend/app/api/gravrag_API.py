@@ -1,9 +1,12 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
-from gravrag import Knowledge
+from gravrag import MemoryManager  # Correct import
 
 app = FastAPI()
+
+# Instantiate the memory manager
+memory_manager = MemoryManager()
 
 class MemoryInputModel(BaseModel):
     content: str
@@ -12,7 +15,7 @@ class MemoryInputModel(BaseModel):
 @app.post("/api/memory/create")
 async def create_memory(memory_input: MemoryInputModel):
     try:
-        await Knowledge.create_memory(memory_input.content, memory_input.metadata)
+        await memory_manager.create_memory(memory_input.content, memory_input.metadata)
         return {"message": "Memory created successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
@@ -20,7 +23,7 @@ async def create_memory(memory_input: MemoryInputModel):
 @app.get("/api/memory/recall")
 async def recall_memory(query: str, top_k: int = 5):
     try:
-        results = await Knowledge.recall_memory(query, top_k)
+        results = await memory_manager.recall_memory(query, top_k)
         return {"results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
@@ -28,7 +31,7 @@ async def recall_memory(query: str, top_k: int = 5):
 @app.post("/api/memory/prune")
 async def prune_memories():
     try:
-        await Knowledge.prune_memories()
+        await memory_manager.prune_memories()
         return {"message": "Pruning complete"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")

@@ -7,9 +7,6 @@ import asyncio
 import sys
 import os
 
-from api.agentchef_api import app as agentchef_app
-from api.gravrag_API import app as gravrag_app
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 agentchef_fastapi = FastAPI()
