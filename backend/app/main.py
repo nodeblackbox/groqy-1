@@ -13,8 +13,8 @@ agentchef_fastapi = FastAPI()
 gravrag_fastapi = FastAPI()
 
 agentchef_fastapi.include_router(llm_router, prefix="/llm", tags=["llm"])
-agentchef_fastapi.include_router(agentchef_app, tags=["agentchef"])
-gravrag_fastapi.include_router(gravrag_app, tags=["gravrag"])
+#agentchef_fastapi.include_router(agentchef_app, tags=["agentchef"])
+#gravrag_fastapi.include_router(gravrag_app, tags=["gravrag"])
 
 # Configuration for AgentChef
 # This dictionary contains all the necessary settings for AgentChef
@@ -27,12 +27,6 @@ config = {
         'api_base': 'http://localhost:11434'  # Ollama API endpoint
     }
 }
-
-# Include AgentChef routes
-agentchef_fastapi.include_router(agentchef_app, tags=["agentchef"])
-
-# Include GravRAG routes
-gravrag_fastapi.include_router(gravrag_app, tags=["gravrag"])
 
 # Function to run a server asynchronously
 async def run_server(app, host, port):

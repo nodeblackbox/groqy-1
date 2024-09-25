@@ -7,14 +7,16 @@ from anthropic import Anthropic
 import openai
 from groq import Groq
 
-# Load model data from JSON file #TODO
+# Construct the absolute path to the neural_resources.json file
+current_dir = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(current_dir, 'neural_resources.json')
 
-# Load model data from JSON file #TODO
-# Load model data from JSON file #TODO
-# Load model data from JSON file #TODO
-# Load model data from JSON file #TODO
-# Load model data from JSON file #TODO
-with open('neural_resources.json', 'r') as f:
+# Verify if the file exists
+if not os.path.exists(file_path):
+    raise FileNotFoundError(f"No such file or directory: '{file_path}'")
+
+# Load model data from JSON file
+with open(file_path, 'r') as f:
     model_data = json.load(f)
 
 class AIAsset:

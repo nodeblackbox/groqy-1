@@ -6,7 +6,7 @@ import click
 from cutlery import DatasetManager, TemplateManager, PromptManager, FileHandler, DocumentLoader
 import pandas as pd
 from api.ai_api_providers import LLMManager
-from api.agentchef_resources import OpenAILLM, OllamaLLM
+from agentchef_resources import OpenAILLM, OllamaLLM
 from anthropic import Anthropic
 import openai
 from groq import Groq

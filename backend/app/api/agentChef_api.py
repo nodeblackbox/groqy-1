@@ -6,7 +6,7 @@ import uvicorn
 from cutlery import DatasetManager, TemplateManager, FileHandler, DocumentLoader, PromptManager
 from chef import DatasetKitchen, DataCollectionAgent, DataDigestionAgent, DataGenerationAgent, DataCleaningAgent, DataAugmentationAgent
 
-from api.agentchef_resources import LLMManager, OllamaLLM
+from agentchef_resources import LLMManager, OllamaLLM
 from huggingface_hub import HfApi
 import uvicorn
 import pandas as pd
