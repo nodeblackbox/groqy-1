@@ -1,8 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import uvicorn
-from agentChef import DatasetKitchen, TemplateManager, FileHandler
+from agentChef.cutlery import DatasetManager, TemplateManager, FileHandler, DocumentLoader
+from agentChef.chef import DatasetKitchen, DataCollectionAgent, DataDigestionAgent, DataGenerationAgent, DataCleaningAgent, DataAugmentationAgent
+from agentChef.utils.prompt_manager import PromptManager
+from agentChef.ai_providers.ollama import OllamaProvider
 
 app = FastAPI()
 
@@ -17,113 +20,122 @@ config = {
     }
 }
 
-# Initialize DatasetKitchen and other components
-kitchen = DatasetKitchen(config)
+# Initialize components
 template_manager = TemplateManager(config['templates_dir'])
 file_handler = FileHandler(config['input_dir'], config['output_dir'])
+ollama_interface = OllamaProvider(config['ollama_config'])
+prompt_manager = PromptManager()
+document_loader = DocumentLoader()
 
+# Initialize agents
+collection_agent = DataCollectionAgent(template_manager, file_handler, document_loader)
+digestion_agent = DataDigestionAgent(file_handler, ollama_interface)
+generation_agent = DataGenerationAgent(ollama_interface, template_manager, prompt_manager)
+cleaning_agent = DataCleaningAgent()
+augmentation_agent = DataAugmentationAgent(ollama_interface, prompt_manager)
+
+# Initialize DatasetManager and DatasetKitchen
+dataset_manager = DatasetManager(
+    ollama_interface,
+    template_manager,
+    config['input_dir'],
+    config['output_dir']
+)
+kitchen = DatasetKitchen(config)
+
+# Pydantic models for request bodies
 class PrepareDatasetRequest(BaseModel):
-    source: str  # Path to the source data file or URL
-    template: str  # Name of the template to use for structuring the data
-    num_samples: int = 100  # Number of samples to generate (default: 100)
-    output_file: str  # Name of the output file to save the prepared dataset
+    source: str
+    template: str
+    num_samples: int = 100
+    output_file: str
+    augmentation_config: Dict[str, Any] = {}
 
 class GenerateParaphrasesRequest(BaseModel):
-    seed_file: str  # Path to the seed file containing original text
-    num_samples: int = 1  # Number of paraphrases to generate for each input (default: 1)
-    system_prompt: Optional[str] = None  # Optional custom system prompt for paraphrasing
+    seed_file: str
+    num_samples: int = 1
+    system_prompt: Optional[str] = None
 
 class AugmentDataRequest(BaseModel):
-    seed_parquet: str  # Path to the seed parquet file to be augmented
+    seed_parquet: str
+    augmentation_config: Dict[str, Any] = {}
 
 class ParseTextToParquetRequest(BaseModel):
-    text_content: str  # Raw text content to be parsed
-    template_name: str  # Name of the template to use for parsing
-    filename: str  # Base name for the output files (without extension)
+    text_content: str
+    template_name: str
+    filename: str
 
 class ConvertParquetRequest(BaseModel):
-    parquet_file: str  # Path to the input parquet file
-    output_formats: List[str] = ['csv', 'jsonl']  # List of desired output formats (default: ['csv', 'jsonl'])
+    parquet_file: str
+    output_formats: List[str] = ['csv', 'jsonl']
 
 class CreateTemplateRequest(BaseModel):
-    template_name: str  # Name of the new template
-    template_fields: List[str]  # List of field names for the template
+    template_name: str
+    template_fields: List[str]
 
 @app.post("/prepare_dataset")
 async def prepare_dataset(request: PrepareDatasetRequest):
-    """
-    Prepare a dataset using the specified source, template, and parameters.
-    
-    - source: Path to the source data file or URL
-    - template: Name of the template to use for structuring the data
-    - num_samples: Number of samples to generate (default: 100)
-    - output_file: Name of the output file to save the prepared dataset
-    
-    Returns a message confirming the dataset preparation and save location.
-    """
     try:
-        dataset = kitchen.prepare_dataset(
-            source=request.source,
-            template_name=request.template,
-            num_samples=request.num_samples,
-            augmentation_config={},
-            output_file=request.output_file
+        # Step 1: Collect and structure data
+        structured_data = collection_agent.collect_and_structure_data(request.source, request.template)
+        
+        # Step 2: Digest data
+        digested_data = digestion_agent.digest_data(structured_data, request.template)
+
+        # Step 3: Clean data
+        cleaned_data = cleaning_agent.clean_data(digested_data)
+        
+        # Step 4: Augment data (if configured)
+        if request.augmentation_config:
+            augmented_data = augmentation_agent.augment_data(cleaned_data, request.augmentation_config)
+        else:
+            augmented_data = cleaned_data
+        
+        # Step 5: Generate synthetic data
+        synthetic_data = generation_agent.generate_synthetic_data(
+            augmented_data, 
+            request.num_samples, 
+            request.augmentation_config
         )
+        
+        # Step 6: Clean data again
+        final_cleaned_data = cleaning_agent.clean_data(synthetic_data)
+        
+        # Save the final dataset
+        file_handler.save_to_parquet(final_cleaned_data, request.output_file)
+        
         return {"message": f"Dataset prepared and saved to {request.output_file}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate_paraphrases")
 async def generate_paraphrases(request: GenerateParaphrasesRequest):
-    """
-    Generate paraphrases for the text in the specified seed file.
-    
-    - seed_file: Path to the seed file containing original text
-    - num_samples: Number of paraphrases to generate for each input (default: 1)
-    - system_prompt: Optional custom system prompt for paraphrasing
-    
-    Returns a message with the locations of the generated paraphrase files.
-    """
     try:
-        output_files = kitchen.generate_paraphrases(
-            seed_file=request.seed_file,
-            num_samples=request.num_samples,
-            system_prompt=request.system_prompt
+        seed_data = file_handler.load_seed_data(request.seed_file)
+        paraphrased_content = generation_agent.generate_paraphrases(
+            seed_data, 
+            request.num_samples, 
+            request.system_prompt
         )
+        output_files = file_handler.save_paraphrased_content(paraphrased_content, request.seed_file)
         return {"message": f"Paraphrased content saved to: {', '.join(output_files)}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/augment_data")
 async def augment_data(request: AugmentDataRequest):
-    """
-    Augment data from a seed parquet file.
-    
-    - seed_parquet: Path to the seed parquet file to be augmented
-    
-    Returns a message with the location of the augmented data file.
-    Note: Currently uses an empty augmentation_config. Extend this to accept configuration if needed.
-    """
     try:
-        augmentation_config = {}  # You can extend this to accept configuration from the request
-        output_file = kitchen.augment_data(seed_parquet=request.seed_parquet, augmentation_config=augmentation_config)
+        seed_data = file_handler.load_seed_data(request.seed_parquet)
+        augmented_data = augmentation_agent.augment_data(seed_data, request.augmentation_config)
+        output_file = file_handler.save_to_parquet(augmented_data, f"augmented_{request.seed_parquet}")
         return {"message": f"Augmented data saved to: {output_file}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/parse_text_to_parquet")
 async def parse_text_to_parquet(request: ParseTextToParquetRequest):
-    """
-    Parse raw text content into a structured parquet file using the specified template.
-    
-    - text_content: Raw text content to be parsed
-    - template_name: Name of the template to use for parsing
-    - filename: Base name for the output files (without extension)
-    
-    Returns information about the parsing process, including locations of output files and dataframe shape.
-    """
     try:
-        df, json_file, parquet_file = kitchen.dataset_manager.parse_text_to_parquet(
+        df, json_file, parquet_file = digestion_agent.parse_text_to_parquet(
             request.text_content,
             request.template_name,
             request.filename
@@ -139,27 +151,14 @@ async def parse_text_to_parquet(request: ParseTextToParquetRequest):
 
 @app.post("/convert_parquet")
 async def convert_parquet(request: ConvertParquetRequest):
-    """
-    Convert a parquet file to other specified formats.
-    
-    - parquet_file: Path to the input parquet file
-    - output_formats: List of desired output formats (default: ['csv', 'jsonl'])
-    
-    Returns a message confirming the conversion and the formats generated.
-    """
     try:
-        kitchen.dataset_manager.convert_parquet(request.parquet_file, request.output_formats)
+        file_handler.convert_parquet(request.parquet_file, request.output_formats)
         return {"message": f"Parquet file converted to {', '.join(request.output_formats)}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/get_templates")
 async def get_templates():
-    """
-    Retrieve all available templates.
-    
-    Returns a dictionary of all templates and their field structures.
-    """
     try:
         templates = template_manager.get_templates()
         return {"templates": templates}
@@ -168,14 +167,6 @@ async def get_templates():
 
 @app.post("/create_template")
 async def create_template(request: CreateTemplateRequest):
-    """
-    Create a new template with the specified name and fields.
-    
-    - template_name: Name of the new template
-    - template_fields: List of field names for the template
-    
-    Returns a confirmation message and the structure of the newly created template.
-    """
     try:
         new_template = template_manager.create_template(request.template_name, request.template_fields)
         return {"message": f"Template '{request.template_name}' created successfully", "template": new_template}
