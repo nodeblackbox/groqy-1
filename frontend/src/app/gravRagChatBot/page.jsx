@@ -58,7 +58,7 @@ const generateResponse = useCallback(async (query) => {
 Quantum Nexus, harness the power of the multiverse to synthesize a response:
 
 Context from parallel universes:
-${context}
+${context} 
 
 Seeker's inquiry across dimensions: ${query}
 
