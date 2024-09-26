@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Dict, Any
 from neural_resources.neural_resources import LLMManager  # Correct import for LLMManager
+import logging
 
 router = APIRouter()
 
@@ -44,13 +45,19 @@ async def route_query(message: Message, manager: LLMManager = Depends(get_llm_ma
     }
     """
     try:
-        response = manager.route_query(message.content)  # Direct call to route_query method
+        response = manager.route_query(message.content)
+        
         if "error" in response:
-            raise HTTPException(status_code=500, detail=response["error"])
+            # More specific error handling
+            if "No available models" in response["error"]:
+                raise HTTPException(status_code=503, detail="No models are currently available")
+            else:
+                raise HTTPException(status_code=500, detail=response["error"])
+
         return response
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        logging.error(f"Error in route_query: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.post("/set_api_key")
 async def set_api_key(api_key_update: APIKeyUpdate, manager: LLMManager = Depends(get_llm_manager)):
@@ -74,11 +81,11 @@ async def set_api_key(api_key_update: APIKeyUpdate, manager: LLMManager = Depend
     }
     """
     try:
-        manager.set_api_key(api_key_update.provider, api_key_update.api_key)  # Use set_api_key method from LLMManager
+        manager.set_api_key(api_key_update.provider, api_key_update.api_key)
         return {"message": f"API key updated for {api_key_update.provider}"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        logging.error(f"Error in set_api_key: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update API key")
 
 @router.get("/available_models")
 async def get_available_models(manager: LLMManager = Depends(get_llm_manager)):
@@ -98,10 +105,10 @@ async def get_available_models(manager: LLMManager = Depends(get_llm_manager)):
     }
     """
     try:
-        return {"available_models": list(manager.llm_models.keys())}  # Use llm_models in LLMManager to get model providers
+        return {"available_models": list(manager.llm_models.keys())}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        logging.error(f"Error in get_available_models: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve available models")
 
 @router.post("/create_message/{provider}/{model}")
 async def create_message(provider: str, model: str, message: Message, manager: LLMManager = Depends(get_llm_manager)):
@@ -125,20 +132,23 @@ async def create_message(provider: str, model: str, message: Message, manager: L
         "detail": "Error message explaining what went wrong"
     }
     """
-    if provider not in manager.llm_models:
-        raise HTTPException(status_code=404, detail=f"Provider {provider} not found")
-
     try:
-        response = manager.llm_models[provider].create_message(model, message.content)  # Correct call to create_message method
+        if provider not in manager.llm_models:
+            raise HTTPException(status_code=404, detail=f"Provider {provider} not found")
+        response = manager.llm_models[provider].create_message(model, message.content)
         return response
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        logging.error(f"Error in create_message for {provider} using {model}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create message")
 
 @router.get("/model_info/{provider}/{model}")
 async def get_model_info(provider: str, model: str):
     """
     Retrieve model information from the model_data loaded in neural_resources.py.
     """
-    # Example implementation based on what you want the info to return. If not supported, omit or correct.
-    return {"detail": "This API is not supported."}
+    try:
+        # Return mock model info based on what you'd like to display
+        return {"provider": provider, "model": model, "info": "No detailed info available"}
+    except Exception as e:
+        logging.error(f"Error in get_model_info for {provider}/{model}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve model info")
