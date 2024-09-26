@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 # from agentChef import DatasetKitchen, TemplateManager, FileHandler
-from gravrag import Knowledge
+from backend.app.gravrag.gravrag import Knowledge
 import uvicorn
 import asyncio
 

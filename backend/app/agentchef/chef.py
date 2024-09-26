@@ -3,20 +3,20 @@ import json
 from colorama import Fore, Style
 import click
 #from config import ConfigManager
-from cutlery import DatasetManager, TemplateManager, PromptManager, FileHandler, DocumentLoader
+from agentchef.cutlery import DatasetManager, TemplateManager, PromptManager, FileHandler, DocumentLoader
 import pandas as pd
 from api.ai_api_providers import LLMManager
-from agentchef_resources import OpenAILLM, OllamaLLM
+from agentchef.agentchef_resources import OpenAILLM, OllamaLLM
 from anthropic import Anthropic
 import openai
 from groq import Groq
 import tqdm
 
 # If ConfigManager is in a separate config.py file next to main.py
-from config import ConfigManager
+from agentchef.config import ConfigManager
 
 # If PromptManager is part of cutlery, update the import
-from cutlery import PromptManager
+from agentchef.cutlery import PromptManager
 
 class DataCollectionAgent:
     def __init__(self, template_manager: TemplateManager, file_handler: FileHandler, document_loader: DocumentLoader):

@@ -1,9 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
-from gravrag import MemoryManager  # Correct import
+from gravrag.gravrag import MemoryManager  # Correct import
 
-app = FastAPI()
+# Using APIRouter for integration into the main FastAPI app
+router = APIRouter()
 
 # Instantiate the memory manager
 memory_manager = MemoryManager()
@@ -12,7 +13,7 @@ class MemoryInputModel(BaseModel):
     content: str
     metadata: Optional[Dict[str, Any]] = {}
 
-@app.post("/api/memory/create")
+@router.post("/memory/create")
 async def create_memory(memory_input: MemoryInputModel):
     try:
         await memory_manager.create_memory(memory_input.content, memory_input.metadata)
@@ -20,7 +21,7 @@ async def create_memory(memory_input: MemoryInputModel):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
-@app.get("/api/memory/recall")
+@router.get("/memory/recall")
 async def recall_memory(query: str, top_k: int = 5):
     try:
         results = await memory_manager.recall_memory(query, top_k)
@@ -28,7 +29,7 @@ async def recall_memory(query: str, top_k: int = 5):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
-@app.post("/api/memory/prune")
+@router.post("/memory/prune")
 async def prune_memories():
     try:
         await memory_manager.prune_memories()

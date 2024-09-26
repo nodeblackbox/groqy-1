@@ -1,17 +1,18 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-import uvicorn
-
-from cutlery import DatasetManager, TemplateManager, FileHandler, DocumentLoader, PromptManager
-from chef import DatasetKitchen, DataCollectionAgent, DataDigestionAgent, DataGenerationAgent, DataCleaningAgent, DataAugmentationAgent
-
-from agentchef_resources import LLMManager, OllamaLLM
-from huggingface_hub import HfApi
-import uvicorn
 import pandas as pd
-import json
 import os
+import json
+
+# Import necessary components for AgentChef
+from agentchef.cutlery import DatasetManager, TemplateManager, FileHandler, DocumentLoader, PromptManager
+from agentchef.chef import DatasetKitchen, DataCollectionAgent, DataDigestionAgent, DataGenerationAgent, DataCleaningAgent, DataAugmentationAgent
+from agentchef.agentchef_resources import LLMManager
+from huggingface_hub import HfApi
+
+# Define APIRouter for agentChef API
+router = APIRouter()
 
 # Initialize necessary objects
 llm_manager = LLMManager()
@@ -19,8 +20,6 @@ template_manager = TemplateManager('./templates')
 file_handler = FileHandler('./input', './output')
 document_loader = DocumentLoader()
 prompt_manager = PromptManager()
-
-app = FastAPI(title="AgentChef API", description="API for data processing and dataset creation")
 
 # Configuration for AgentChef
 config = {
@@ -36,27 +35,7 @@ config = {
 # Initialize DatasetKitchen
 kitchen = DatasetKitchen(config)
 
-class LLMConfig(BaseModel):
-    model: str
-    api_base: str
-
-class CustomAgentConfig(BaseModel):
-    agent_name: str
-    config: Dict[str, Any]
-
-class PrepareDatasetRequest(BaseModel):
-    source: str
-    template_name: str
-    num_samples: int
-    augmentation_config: Optional[Dict[str, Any]] = None
-    output_file: str
-
-class GenerateParaphrasesRequest(BaseModel):
-    seed_file: str
-    num_samples: int = 1
-    system_prompt: Optional[str] = None
-    
-# Pydantic models for request bodies
+# Request models for AgentChef API
 class DataSourceRequest(BaseModel):
     source_type: str
     query: str
@@ -80,7 +59,7 @@ class PushToHuggingFaceRequest(BaseModel):
 def get_llm_manager():
     return llm_manager
 
-@app.post("/collect_data")
+@router.post("/collect_data")
 async def collect_data(request: DataSourceRequest):
     """
     Collect data from arXiv, Wikipedia, or Hugging Face datasets.
@@ -106,7 +85,7 @@ async def collect_data(request: DataSourceRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/structure_data")
+@router.post("/structure_data")
 async def structure_data(request: StructureDataRequest):
     """
     Structure collected data into the instruction-input-output format.
@@ -148,7 +127,7 @@ async def structure_data(request: StructureDataRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/augment_data")
+@router.post("/augment_data")
 async def augment_data(request: AugmentDataRequest, manager: LLMManager = Depends(get_llm_manager)):
     """
     Augment structured data by generating paraphrases, expanding, and cleaning.
@@ -190,7 +169,7 @@ async def augment_data(request: AugmentDataRequest, manager: LLMManager = Depend
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/push_to_huggingface")
+@router.post("/push_to_huggingface")
 async def push_to_huggingface(request: PushToHuggingFaceRequest):
     """
     Push the final dataset to Hugging Face.
@@ -219,7 +198,7 @@ async def push_to_huggingface(request: PushToHuggingFaceRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/get_templates")
+@router.get("/get_templates")
 async def get_templates():
     """
     Retrieve all available templates.
@@ -230,7 +209,7 @@ async def get_templates():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/get_available_agents")
+@router.get("/get_available_agents")
 async def get_available_agents():
     """
     Retrieve all available AI agents.
@@ -240,6 +219,3 @@ async def get_available_agents():
         return {"available_agents": agents}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8888)
