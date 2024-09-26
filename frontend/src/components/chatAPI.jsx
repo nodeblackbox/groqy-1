@@ -1,4 +1,5 @@
-// frontend\src\components\chatAPI.jsx
+// src/components/chatAPI.jsx
+
 const OLLAMA_BASE_URL = 'http://localhost:11434/api';
 const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
 
@@ -91,7 +92,7 @@ class ChatAPI {
 
         if (this.useGroq) {
             if (!this.apiKey) {
-                throw new Error('API key is required for Groq API');
+                throw new Error('GROQ API key is required');
             }
             headers['Authorization'] = `Bearer ${this.apiKey}`;
         }
