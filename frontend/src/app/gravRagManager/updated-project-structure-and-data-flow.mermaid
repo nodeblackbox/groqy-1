@@ -1,0 +1,121 @@
+graph TD
+    A[Project Root] -->|Analyze| B[File Structure Analyzer]
+    B -->|Generate| C[Directory Tree]
+    B -->|Identify| D[Pages]
+    B -->|Identify| E[Components]
+    B -->|Identify| F[API Routes]
+    B -->|Identify| G[Configuration Files]
+
+    D -->|Analyze| H[Page Analyzer]
+    E -->|Analyze| I[Component Analyzer]
+    F -->|Analyze| J[API Route Analyzer]
+    G -->|Analyze| K[Config Analyzer]
+
+    H -->|Extract| L[Page Metadata]
+    I -->|Extract| M[Component Metadata]
+    J -->|Extract| N[API Metadata]
+    K -->|Extract| O[Config Metadata]
+
+    L -->|Store| P[Qdrant Vector DB]
+    M -->|Store| P
+    N -->|Store| P
+    O -->|Store| P
+
+    I -->|Identify| Q[Inter-component Relations]
+    Q -->|Map| R[Component Dependency Graph]
+    R -->|Store| P
+
+    S[Code Content Analyzer] -->|Process| T[AST Generator]
+    T -->|Analyze| U[AST Analyzer]
+    U -->|Extract| V[Code Insights]
+    V -->|Store| P
+
+    W[Context Synthesizer] -->|Query| P
+    W -->|Generate| X[Rich Context for LLM]
+
+    Y[LLM API Interface] -->|Request Context| W
+    Y -->|Receive Context| X
+    Y -->|Generate Response| Z[LLM-generated Insights]
+
+    AA[RAG Engine] -->|Query| P
+    AA -->|Retrieve| BB[Relevant Vectors]
+    AA -->|Augment| CC[LLM Input]
+
+    subgraph "File Structure Analysis"
+        B
+        C
+        D
+        E
+        F
+        G
+    end
+
+    subgraph "Metadata Extraction"
+        H
+        I
+        J
+        K
+        L
+        M
+        N
+        O
+    end
+
+    subgraph "Component Relationship Analysis"
+        Q
+        R
+    end
+
+    subgraph "Code Analysis"
+        S
+        T
+        U
+        V
+    end
+
+    subgraph "Context Generation"
+        W
+        X
+    end
+
+    subgraph "LLM Integration"
+        Y
+        Z
+    end
+
+    subgraph "RAG System"
+        AA
+        BB
+        CC
+    end
+
+    subgraph "Dashboard Component"
+        DD[Dashboard]
+        EE[State Management]
+        FF[API Interactions]
+        GG[UI Components]
+    end
+
+    DD -->|Uses| EE
+    DD -->|Calls| FF
+    DD -->|Renders| GG
+
+    EE -->|Manages| HH[Local Storage]
+    EE -->|Updates| II[UI State]
+
+    FF -->|Fetches| JJ[Ollama Models]
+    FF -->|Sends| KK[Chat Messages]
+    FF -->|Handles| LL[File Operations]
+
+    GG -->|Includes| MM[ChatView]
+    GG -->|Includes| NN[WorkflowBuilder]
+    GG -->|Includes| OO[FileUploader]
+    GG -->|Includes| PP[ToolingConfiguration]
+
+    DD -->|Uses| QQ[NotificationProvider]
+    DD -->|Renders| RR[TopNavigation]
+    DD -->|Renders| SS[SideNavigation]
+
+    TT[User Interactions] -->|Trigger| DD
+    DD -->|Updates| II
+    II -->|Reflects in| GG
