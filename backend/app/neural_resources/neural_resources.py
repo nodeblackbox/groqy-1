@@ -39,12 +39,16 @@ class AnthropicLLM(AIAsset):
         self.client = Anthropic(api_key=api_key)
 
     def create_message(self, model: str, message: str) -> Dict[str, Any]:
-        response = self.client.messages.create(
-            model=model,
-            messages=[message],
-            max_tokens=model_data['models'][model]['max_tokens']
-        )
-        return response.model_dump()
+        try:
+            response = self.client.messages.create(
+                model=model,
+                messages=[message],
+                max_tokens=model_data['models'][model]['max_tokens']
+            )
+            return response.model_dump()
+        except Exception as e:
+            logging.error(f"Error creating message for Anthropic: {str(e)}")
+            return {"error": f"Anthropic failed: {str(e)}"}
 
     def get_output_tokens(self, response: Dict[str, Any]) -> int:
         return response.get('usage', {}).get('output_tokens', 0)
@@ -55,12 +59,16 @@ class OpenAILLM(AIAsset):
         self.client = openai.OpenAI(api_key=api_key)
 
     def create_message(self, model: str, message: str) -> Dict[str, Any]:
-        response = self.client.chat.completions.create(
-            model=model,
-            messages=[{"content": message}],
-            max_tokens=model_data['models'][model]['max_tokens']
-        )
-        return response.model_dump()
+        try:
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=[{"content": message}],
+                max_tokens=model_data['models'][model]['max_tokens']
+            )
+            return response.model_dump()
+        except Exception as e:
+            logging.error(f"Error creating message for OpenAI: {str(e)}")
+            return {"error": f"OpenAI failed: {str(e)}"}
 
 class GroqLLM(AIAsset):
     def __init__(self, api_key: str):
@@ -68,26 +76,34 @@ class GroqLLM(AIAsset):
         self.client = Groq(api_key=api_key)
 
     def create_message(self, model: str, message: str) -> Dict[str, Any]:
-        response = self.client.chat.completions.create(
-            model=model,
-            messages=[{"content": message}],
-            max_tokens=model_data['models'][model]['max_tokens']
-        )
-        return response.model_dump()
+        try:
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=[{"content": message}],
+                max_tokens=model_data['models'][model]['max_tokens']
+            )
+            return response.model_dump()
+        except Exception as e:
+            logging.error(f"Error creating message for Groq: {str(e)}")
+            return {"error": f"Groq failed: {str(e)}"}
 
 class OllamaLLM(AIAsset):
     def __init__(self, base_url: str = "http://localhost:11434"):
         self.base_url = base_url
 
     def create_message(self, model: str, message: str) -> Dict[str, Any]:
-        url = f"{self.base_url}/api/generate"
-        payload = {
-            "model": model,
-            "prompt": message,
-            "stream": False
-        }
-        response = requests.post(url, json=payload)
-        return response.json()
+        try:
+            url = f"{self.base_url}/api/generate"
+            payload = {
+                "model": model,
+                "prompt": message,
+                "stream": False
+            }
+            response = requests.post(url, json=payload)
+            return response.json()
+        except Exception as e:
+            logging.error(f"Error creating message for Ollama: {str(e)}")
+            return {"error": f"Ollama failed: {str(e)}"}
 
 class LLMManager:
     def __init__(self):
@@ -102,7 +118,6 @@ class LLMManager:
         self.llm_models["ollama"] = OllamaLLM()
 
     def _load_api_keys(self) -> Dict[str, str]:
-        # Use overridden API keys if set, otherwise use environment variables
         return {
             "anthropic": self.overridden_keys.get('anthropic', os.getenv('ANTHROPIC_API_KEY')),
             "openai": self.overridden_keys.get('openai', os.getenv('OPENAI_API_KEY')),
@@ -121,7 +136,6 @@ class LLMManager:
     def set_api_key(self, provider: str, api_key: str):
         """Override API keys manually"""
         self.overridden_keys[provider] = api_key
-        # Reinitialize the models with new API key
         self._initialize_models()
 
     def route_query(self, message: str) -> Dict[str, Any]:
