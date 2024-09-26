@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Dict, Any, List
-from agentchef_resources import LLMManager, model_data, OpenAILLM, OllamaLLM
+from backend.app.agentchef_resources import LLMManager, model_data, OpenAILLM, OllamaLLM
 
 router = APIRouter()
 
