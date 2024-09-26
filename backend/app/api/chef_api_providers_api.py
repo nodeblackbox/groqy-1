@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Dict, Any, List
-from ..neural_resources import LLMManager, model_data  # Assuming the previous code is in llm_manager.py
+from ..neural_resources.neural_resources import LLMManager, model_data  # Assuming the previous code is in llm_manager.py
 
 router = APIRouter()
 

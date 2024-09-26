@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Dict, Any
-from neural_resources import LLMManager  # Import LLMManager, not model_data
+from neural_resources.neural_resources import LLMManager  # Correct import for LLMManager
 
 router = APIRouter()
 
@@ -51,6 +51,7 @@ async def route_query(message: Message, manager: LLMManager = Depends(get_llm_ma
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/set_api_key")
 async def set_api_key(api_key_update: APIKeyUpdate, manager: LLMManager = Depends(get_llm_manager)):
     """
@@ -78,6 +79,7 @@ async def set_api_key(api_key_update: APIKeyUpdate, manager: LLMManager = Depend
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/available_models")
 async def get_available_models(manager: LLMManager = Depends(get_llm_manager)):
     """
@@ -99,6 +101,7 @@ async def get_available_models(manager: LLMManager = Depends(get_llm_manager)):
         return {"available_models": list(manager.llm_models.keys())}  # Use llm_models in LLMManager to get model providers
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/create_message/{provider}/{model}")
 async def create_message(provider: str, model: str, message: Message, manager: LLMManager = Depends(get_llm_manager)):
@@ -130,6 +133,7 @@ async def create_message(provider: str, model: str, message: Message, manager: L
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/model_info/{provider}/{model}")
 async def get_model_info(provider: str, model: str):

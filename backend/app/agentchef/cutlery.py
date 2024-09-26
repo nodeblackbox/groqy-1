@@ -24,7 +24,7 @@ from langchain_community.document_loaders import (
 )
 
 
-from neural_resources import LLMManager
+from neural_resources.neural_resources import LLMManager
 
 from huggingface_hub import snapshot_download, HfApi, hf_hub_download
 from github import Github
