@@ -147,7 +147,7 @@ const TreeNode = ({ node, onAdd, onDelete, onToggle, onEdit, searchTerm }) => {
 
 export default function ComprehensiveComponent() {
     // State declarations
-    const [darkMode, setDarkMode] = useState(true)
+    const [darkMode, setDarkMode] = useState(false)
     const [activeTab, setActiveTab] = useState('structure')
     const [jsonStructure, setJsonStructure] = useState({})
     const [searchTerm, setSearchTerm] = useState('')
@@ -547,7 +547,7 @@ export default function ComprehensiveComponent() {
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent side="right">
-                            <p>{darkMode ? 'Dark Mode' : 'Light Mode'}</p>
+                            <p>{darkMode ? 'Light Mode' : 'Dark Mode'}</p>
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>

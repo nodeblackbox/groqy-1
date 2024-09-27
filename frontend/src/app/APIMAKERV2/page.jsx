@@ -27,7 +27,7 @@ const TreeNode = ({ node, onAdd, onDelete, onToggle, onEdit, searchTerm }) => {
         setNodeType(e.target.value)
     }
 
-    const matchesSearch = node.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = node?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false
 
     return (
         <div className={`ml-4 ${searchTerm && !matchesSearch ? 'hidden' : ''}`}>
