@@ -49,7 +49,7 @@ const NotificationProvider = ({ children }) => {
                                         {type === 'success' && <CheckCircle className="h-6 w-6 text-green-400" />}
                                         {type === 'error' && <XCircle className="h-6 w-6 text-red-400" />}
                                         {type === 'info' && <Info className="h-6 w-6 text-blue-400" />}
-                                        {type === 'warning' && <ExclamationTriangle className="h-6 w-6 text-yellow-400" />}
+                                        {type === 'warning' && <AlertTriangle className="h-6 w-6 text-yellow-400" />}
                                     </div>
                                     <div className="ml-3 w-0 flex-1">
                                         <p className="text-sm font-medium text-gray-900 dark:text-white">{message}</p>
