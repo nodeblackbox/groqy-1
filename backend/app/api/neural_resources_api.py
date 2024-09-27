@@ -28,6 +28,9 @@ class GroqProvider:
         )
         return response
 
+def get_llm_manager() -> LLMManager:
+    return llm_manager
+
 @router.post("/route_query")
 async def route_query(message: Message, manager: LLMManager = Depends(get_llm_manager)):
     """
