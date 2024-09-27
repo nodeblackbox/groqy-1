@@ -623,19 +623,19 @@ export default function Dashboard() {
                 </main>
             </div>
         </NotificationProvider>
-    );  // Add this closing parenthesis
-}
+    );
 
-// Helper function to get header title based on view
-function getHeaderTitle(view) {
-    switch (view) {
-        case 'workflow':
-            return 'Agent Workflow Builder';
-        case 'fileUpload':
-            return 'File Uploader';
-        case 'tooling':
-            return 'Tooling & Configuration';
-        default:
-            return 'Quantum Nexus';
+    // Helper function to get header title based on view
+    function getHeaderTitle(view) {
+        switch (view) {
+            case 'workflow':
+                return 'Agent Workflow Builder';
+            case 'fileUpload':
+                return 'File Uploader';
+            case 'tooling':
+                return 'Tooling & Configuration';
+            default:
+                return 'Quantum Nexus';
+        }
     }
 }

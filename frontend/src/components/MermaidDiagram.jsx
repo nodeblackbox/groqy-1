@@ -1,27 +1,30 @@
+// components/MermaidDiagram.jsx
 "use client";
 
-import React, { useEffect, useRef } from 'react';
-import mermaid from 'mermaid';
+import React, { useEffect, useRef } from "react";
+import mermaid from "mermaid";
 
-
-// MermaidDiagram Component
-const MermaidDiagramComponent = ({ code, theme }) => {
-    const mermaidRef = useRef(null);
+const MermaidDiagram = ({ code }) => {
+    const chartRef = useRef(null);
 
     useEffect(() => {
-        mermaid.initialize({
-            startOnLoad: false,
-            theme: theme === "dark" ? "dark" : "default",
-        });
-
-        if (mermaidRef.current && code) {
-            mermaid.render("mermaid-diagram", code).then((result) => {
-                mermaidRef.current.innerHTML = result;
+        if (code) {
+            mermaid.initialize({ startOnLoad: true });
+            mermaid.contentLoaded();
+            mermaid.render("generatedDiagram", code, (svgCode) => {
+                if (chartRef.current) {
+                    chartRef.current.innerHTML = svgCode;
+                }
             });
         }
-    }, [code, theme]);
+    }, [code]);
 
-    return <div ref={mermaidRef} />;
+    return (
+        <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
+            <h2 className="text-xl font-semibold mb-4 text-blue-400">Workflow Diagram</h2>
+            <div ref={chartRef} className="mermaid"></div>
+        </div>
+    );
 };
 
-export default MermaidDiagramComponent;
+export default MermaidDiagram;
