@@ -19,8 +19,14 @@ class APIKeyUpdate(BaseModel):
     api_key: str   # The new API key to set for the specified provider
 
 # Dependency to get the LLMManager instance
-def get_llm_manager():
-    return llm_manager
+class GroqProvider:
+    def create_message(self, model, chat_request):
+        # chat_request is already in the correct format, so we can use it directly
+        response = self.client.chat.completions.create(
+            model=model,
+            **chat_request
+        )
+        return response
 
 @router.post("/route_query")
 async def route_query(message: Message, manager: LLMManager = Depends(get_llm_manager)):

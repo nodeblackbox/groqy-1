@@ -613,7 +613,7 @@
 
 
 
-  ### [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
+  ### [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
 
   **Type:** PY file
 
@@ -1175,7 +1175,7 @@
     from groq import Groq
     from fastapi import FastAPI
     #TODO POSSIBLE CIRCULAR IMPORT
-    from api.neural_resources_api import router as llm_router
+    from api.neural_resources_API import router as llm_router
     
     app = FastAPI()
     
@@ -1333,8 +1333,8 @@
   - [api\file_structure.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\file_structure.py)
   - [api\file_structure.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\file_structure.py)
   - [api\file_structure.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\file_structure.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
 - **model** is used in:
   - [agentchef_resources.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\agentchef_resources.py)
   - [neural_resources.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\neural_resources.py)
@@ -1458,11 +1458,11 @@
   - [api\ai_api_providers.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\ai_api_providers.py)
   - [api\chef_api_providers_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\chef_api_providers_api.py)
   - [api\file_structure.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\file_structure.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
 - **llm_manager** is used in:
   - [api\ai_api_providers.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\ai_api_providers.py)
   - [api\chef_api_providers_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\chef_api_providers_api.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
 - **LLMManager** is used in:
   - [api\ai_api_providers.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\ai_api_providers.py)
   - [api\ai_api_providers.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\ai_api_providers.py)
@@ -1472,10 +1472,10 @@
   - [api\chef_api_providers_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\chef_api_providers_api.py)
   - [api\chef_api_providers_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\chef_api_providers_api.py)
   - [api\chef_api_providers_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\chef_api_providers_api.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
 - **status_code** is used in:
   - [api\ai_api_providers.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\ai_api_providers.py)
   - [api\ai_api_providers.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\ai_api_providers.py)
@@ -1486,9 +1486,9 @@
   - [api\gravrag_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\gravrag_API.py)
   - [api\gravrag_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\gravrag_API.py)
   - [api\gravrag_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\gravrag_API.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
   - [api\oarc_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\oarc_api.py)
 - **detail** is used in:
   - [api\ai_api_providers.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\ai_api_providers.py)
@@ -1500,9 +1500,9 @@
   - [api\gravrag_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\gravrag_API.py)
   - [api\gravrag_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\gravrag_API.py)
   - [api\gravrag_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\gravrag_API.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
-  - [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
+  - [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py)
   - [api\oarc_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\oarc_api.py)
 - **AGENT_CHEF_API_URL** is used in:
   - [api\file_structure.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\file_structure.py)
@@ -1602,7 +1602,7 @@
   - openai
   - groq
   - fastapi
-  - api.neural_resources_api
+  - api.neural_resources_API
 - [runthisIFYOUAREBORCH.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\runthisIFYOUAREBORCH.py) depends on:
   - os
   - re
@@ -1662,7 +1662,7 @@
   - pydantic
   - typing
   - ..gravrag
-- [api\neural_resources_api.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_api.py) depends on:
+- [api\neural_resources_API.py](file://D:\CodingGit_StorageHDD\Ollama_Custom_Mods\nextjs\cee_cee_mystery\quantum-nexus\groqy\backend\app\api\neural_resources_API.py) depends on:
   - fastapi
   - pydantic
   - typing
@@ -1685,7 +1685,7 @@ The project structure appears to be a complex system with multiple components an
 1. **APIs**: There are multiple APIs in the project, including:
 	* `agentChef_api`: Provides endpoints for data processing and dataset creation.
 	* `gravrag_API`: Provides endpoints for memory management and recall.
-	* `neural_resources_api`: Provides endpoints for neural resource management.
+	* `neural_resources_API`: Provides endpoints for neural resource management.
 	* `oarc_api`: Provides endpoints for chatbot functionality.
 2. **Services**: There are several services that interact with the APIs, including:
 	* `agentChef`: A service that provides data processing and dataset creation functionality.

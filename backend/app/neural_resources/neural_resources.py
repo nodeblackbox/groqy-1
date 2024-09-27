@@ -76,6 +76,11 @@ class GroqLLM(AIAsset):
         return response.model_dump()
 
 class OllamaLLM(AIAsset):
+# The line `    ` in the code snippet you provided is simply a placeholder for indentation. It appears
+# multiple times in the code to maintain the correct indentation levels within the classes and methods
+# defined in the Python script. In Python, proper indentation is crucial for defining the structure of
+# classes, methods, loops, and conditional statements. The actual indentation in the code is typically
+# achieved using spaces or tabs to denote the hierarchy of the code blocks.
     def __init__(self, base_url: str = "http://localhost:11434"):
         self.base_url = base_url
 
