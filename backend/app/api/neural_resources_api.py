@@ -161,3 +161,7 @@ async def get_model_info(provider: str, model: str):
     except Exception as e:
         logging.error(f"Error in get_model_info for {provider}/{model}: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve model info")
+
+
+
+print(hit)

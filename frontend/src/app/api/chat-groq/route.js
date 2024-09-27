@@ -4,47 +4,51 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
     try {
-        const { messages, model, temperature, max_tokens, top_p, stream } = await req.json();
+        console.log('Received request to chat-groq API');
+        const { content, provider, model } = await req.json();
+        console.log(`Request details: provider=${provider}, model=${model}`);
+
         const authHeader = req.headers.get('Authorization') || '';
         const apiKeyMatch = authHeader.match(/^Bearer (.+)$/);
         const apiKey = apiKeyMatch ? apiKeyMatch[1] : '';
 
         if (!apiKey) {
-            return NextResponse.json({ error: 'GROQ API key is missing' }, { status: 401 });
+            console.error('API key is missing');
+            return NextResponse.json({ error: 'API key is missing' }, { status: 401 });
         }
 
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        console.log('Sending request to backend API');
+        const response = await fetch(`http://localhost:8000/neural_resources/create_message/${provider}/${model}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`,
             },
-            body: JSON.stringify({
-                model,
-                messages,
-                temperature,
-                max_tokens,
-                top_p,
-                stream,
-            }),
+            body: JSON.stringify({ content }),
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            console.error('GROQ API error:', errorData);
-            return NextResponse.json({ error: 'Error from GROQ API', details: errorData }, { status: response.status });
+            console.error('Backend API error:', errorData);
+            return NextResponse.json({ error: 'Error from Backend API', details: errorData }, { status: response.status });
         }
 
-        if (stream) {
-            // Handle streaming response if necessary
-            // For simplicity, we'll not handle streaming here
-            return NextResponse.json({ error: 'Streaming not implemented in GROQ API route' }, { status: 501 });
-        } else {
-            const data = await response.json();
-            return NextResponse.json(data);
-        }
+        const data = await response.json();
+        console.log('Received successful response from backend API');
+        return NextResponse.json(data);
     } catch (error) {
         console.error('Error in chat-groq API route:', error);
+
+        if (error instanceof SyntaxError) {
+            console.error('JSON parsing error:', error.message);
+            return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+        }
+
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            console.error('Network error:', error.message);
+            return NextResponse.json({ error: 'Unable to connect to backend API' }, { status: 503 });
+        }
+
         return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
     }
 }
