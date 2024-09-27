@@ -1,16 +1,48 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react'
+
+import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
-import { Cpu, Database, Layers, Zap, Plus, Trash2, ChevronRight, ChevronDown, Play, Edit, Save, Download, Upload, Search, Sun, Moon } from "lucide-react"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogBody,
+} from "@/components/ui/dialog"
+import {
+    Cpu,
+    Database,
+    Layers,
+    Zap,
+    Plus,
+    Trash2,
+    ChevronRight,
+    ChevronDown,
+    Play,
+    Edit,
+    Save,
+    Download,
+    Upload,
+    Search,
+    Sun,
+    Moon,
+    Trash,
+} from 'lucide-react'
 import { useHotkeys } from 'react-hotkeys-hook'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from "@/components/ui/dialog"
 import { toast, Toaster } from 'react-hot-toast'
 
+// TreeNode Component for JSON Structure Builder
 const TreeNode = ({ node, onAdd, onDelete, onToggle, onEdit, searchTerm }) => {
     const [isEditing, setIsEditing] = useState(false)
     const [nodeType, setNodeType] = useState(node.type)
@@ -27,7 +59,8 @@ const TreeNode = ({ node, onAdd, onDelete, onToggle, onEdit, searchTerm }) => {
         setNodeType(e.target.value)
     }
 
-    const matchesSearch = node.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = node?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false
+
 
     return (
         <div className={`ml-4 ${searchTerm && !matchesSearch ? 'hidden' : ''}`}>
@@ -59,7 +92,12 @@ const TreeNode = ({ node, onAdd, onDelete, onToggle, onEdit, searchTerm }) => {
                         className="h-6 py-0 px-1 w-24 bg-gray-800 border border-gray-700 text-white text-xs"
                     />
                 ) : (
-                        <span className={`text-green-400 text-xs ${!matchesSearch && searchTerm ? 'hidden' : ''}`} onDoubleClick={() => setIsEditing(true)}>{node.name}</span>
+                    <span
+                        className={`text-green-400 text-xs cursor-pointer ${!matchesSearch && searchTerm ? 'hidden' : ''}`}
+                        onDoubleClick={() => setIsEditing(true)}
+                    >
+                        {node.name}
+                    </span>
                 )}
                 {node.value !== undefined && node.type !== 'object' && node.type !== 'array' && (
                     isEditing ? (
@@ -71,7 +109,12 @@ const TreeNode = ({ node, onAdd, onDelete, onToggle, onEdit, searchTerm }) => {
                             className="h-6 py-0 px-1 w-24 bg-gray-800 border border-gray-700 text-white text-xs"
                         />
                     ) : (
-                            <span className={`text-yellow-400 text-xs ${!matchesSearch && searchTerm ? 'hidden' : ''}`} onDoubleClick={() => setIsEditing(true)}>: {node.value}</span>
+                        <span
+                            className={`text-yellow-400 text-xs cursor-pointer ${!matchesSearch && searchTerm ? 'hidden' : ''}`}
+                            onDoubleClick={() => setIsEditing(true)}
+                        >
+                            : {node.value}
+                        </span>
                     )
                 )}
                 <div className="ml-auto flex space-x-1">
@@ -103,11 +146,66 @@ const TreeNode = ({ node, onAdd, onDelete, onToggle, onEdit, searchTerm }) => {
 }
 
 export default function ComprehensiveComponent() {
-    // Dark Mode State
-    const [darkMode, setDarkMode] = useState(() => {
-        const stored = localStorage.getItem('darkMode')
-        return stored ? JSON.parse(stored) : false
-    })
+    // State declarations
+    const [darkMode, setDarkMode] = useState(false)
+    const [activeTab, setActiveTab] = useState('structure')
+    const [jsonStructure, setJsonStructure] = useState({})
+    const [searchTerm, setSearchTerm] = useState('')
+    const [aiCommand, setAiCommand] = useState('')
+    const [complexity, setComplexity] = useState(50)
+    const [isRealTime, setIsRealTime] = useState(false)
+    const [aiLogs, setAiLogs] = useState([])
+    const [aiTemplates, setAiTemplates] = useState([])
+    const [databases, setDatabases] = useState([])
+    const [selectedDatabase, setSelectedDatabase] = useState(null)
+    const [queries, setQueries] = useState([])
+    const [currentQuery, setCurrentQuery] = useState('')
+    const [queryResult, setQueryResult] = useState(null)
+    const [queryPage, setQueryPage] = useState(1)
+    const [queryPageSize, setQueryPageSize] = useState(10)
+    const [apiEndpoints, setApiEndpoints] = useState([])
+    const [newEndpoint, setNewEndpoint] = useState({ name: '', url: '', method: 'GET', headers: '{"Content-Type": "application/json"}', payload: '' })
+    const [testUrl, setTestUrl] = useState('')
+    const [testMethod, setTestMethod] = useState('GET')
+    const [testHeaders, setTestHeaders] = useState('{}')
+    const [testPayload, setTestPayload] = useState('')
+    const [testResult, setTestResult] = useState('')
+    const [testHistory, setTestHistory] = useState([])
+    const [authKeys, setAuthKeys] = useState({ openai: '', anthropic: '', groq: '' })
+    const [chatHistory, setChatHistory] = useState([])
+    const [customLayout, setCustomLayout] = useState('default')
+    const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false)
+    const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
+
+    // useEffect hooks for localStorage
+    useEffect(() => {
+        const storedDarkMode = localStorage.getItem('darkMode')
+        if (storedDarkMode) setDarkMode(JSON.parse(storedDarkMode))
+
+        const storedJsonStructure = localStorage.getItem('jsonStructure')
+        if (storedJsonStructure) setJsonStructure(JSON.parse(storedJsonStructure))
+
+        const storedAiLogs = localStorage.getItem('aiLogs')
+        if (storedAiLogs) setAiLogs(JSON.parse(storedAiLogs))
+
+        const storedAiTemplates = localStorage.getItem('aiTemplates')
+        if (storedAiTemplates) setAiTemplates(JSON.parse(storedAiTemplates))
+
+        const storedDatabases = localStorage.getItem('databases')
+        if (storedDatabases) setDatabases(JSON.parse(storedDatabases))
+
+        const storedQueries = localStorage.getItem('queries')
+        if (storedQueries) setQueries(JSON.parse(storedQueries))
+
+        const storedApiEndpoints = localStorage.getItem('apiEndpoints')
+        if (storedApiEndpoints) setApiEndpoints(JSON.parse(storedApiEndpoints))
+
+        const storedTestHistory = localStorage.getItem('testHistory')
+        if (storedTestHistory) setTestHistory(JSON.parse(storedTestHistory))
+
+        const storedAuthKeys = localStorage.getItem('authKeys')
+        if (storedAuthKeys) setAuthKeys(JSON.parse(storedAuthKeys))
+    }, [])
 
     useEffect(() => {
         localStorage.setItem('darkMode', JSON.stringify(darkMode))
@@ -118,50 +216,9 @@ export default function ComprehensiveComponent() {
         }
     }, [darkMode])
 
-    // Tabs State
-    const [activeTab, setActiveTab] = useState('structure')
-
-    // JSON Structure State
-    const [jsonStructure, setJsonStructure] = useState(() => {
-        const stored = localStorage.getItem('jsonStructure')
-        return stored ? JSON.parse(stored) : {
-            type: 'object',
-            name: 'root',
-            isOpen: true,
-            children: [
-                { type: 'string', name: 'name', value: 'John Doe' },
-                { type: 'number', name: 'age', value: 30 },
-                {
-                    type: 'object',
-                    name: 'address',
-                    isOpen: true,
-                    children: [
-                        { type: 'string', name: 'street', value: '123 Main St' },
-                        { type: 'string', name: 'city', value: 'Anytown' },
-                    ],
-                },
-            ],
-        }
-    })
-
-    const [searchTerm, setSearchTerm] = useState('')
-
     useEffect(() => {
         localStorage.setItem('jsonStructure', JSON.stringify(jsonStructure))
     }, [jsonStructure])
-
-    // AI Command Center State
-    const [aiCommand, setAiCommand] = useState('')
-    const [complexity, setComplexity] = useState(50)
-    const [isRealTime, setIsRealTime] = useState(false)
-    const [aiLogs, setAiLogs] = useState(() => {
-        const stored = localStorage.getItem('aiLogs')
-        return stored ? JSON.parse(stored) : []
-    })
-    const [aiTemplates, setAiTemplates] = useState(() => {
-        const stored = localStorage.getItem('aiTemplates')
-        return stored ? JSON.parse(stored) : []
-    })
 
     useEffect(() => {
         localStorage.setItem('aiLogs', JSON.stringify(aiLogs))
@@ -171,27 +228,6 @@ export default function ComprehensiveComponent() {
         localStorage.setItem('aiTemplates', JSON.stringify(aiTemplates))
     }, [aiTemplates])
 
-    // Database Interactions State
-    const [databases, setDatabases] = useState(() => {
-        const stored = localStorage.getItem('databases')
-        return stored ? JSON.parse(stored) : [
-            { id: 1, name: 'ProductsDB', type: 'PostgreSQL', host: 'localhost', port: 5432 },
-            { id: 2, name: 'UsersDB', type: 'MongoDB', host: 'localhost', port: 27017 },
-        ]
-    })
-    const [queries, setQueries] = useState(() => {
-        const stored = localStorage.getItem('queries')
-        return stored ? JSON.parse(stored) : [
-            'SELECT * FROM Users WHERE last_login > \'2023-01-01\'',
-            'UPDATE Products SET stock = stock - 1 WHERE id = 1234',
-            'INSERT INTO Orders (user_id, product_id, quantity) VALUES (1, 2, 3)',
-        ]
-    })
-    const [currentQuery, setCurrentQuery] = useState('')
-    const [queryResult, setQueryResult] = useState(null)
-    const [queryPage, setQueryPage] = useState(1)
-    const [queryPageSize, setQueryPageSize] = useState(10)
-
     useEffect(() => {
         localStorage.setItem('databases', JSON.stringify(databases))
     }, [databases])
@@ -199,29 +235,6 @@ export default function ComprehensiveComponent() {
     useEffect(() => {
         localStorage.setItem('queries', JSON.stringify(queries))
     }, [queries])
-
-    // API Tester State
-    const [apiEndpoints, setApiEndpoints] = useState(() => {
-        const stored = localStorage.getItem('apiEndpoints')
-        return stored ? JSON.parse(stored) : [
-            { id: 1, name: 'Get Users', url: 'https://jsonplaceholder.typicode.com/users', method: 'GET', headers: { 'Content-Type': 'application/json' }, payload: null },
-            { id: 2, name: 'Create Post', url: 'https://jsonplaceholder.typicode.com/posts', method: 'POST', headers: { 'Content-Type': 'application/json' }, payload: { title: '', body: '', userId: 1 } },
-        ]
-    })
-    const [newEndpoint, setNewEndpoint] = useState({ name: '', url: '', method: 'GET', headers: '{"Content-Type": "application/json"}', payload: '' })
-    const [testUrl, setTestUrl] = useState('')
-    const [testMethod, setTestMethod] = useState('GET')
-    const [testHeaders, setTestHeaders] = useState('{}')
-    const [testPayload, setTestPayload] = useState('')
-    const [testResult, setTestResult] = useState('')
-    const [testHistory, setTestHistory] = useState(() => {
-        const stored = localStorage.getItem('testHistory')
-        return stored ? JSON.parse(stored) : []
-    })
-    const [authKeys, setAuthKeys] = useState(() => {
-        const stored = localStorage.getItem('authKeys')
-        return stored ? JSON.parse(stored) : { openai: '', anthropic: '', groq: '' }
-    })
 
     useEffect(() => {
         localStorage.setItem('apiEndpoints', JSON.stringify(apiEndpoints))
@@ -234,16 +247,6 @@ export default function ComprehensiveComponent() {
     useEffect(() => {
         localStorage.setItem('authKeys', JSON.stringify(authKeys))
     }, [authKeys])
-
-    // Chatbot Testing State (Placeholder)
-    const [chatHistory, setChatHistory] = useState([])
-
-    // UI Customization State
-    const [customLayout, setCustomLayout] = useState('default')
-
-    // Dialog States
-    const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false)
-    const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
 
     // Hotkeys
     useHotkeys('ctrl+s, command+s', (event) => {
@@ -291,6 +294,7 @@ export default function ComprehensiveComponent() {
     }
 
     const handleImportJSON = (importedJSON) => {
+        if (!importedJSON) return
         try {
             const parsed = JSON.parse(importedJSON)
             setJsonStructure(parsed)
@@ -327,7 +331,7 @@ export default function ComprehensiveComponent() {
             return
         }
         // Mock AI processing
-        const response = `AI Response to "${aiCommand}" with Gravitational pull ${complexity}% and ${isRealTime ? 'real-time' : 'batch'} processing.`
+        const response = `AI Response to "${aiCommand}" with complexity ${complexity}% and ${isRealTime ? 'real-time' : 'batch'} processing.`
         setAiLogs([...aiLogs, { command: aiCommand, response, timestamp: new Date().toLocaleString() }])
         setAiCommand('')
         toast.success('AI Command Executed')
@@ -351,7 +355,7 @@ export default function ComprehensiveComponent() {
 
     // Database Interactions Handlers
     const addDatabase = () => {
-        const newDb = { id: Date.now(), name: 'NewDB', type: 'MySQL', host: 'localhost', port: 3306 }
+        const newDb = { id: Date.now(), name: 'NewDB', type: 'MySQL', host: 'localhost', port: 3306, tables: ['table1', 'table2'] }
         setDatabases([...databases, newDb])
         toast.success('Database Added')
     }
@@ -359,6 +363,13 @@ export default function ComprehensiveComponent() {
     const deleteDatabaseHandler = (dbId) => {
         setDatabases(databases.filter(db => db.id !== dbId))
         toast.success('Database Deleted')
+        if (selectedDatabase && selectedDatabase.id === dbId) {
+            setSelectedDatabase(null)
+        }
+    }
+
+    const selectDatabase = (db) => {
+        setSelectedDatabase(db)
     }
 
     const executeQuery = () => {
@@ -372,11 +383,20 @@ export default function ComprehensiveComponent() {
             toast.error('Unsupported Query Type')
             return
         }
-        const simulatedResult = [
-            { id: 1, name: 'Alice', last_login: '2023-05-10' },
-            { id: 2, name: 'Bob', last_login: '2023-06-15' },
-            // Add more mock data as needed
-        ]
+        // Mock result based on selected database
+        let simulatedResult = []
+        if (selectedDatabase) {
+            simulatedResult = selectedDatabase.tables.map((table, index) => ({
+                id: index + 1,
+                name: `${table}_name_${index + 1}`,
+                value: Math.floor(Math.random() * 100),
+            }))
+        } else {
+            simulatedResult = [
+                { id: 1, name: 'Alice', value: 50 },
+                { id: 2, name: 'Bob', value: 70 },
+            ]
+        }
         setQueryResult(simulatedResult)
         setQueries([...queries, currentQuery])
         setCurrentQuery('')
@@ -614,7 +634,7 @@ export default function ComprehensiveComponent() {
                                 </Button>
                             </div>
                             <div className="flex items-center justify-between mb-4">
-                                <span>Gravitational pull: {complexity}%</span>
+                                <span>Complexity Level: {complexity}%</span>
                                 <Slider
                                     max={100}
                                     step={1}
@@ -630,6 +650,35 @@ export default function ComprehensiveComponent() {
                                     onCheckedChange={setIsRealTime}
                                 />
                             </div>
+                            {/* Chatbot Interface */}
+                            <div className="bg-gray-800 p-4 rounded-lg max-h-64 overflow-auto">
+                                <h3 className="text-lg mb-2">Chatbot:</h3>
+                                <div className="space-y-2">
+                                    {chatHistory.map((chat, index) => (
+                                        <div key={index}>
+                                            <p className="text-sm"><strong>You:</strong> {chat.userMessage}</p>
+                                            <p className="text-sm"><strong>Bot:</strong> {chat.botMessage}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                                <Input
+                                    className="mt-2 bg-gray-700 border-gray-600 text-white"
+                                    placeholder="Type a message..."
+                                    value={aiCommand}
+                                    onChange={(e) => setAiCommand(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleExecuteAI()
+                                            setChatHistory([...chatHistory, { userMessage: aiCommand, botMessage: `Mock response to "${aiCommand}"` }])
+                                            setAiCommand('')
+                                        }
+                                    }}
+                                />
+                                <Button className="mt-2 bg-red-600 hover:bg-red-700" onClick={() => setChatHistory([])}>
+                                    Clear Chat
+                                </Button>
+                            </div>
+                            {/* AI Logs */}
                             <div className="bg-gray-800 p-4 rounded-lg max-h-64 overflow-auto">
                                 <h3 className="text-lg mb-2">AI Logs:</h3>
                                 <ul className="space-y-2">
@@ -673,17 +722,27 @@ export default function ComprehensiveComponent() {
                             </div>
                             <ul className="space-y-2">
                                 {databases.map(db => (
-                                    <li key={db.id} className="flex items-center justify-between bg-gray-800 p-2 rounded">
+                                    <li key={db.id} className="flex items-center justify-between bg-gray-800 p-2 rounded cursor-pointer" onClick={() => selectDatabase(db)}>
                                         <div>
                                             <p className="font-semibold">{db.name}</p>
                                             <p className="text-sm">{db.type} - {db.host}:{db.port}</p>
                                         </div>
                                         <Button variant="ghost" size="sm" onClick={() => deleteDatabaseHandler(db.id)}>
-                                            <Trash2 size={14} />
+                                            <Trash size={14} />
                                         </Button>
                                     </li>
                                 ))}
                             </ul>
+                            {selectedDatabase && (
+                                <div className="mt-4">
+                                    <h3 className="text-lg font-semibold">Tables in {selectedDatabase.name}:</h3>
+                                    <ul className="space-y-1">
+                                        {selectedDatabase.tables.map((table, index) => (
+                                            <li key={index} className="text-sm text-gray-400">{table}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
                         <div className="bg-black p-6 rounded-xl">
                             <div className="flex justify-between items-center mb-4">
@@ -695,8 +754,8 @@ export default function ComprehensiveComponent() {
                             <Input
                                 as="textarea"
                                 rows={4}
-                                className="bg-gray-800 border border-gray-700 text-white p-2 rounded w-full mb-4"
-                                placeholder="Enter your SQL query here..."
+                                className="bg-gray-800 border-gray-700 text-white p-2 rounded w-full mb-4"
+                                placeholder="Enter your SQL SELECT query here..."
                                 value={currentQuery}
                                 onChange={(e) => setCurrentQuery(e.target.value)}
                             />
@@ -836,8 +895,8 @@ export default function ComprehensiveComponent() {
                                         <div>
                                             <p className="font-semibold">{ep.name}</p>
                                             <p className="text-sm">{ep.method} - {ep.url}</p>
-                                            {ep.payload && <pre className="text-xs bg-gray-700 p-1 rounded mt-1">{JSON.stringify(ep.payload, null, 2)}</pre>}
-                                            {ep.headers && <pre className="text-xs bg-gray-700 p-1 rounded mt-1">{JSON.stringify(ep.headers, null, 2)}</pre>}
+                                            {ep.payload && <pre className="text-xs bg-gray-700 p-1 rounded mt-1">{JSON.stringify(JSON.parse(ep.payload), null, 2)}</pre>}
+                                            {ep.headers && <pre className="text-xs bg-gray-700 p-1 rounded mt-1">{JSON.stringify(JSON.parse(ep.headers), null, 2)}</pre>}
                                         </div>
                                         <Button variant="ghost" size="sm" onClick={() => deleteApiEndpoint(ep.id)}>
                                             <Trash2 size={14} />
@@ -878,7 +937,7 @@ export default function ComprehensiveComponent() {
                     <DialogFooter>
                         <Button onClick={() => {
                             const templateName = prompt('Enter Template Name:')
-                            handleSaveTemplate(templateName)
+                            if (templateName) handleSaveTemplate(templateName)
                         }}>
                             Save
                         </Button>
