@@ -5,3 +5,4 @@
 /backend/app/.venv/
 *.pyc
 __pycache__/*
+package-lock.json
