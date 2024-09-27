@@ -652,3 +652,4 @@ function getHeaderTitle(view) {
             return 'Quantum Nexus';
     }
 }
+

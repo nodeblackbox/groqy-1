@@ -1,11 +1,12 @@
-// src/app/components/TopNavigation.jsx
-// Written by: @Borch
-// fitted for dashboardV9 <- cloned from dashboardV7, and modulated with gpt4o readme.md suggestions
+// src/components/TopNavigation.jsx
+
+'use client';
 
 import React from 'react';
 import { Sun, Moon, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import PropTypes from 'prop-types';
 
 export default function TopNavigation({ toggleDarkMode, toggleSettings }) {
     return (
@@ -16,8 +17,7 @@ export default function TopNavigation({ toggleDarkMode, toggleSettings }) {
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button variant="ghost" onClick={toggleDarkMode} aria-label="Toggle Dark Mode">
-                                <Sun className="h-5 w-5 dark:hidden" />
-                                <Moon className="h-5 w-5 hidden dark:inline" />
+                                <Sun className="h-5 w-5" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>Toggle Dark Mode</TooltipContent>
@@ -35,3 +35,8 @@ export default function TopNavigation({ toggleDarkMode, toggleSettings }) {
         </div>
     );
 }
+
+TopNavigation.propTypes = {
+    toggleDarkMode: PropTypes.func.isRequired,
+    toggleSettings: PropTypes.func.isRequired,
+};

@@ -7,7 +7,7 @@ Users can create custom agents to extend the functionality of the agentChef pack
 To create a custom agent, inherit from the `CustomAgentBase` class and implement the required methods:
 
 ```python
-from agentChef.cutlery import CustomAgentBase
+from cutlery import CustomAgentBase
 import pandas as pd
 
 class MyCustomAgent(CustomAgentBase):
