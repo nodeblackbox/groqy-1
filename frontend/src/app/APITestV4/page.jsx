@@ -41,7 +41,6 @@ import {
 } from 'lucide-react'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { toast, Toaster } from 'react-hot-toast'
-
 // TreeNode Component for JSON Structure Builder
 const TreeNode = ({ node, onAdd, onDelete, onToggle, onEdit, searchTerm }) => {
     const [isEditing, setIsEditing] = useState(false)
@@ -60,7 +59,6 @@ const TreeNode = ({ node, onAdd, onDelete, onToggle, onEdit, searchTerm }) => {
     }
 
     const matchesSearch = node?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false
-
 
     return (
         <div className={`ml-4 ${searchTerm && !matchesSearch ? 'hidden' : ''}`}>
@@ -145,9 +143,11 @@ const TreeNode = ({ node, onAdd, onDelete, onToggle, onEdit, searchTerm }) => {
     )
 }
 
+
+
 export default function ComprehensiveComponent() {
     // State declarations
-    const [darkMode, setDarkMode] = useState(false)
+    const [darkMode, setDarkMode] = useState(true)
     const [activeTab, setActiveTab] = useState('structure')
     const [jsonStructure, setJsonStructure] = useState({})
     const [searchTerm, setSearchTerm] = useState('')
@@ -176,6 +176,7 @@ export default function ComprehensiveComponent() {
     const [customLayout, setCustomLayout] = useState('default')
     const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false)
     const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
+    const [showAPIManager, setShowAPIManager] = useState(false)
 
     // useEffect hooks for localStorage
     useEffect(() => {
@@ -473,6 +474,202 @@ export default function ComprehensiveComponent() {
         setIsAuthDialogOpen(false)
     }
 
+    // EnhancedAPIManager Component
+    const EnhancedAPIManager = ({ onClose }) => {
+        const [apiKeys, setApiKeys] = useState({
+            openai: '',
+            groq: '',
+            anthropic: ''
+        })
+        const [showKeys, setShowKeys] = useState({
+            openai: false,
+            groq: false,
+            anthropic: false
+        })
+        const [selectedProvider, setSelectedProvider] = useState('openai')
+        const [requestType, setRequestType] = useState('GET')
+        const [responseData, setResponseData] = useState('')
+        const [responseHeaders, setResponseHeaders] = useState('')
+
+        const apiEndpoints = {
+            setApiKey: '/neural_resources/set_api_key',
+            getAvailableModels: '/neural_resources/available_models'
+        }
+
+        useEffect(() => {
+            const storedKeys = localStorage.getItem('apiKeys')
+            if (storedKeys) {
+                setApiKeys(JSON.parse(storedKeys))
+            }
+        }, [])
+
+        const handleInputChange = (service, value) => {
+            setApiKeys(prev => ({ ...prev, [service]: value }))
+        }
+
+        const toggleShowKey = (service) => {
+            setShowKeys(prev => ({ ...prev, [service]: !prev[service] }))
+        }
+
+        const saveKeys = () => {
+            localStorage.setItem('apiKeys', JSON.stringify(apiKeys))
+            toast.success('API keys saved successfully!')
+        }
+
+        const formatPayload = (payload) => {
+            return JSON.stringify(payload, null, 2)
+        }
+
+        const simulateRequest = async () => {
+            setResponseData('Loading...')
+            setResponseHeaders('')
+
+            // Simulate API request
+            await new Promise(resolve => setTimeout(resolve, 1000))
+
+            if (requestType === 'GET') {
+                setResponseData(JSON.stringify({ available_models: ["openai", "groq", "anthropic"] }, null, 2))
+            } else {
+                setResponseData(JSON.stringify({ message: `API key updated for provider ${selectedProvider}` }, null, 2))
+            }
+
+            setResponseHeaders(JSON.stringify({
+                'Content-Type': 'application/json',
+                'X-Request-ID': '1234567890',
+                'Date': new Date().toUTCString()
+            }, null, 2))
+
+            toast.success('Request simulated successfully!')
+        }
+
+        const renderKeyInput = (service, label) => (
+            <div className="mb-4">
+                <Label htmlFor={service} className="block mb-2 text-sm font-medium text-gray-300">
+                    {label}
+                </Label>
+                <div className="relative">
+                    <Input
+                        type={showKeys[service] ? 'text' : 'password'}
+                        id={service}
+                        value={apiKeys[service]}
+                        onChange={(e) => handleInputChange(service, e.target.value)}
+                        className="bg-gray-700 text-white border-gray-600 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder={`Enter your ${label}`}
+                    />
+                    <Button
+                        type="button"
+                        onClick={() => toggleShowKey(service)}
+                        className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-400 hover:text-white"
+                    >
+                        {showKeys[service] ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </Button>
+                </div>
+            </div>
+        )
+
+        return (
+            <div className="min-h-screen bg-gray-900 p-8">
+                <Button onClick={onClose} className="mb-4 bg-gray-700 hover:bg-gray-600">
+                    Back
+                </Button>
+                <Card className="w-full max-w-4xl mx-auto bg-gray-800 text-white">
+                    <CardHeader>
+                        <CardTitle className="text-3xl font-bold flex items-center text-blue-400">
+                            <Database className="mr-2" /> Neural Resources API Manager
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Tabs defaultValue="keys" className="space-y-4">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="keys">API Keys</TabsTrigger>
+                                <TabsTrigger value="test">Test Requests</TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="keys">
+                                <form onSubmit={(e) => { e.preventDefault(); saveKeys(); }} className="space-y-4">
+                                    {renderKeyInput('openai', 'OpenAI API Key')}
+                                    {renderKeyInput('groq', 'Groq API Key')}
+                                    {renderKeyInput('anthropic', 'Anthropic API Key')}
+                                    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+                                        <Save className="mr-2" /> Save API Keys
+                                    </Button>
+                                </form>
+                            </TabsContent>
+
+                            <TabsContent value="test" className="space-y-4">
+                                <div className="flex space-x-4">
+                                    <Select value={requestType} onValueChange={(value) => setRequestType(value)}>
+                                        <SelectTrigger className="w-[180px] bg-gray-700 text-white">
+                                            <SelectValue placeholder="Select request type">{requestType}</SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="GET">GET</SelectItem>
+                                            <SelectItem value="POST">POST</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {requestType === 'POST' && (
+                                        <Select value={selectedProvider} onValueChange={(value) => setSelectedProvider(value)}>
+                                            <SelectTrigger className="w-[180px] bg-gray-700 text-white">
+                                                <SelectValue placeholder="Select provider">{selectedProvider}</SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="openai">OpenAI</SelectItem>
+                                                <SelectItem value="groq">Groq</SelectItem>
+                                                <SelectItem value="anthropic">Anthropic</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                    <Button onClick={simulateRequest} className="bg-green-600 hover:bg-green-700">
+                                        <Play className="mr-2" /> Test Request
+                                    </Button>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <h3 className="text-lg font-semibold mb-2 flex items-center">
+                                            <Send className="mr-2" /> Request Details
+                                        </h3>
+                                        <Card className="bg-gray-700 p-4">
+                                            <p><strong>Endpoint:</strong> {requestType === 'GET' ? apiEndpoints.getAvailableModels : apiEndpoints.setApiKey}</p>
+                                            <p><strong>Method:</strong> <span className={`inline-block px-2 py-1 rounded ${requestType === 'GET' ? 'bg-blue-600' : 'bg-green-600'}`}>{requestType}</span></p>
+                                            {requestType === 'POST' && (
+                                                <div>
+                                                    <p><strong>Payload:</strong></p>
+                                                    <pre className="bg-gray-800 p-2 rounded mt-2 overflow-x-auto">
+                                                        {formatPayload({
+                                                            provider: selectedProvider,
+                                                            api_key: "your_new_api_key_here"
+                                                        })}
+                                                    </pre>
+                                                </div>
+                                            )}
+                                        </Card>
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-lg font-semibold mb-2 flex items-center">
+                                            <Code className="mr-2" /> Response
+                                        </h3>
+                                        <Card className="bg-gray-700 p-4">
+                                            <p><strong>Headers:</strong></p>
+                                            <pre className="bg-gray-800 p-2 rounded mt-2 overflow-x-auto">
+                                                {responseHeaders || 'No response yet'}
+                                            </pre>
+                                            <p className="mt-4"><strong>Body:</strong></p>
+                                            <pre className="bg-gray-800 p-2 rounded mt-2 overflow-x-auto">
+                                                {responseData || 'No response yet'}
+                                            </pre>
+                                        </Card>
+                                    </div>
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
     // Render Component
     return (
         <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-white'} text-white overflow-hidden`}>
@@ -530,7 +727,7 @@ export default function ComprehensiveComponent() {
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" className="h-12 w-12" onClick={() => setIsAuthDialogOpen(true)}>
+                            <Button variant="ghost" className="h-12 w-12" onClick={() => setShowAPIManager(true)}>
                                 <Edit className="w-6 h-6 text-red-400" />
                             </Button>
                         </TooltipTrigger>
@@ -547,12 +744,11 @@ export default function ComprehensiveComponent() {
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent side="right">
-                            <p>{darkMode ? 'Light Mode' : 'Dark Mode'}</p>
+                            <p>{darkMode ? 'Dark Mode' : 'Light Mode'}</p>
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
             </div>
-
             {/* Main Content */}
             <div className={`flex-1 flex flex-col p-8 overflow-auto ${darkMode ? 'bg-gray-900' : 'bg-gray-100'} text-white`}>
                 <h1 className="text-4xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
