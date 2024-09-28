@@ -7,11 +7,6 @@ from api.agentChef_api import router as agentchef_router
 from api.gravrag_API import router as gravrag_router
 from api.neural_resources_api import router as neural_resources_router  # New neural resources router
 
-
-
-
-
-
 app = FastAPI(title="Cogenesis Backend API", description="API for managing AI agents and models")
 
 # Configure CORS
