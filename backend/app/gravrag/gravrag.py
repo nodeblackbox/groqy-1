@@ -2,10 +2,11 @@ import time
 import math
 import uuid
 import logging
+import asyncio
 from typing import List, Dict, Any, Optional
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition
+from qdrant_client.models import Distance, VectorParams, PointStruct
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -25,7 +26,7 @@ class MemoryPacket:
         # Default metadata if not provided
         self.metadata.setdefault("timestamp", time.time())
         self.metadata.setdefault("recall_count", 0)
-        self.metadata.setdefault("memetic_similarity", 1.0)  # Could be refined over time
+        self.metadata.setdefault("memetic_similarity", 1.0)  # Can be refined over time
         self.metadata.setdefault("semantic_relativity", 1.0)  # Set after query similarity
         self.metadata.setdefault("gravitational_pull", self.calculate_gravitational_pull())
         self.metadata.setdefault("spacetime_coordinate", self.calculate_spacetime_coordinate())
@@ -41,7 +42,6 @@ class MemoryPacket:
         
         # Calculate gravitational pull
         gravitational_pull = vector_magnitude * (1 + math.log1p(recall_count)) * memetic_similarity * semantic_relativity
-        
         self.metadata["gravitational_pull"] = gravitational_pull
         return gravitational_pull
 
@@ -114,49 +114,63 @@ class MemoryManager:
         Ensure that the Qdrant collection is set up for vectors with cosine distance.
         """
         try:
+            # Check if the collection exists, otherwise create it
             self.qdrant_client.get_collection(self.collection_name)
-            logger.info(f"Collection {self.collection_name} exists.")
+            logger.info(f"Collection '{self.collection_name}' exists.")
         except Exception:
-            logger.info(f"Creating collection {self.collection_name}.")
+            logger.info(f"Creating collection '{self.collection_name}'.")
             self.qdrant_client.create_collection(
                 collection_name=self.collection_name,
-                vectors_config=VectorParams(size=self.model.get_sentence_embedding_dimension(), distance=Distance.COSINE)
+                vectors_config=VectorParams(
+                    size=self.model.get_sentence_embedding_dimension(),
+                    distance=Distance.COSINE
+                )
             )
 
     async def create_memory(self, content: str, metadata: Dict[str, Any]):
         """
-        Create a memory from content, vectorize it, and store in Qdrant.
+        Create a memory from content, vectorize it, and store it in Qdrant asynchronously.
         """
+        loop = asyncio.get_event_loop()
         try:
-            vector = self.model.encode(content).tolist()
+            # Vectorize the content using the SentenceTransformer model
+            vector = await loop.run_in_executor(None, self.model.encode, content)
+            vector = vector.tolist()
             memory_packet = MemoryPacket(vector=vector, metadata=metadata)
             point_id = str(uuid.uuid4())
             
-            # Upsert the memory packet to the collection
-            self.qdrant_client.upsert(
-                collection_name=self.collection_name,
-                points=[PointStruct(id=point_id, vector=vector, payload=memory_packet.to_payload())]
+            # Upsert (insert or update) the memory packet in Qdrant
+            await loop.run_in_executor(
+                None,
+                self.qdrant_client.upsert,
+                self.collection_name,
+                [PointStruct(id=point_id, vector=vector, payload=memory_packet.to_payload())]
             )
             logger.info(f"Memory created successfully with ID: {point_id}")
         except Exception as e:
             logger.error(f"Failed to create memory: {e}")
             raise
 
-    async def recall_memory(self, query_content: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    async def recall_memory(self, query_content: str, top_k: int = 5):
         """
-        Recall a memory based on query content and return top K most relevant memories.
+        Recall a memory based on query content and return the top K most relevant memories.
         """
+        loop = asyncio.get_event_loop()
         try:
-            query_vector = self.model.encode(query_content).tolist()
+            # Vectorize the query content
+            query_vector = await loop.run_in_executor(None, self.model.encode, query_content)
+            query_vector = query_vector.tolist()
 
-            # Perform semantic search
-            results = self.qdrant_client.search(
-                collection_name=self.collection_name,
-                query_vector=query_vector,
+            # Perform a semantic search in Qdrant using the query vector and top_k limit
+            results = await loop.run_in_executor(
+                None,
+                self.qdrant_client.search,
+                self.collection_name,
+                query_vector,
                 limit=top_k
             )
 
-            # Format the results
+            # Convert results to MemoryPacket instances and return their metadata
             return [MemoryPacket.from_payload(hit.payload).metadata for hit in results]
         except Exception as e:
             logger.error(f"Failed to recall memory: {e}")
@@ -164,20 +178,28 @@ class MemoryManager:
 
     async def prune_memories(self):
         """
-        Prune low relevance memories based on their gravitational pull and spacetime coordinates.
+        Prune low relevance memories based on their gravitational pull and spacetime coordinates asynchronously.
         """
+        loop = asyncio.get_event_loop()
         try:
-            total_points = self.qdrant_client.count(self.collection_name).count
-            if total_points > 1000000:  # Arbitrary limit
-                points = self.qdrant_client.scroll(collection_name=self.collection_name, limit=1000)
+            # Get total points in the collection
+            total_points = await loop.run_in_executor(None, self.qdrant_client.count, self.collection_name)
+            total_points = total_points.count
+
+            if total_points > 1000000:  # Arbitrary limit for memory pruning
+                points = await loop.run_in_executor(None, self.qdrant_client.scroll, self.collection_name, 1000)
                 low_relevance_points = [
                     p.id for p in points if p.payload['metadata']['gravitational_pull'] < GRAVITATIONAL_THRESHOLD
                 ]
+
+                # Delete low relevance points
                 if low_relevance_points:
-                    self.qdrant_client.delete(collection_name=self.collection_name, points_selector=low_relevance_points)
+                    await loop.run_in_executor(
+                        None,
+                        self.qdrant_client.delete,
+                        self.collection_name,
+                        low_relevance_points
+                    )
         except Exception as e:
             logger.error(f"Failed to prune memories: {e}")
             raise
-
-# Instantiate the memory manager
-Knowledge = MemoryManager()
