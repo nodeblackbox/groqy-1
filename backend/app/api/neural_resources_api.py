@@ -78,29 +78,5 @@ async def get_model_info(model: str):
         logger.info(f"Retrieved model info for model: {model}")
         return info  # Return the full model JSON
     except Exception as e:
-<<<<<<< HEAD
-        logging.error(f"Error in create_message for {provider} using {model}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to create message")
-
-@router.get("/model_info/{provider}/{model}")
-async def get_model_info(provider: str, model: str):
-    """
-    Retrieve model information from the model_data loaded in neural_resources.py.
-    """
-    try:
-        # Return mock model info based on what you'd like to display
-        return {"provider": provider, "model": model, "info": "No detailed info available"}
-    except Exception as e:
-        logging.error(f"Error in get_model_info for {provider}/{model}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve model info")
-
-
-
-print(hit)
-=======
         logger.exception(f"Unexpected error in get_model_info: {str(e)}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
-<<<<<<< HEAD
->>>>>>> e47813ed68303a45b7e32753eef8dcbbe5c08655
-=======
->>>>>>> ea94a73db99edcb4f95c6c9869d046ec8d7f48ec
