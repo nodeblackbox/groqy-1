@@ -1,0 +1,30 @@
+{
+	"llama3-groq-70b-8192-tool-use-preview": {
+      "provider": "groq",
+      "type": "text-generation",
+      "capabilities": [
+        "text-generation",
+        "conversation",
+        "code-generation",
+        "function-calling"
+      ],
+      "temperature": 1.0,
+      "max_tokens": 8192,
+      "context_window": 8192,
+      "description": "Large model optimized for tool use and function calling tasks."
+    },
+    "llama3-groq-8b-8192-tool-use-preview": {
+      "provider": "groq",
+      "type": "text-generation",
+      "capabilities": [
+        "text-generation",
+        "conversation",
+        "code-generation",
+        "function-calling"
+      ],
+      "temperature": 1.0,
+      "max_tokens": 8192,
+      "context_window": 8192,
+      "description": "Efficient model for tool use and function calling with a smaller footprint."
+    }
+}

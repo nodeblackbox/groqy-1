@@ -8,7 +8,8 @@ import json
 # Import necessary components for AgentChef
 from agentchef.cutlery import DatasetManager, TemplateManager, FileHandler, DocumentLoader, PromptManager
 from agentchef.chef import DatasetKitchen, DataCollectionAgent, DataDigestionAgent, DataGenerationAgent, DataCleaningAgent, DataAugmentationAgent
-from agentchef.agentchef_resources import LLMManager
+
+from backend.app.agentchef_resources.agentchef_resources import LLMManager
 from huggingface_hub import HfApi
 
 # Define APIRouter for agentChef API

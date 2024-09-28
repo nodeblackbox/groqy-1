@@ -9,7 +9,7 @@ from groq import Groq
 
 # Construct the absolute path to the neural_resources.json file
 current_dir = os.path.dirname(os.path.abspath(__file__))
-file_path = os.path.join(current_dir, '../neural_resources/neural_resources.json')
+file_path = os.path.join(current_dir, '../agentchef_resources/agentchef_resources.json')
 
 # Verify if the file exists
 if not os.path.exists(file_path):
