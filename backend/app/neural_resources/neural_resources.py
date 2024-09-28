@@ -11,24 +11,6 @@ import requests
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Get the absolute path of the current file
-current_directory = os.path.dirname(os.path.abspath(__file__))
-
-# Create the path to neural_resources.json
-json_path = os.path.join(current_directory, 'neural_resources.json')
-
-# Load model data from JSON file
-try:
-    with open(json_path, 'r') as f:
-        model_data = json.load(f)
-    logger.info(f"Successfully loaded model data from {json_path}")
-except FileNotFoundError:
-    logger.error(f"neural_resources.json not found at {json_path}")
-    model_data = {}
-except json.JSONDecodeError:
-    logger.error(f"Error decoding neural_resources.json. Please check the file format.")
-    model_data = {}
-
 class AIAsset:
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -54,7 +36,7 @@ class AnthropicLLM(AIAsset):
             response = self.client.messages.create(
                 model=model,
                 messages=[{"role": "user", "content": message}],
-                max_tokens=model_data.get('models', {}).get(model, {}).get('max_tokens', 1000)
+                max_tokens=1000
             )
             logger.info(f"Successfully created message with Anthropic model: {model}")
             return response.model_dump()
@@ -80,7 +62,7 @@ class OpenAILLM(AIAsset):
             response = self.client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": message}],
-                max_tokens=model_data.get('models', {}).get(model, {}).get('max_tokens', 1000)
+                max_tokens=1000
             )
             logger.info(f"Successfully created message with OpenAI model: {model}")
             return response.model_dump()
@@ -106,7 +88,7 @@ class GroqLLM(AIAsset):
             response = self.client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": message}],
-                max_tokens=model_data.get('models', {}).get(model, {}).get('max_tokens', 1000)
+                max_tokens=1000
             )
             logger.info(f"Successfully created message with Groq model: {model}")
             return response.model_dump()
@@ -150,6 +132,7 @@ class LLMManager:
     def __init__(self):
         self.llm_models: Dict[str, AIAsset] = {}
         self.overridden_keys: Dict[str, str] = {}
+        self.models_cache = {}  # Cache to store fetched model info
         self._initialize_models()
         logger.info("LLMManager initialized")
 
@@ -157,7 +140,9 @@ class LLMManager:
         logger.debug("Initializing AI models")
         for provider, api_key in self._load_api_keys().items():
             if api_key:
-                self.llm_models[provider] = self._create_llm_instance(provider, api_key)
+                llm_instance = self._create_llm_instance(provider, api_key)
+                if llm_instance:
+                    self.llm_models[provider] = llm_instance
         self.llm_models["ollama"] = OllamaLLM()
         logger.info(f"Initialized models: {', '.join(self.llm_models.keys())}")
 
@@ -177,10 +162,6 @@ class LLMManager:
 
     def _create_llm_instance(self, provider: str, api_key: str) -> Optional[AIAsset]:
         logger.debug(f"Creating LLM instance for provider: {provider}")
-        if not api_key:
-            logger.warning(f"No API key provided for {provider}. Skipping initialization.")
-            return None
-        
         if provider == "anthropic":
             return AnthropicLLM(api_key)
         elif provider == "openai":
@@ -198,6 +179,45 @@ class LLMManager:
             raise ValueError("Both provider and api_key must be non-empty strings")
         self.overridden_keys[provider] = api_key
         self._initialize_models()
+
+    def get_available_models(self) -> List[str]:
+        models = []
+
+        # Fetch Ollama models
+        try:
+            logger.info("Fetching Ollama models")
+            ollama_response = requests.get("http://localhost:11434/api/tags")
+            if ollama_response.status_code == 200:
+                ollama_data = ollama_response.json()
+                ollama_models = [model['name'] for model in ollama_data.get('models', [])]
+                models.extend(ollama_models)
+            else:
+                logger.error(f"Failed to fetch Ollama models: {ollama_response.status_code}")
+        except Exception as e:
+            logger.error(f"Error fetching Ollama models: {str(e)}")
+
+        # Fetch Groq models (ensure this section is correctly handling Groq models)
+        try:
+            logger.info("Fetching Groq models")
+            groq_api_key = os.getenv("GROQ_API_KEY")
+            groq_response = requests.get(
+                "https://api.groq.com/openai/v1/models",
+                headers={
+                    "Authorization": f"Bearer {groq_api_key}",
+                    "Content-Type": "application/json"
+                }
+            )
+            if groq_response.status_code == 200:
+                groq_models_data = groq_response.json()
+                groq_models = groq_models_data.get("data", [])
+                models.extend([model['id'] for model in groq_models])
+            else:
+                logger.error(f"Failed to fetch Groq models: {groq_response.status_code}")
+        except Exception as e:
+            logger.error(f"Error fetching Groq models: {str(e)}")
+
+        logger.debug(f"Available models: {', '.join(models)}")
+        return models
 
     def route_query(self, message: str, model: Optional[str] = None) -> Dict[str, Any]:
         logger.info(f"Routing query to {'specified model: ' + model if model else 'default model'}")
@@ -234,26 +254,51 @@ class LLMManager:
         logger.error("No available models could process the request")
         return {"error": "No available models could process the request"}
 
-    def get_available_models(self) -> List[str]:
-        logger.info("Fetching available models")
-        models = list(model_data.get('models', {}).keys())
-        logger.debug(f"Available models: {', '.join(models)}")
-        return models
-
     def get_model_info(self, model: str) -> Dict[str, Any]:
         logger.info(f"Retrieving model info for model: {model}")
-        if model not in model_data.get('models', {}):
-            logger.error(f"Model {model} not found in model_data")
-            return {"error": f"Model {model} not found"}
         
-        model_info = model_data['models'][model]
-        info = {
-            "model": model,
-            "type": model_info.get('type', 'Unknown'),
-            "capabilities": model_info.get('capabilities', []),
-            "max_tokens": model_info.get('max_tokens', 'Unknown'),
-            "context_window": model_info.get('context_window', 'Unknown'),
-            "description": model_info.get('description', 'No description available')
-        }
-        logger.info(f"Successfully retrieved info for {model}")
-        return info
+        # Check if the model info is cached
+        if model in self.models_cache:
+            logger.debug(f"Model info for {model} retrieved from cache.")
+            return self.models_cache[model]
+
+        try:
+            # Fetch from Ollama
+            ollama_models = self.get_available_models()
+            if model in ollama_models:
+                logger.info(f"Fetching model info from Ollama for model: {model}")
+                url = f"{self.llm_models['ollama'].base_url}/api/models/{model}"
+                ollama_response = requests.get(url)
+                if ollama_response.status_code == 200:
+                    model_info = ollama_response.json()
+                    self.models_cache[model] = model_info  # Cache the result
+                    logger.debug(f"Fetched Ollama model info: {model_info}")
+                    return model_info
+                else:
+                    logger.error(f"Failed to fetch Ollama model info: {ollama_response.status_code}, Response: {ollama_response.text}")
+            
+            # Fetch from Groq
+            groq_api_key = self.overridden_keys.get('groq')
+            if groq_api_key:
+                logger.info(f"Fetching model info from Groq for model: {model}")
+                url = f"https://api.groq.com/openai/v1/models/{model}"
+                groq_response = requests.get(
+                    url,
+                    headers={
+                        "Authorization": f"Bearer {groq_api_key}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                if groq_response.status_code == 200:
+                    model_info = groq_response.json()
+                    self.models_cache[model] = model_info  # Cache the result
+                    logger.debug(f"Fetched Groq model info: {model_info}")
+                    return model_info
+                else:
+                    logger.error(f"Failed to fetch Groq model info: {groq_response.status_code}, Response: {groq_response.text}")
+        except Exception as e:
+            logger.error(f"Error fetching model info for {model}: {str(e)}")
+            return {"error": f"Model {model} not found or failed to retrieve info."}
+        
+        logger.error(f"Model {model} not found in any provider.")
+        return {"error": f"Model {model} not found in any provider."}
