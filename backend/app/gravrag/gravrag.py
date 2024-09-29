@@ -2,32 +2,29 @@ import time
 import math
 import uuid
 import logging
-import asyncio
 from typing import List, Dict, Any, Optional
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
+from sklearn.metrics.pairwise import cosine_similarity
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Gravitational constants and thresholds
-GRAVITATIONAL_THRESHOLD = 1e-5
+GRAVITATIONAL_THRESHOLD = 1e-5  # This can be adjusted based on system requirements
 
 class MemoryPacket:
     def __init__(self, vector: List[float], metadata: Dict[str, Any]):
-        """
-        Memory packet to handle all gravity-based functions and metadata tracking.
-        """
         self.vector = vector  # Semantic vector from SentenceTransformer
         self.metadata = metadata or {}
-        
+
         # Default metadata if not provided
-        self.metadata.setdefault("timestamp", time.time())
-        self.metadata.setdefault("recall_count", 0)
-        self.metadata.setdefault("memetic_similarity", 1.0)  # Can be refined over time
-        self.metadata.setdefault("semantic_relativity", 1.0)  # Set after query similarity
+        self.metadata.setdefault("timestamp", time.time())  # Timestamp of creation
+        self.metadata.setdefault("recall_count", 0)  # How many times this memory was recalled
+        self.metadata.setdefault("memetic_similarity", self.calculate_memetic_similarity())  # Dynamically calculated
+        self.metadata.setdefault("semantic_relativity", 1.0)  # Will be updated during query
         self.metadata.setdefault("gravitational_pull", self.calculate_gravitational_pull())
         self.metadata.setdefault("spacetime_coordinate", self.calculate_spacetime_coordinate())
 
@@ -39,8 +36,8 @@ class MemoryPacket:
         recall_count = self.metadata["recall_count"]
         memetic_similarity = self.metadata["memetic_similarity"]
         semantic_relativity = self.metadata["semantic_relativity"]
-        
-        # Calculate gravitational pull
+
+        # Dynamically calculate gravitational pull
         gravitational_pull = vector_magnitude * (1 + math.log1p(recall_count)) * memetic_similarity * semantic_relativity
         self.metadata["gravitational_pull"] = gravitational_pull
         return gravitational_pull
@@ -56,15 +53,53 @@ class MemoryPacket:
 
     def update_relevance(self, query_vector: List[float]):
         """
-        Update relevance when recalling a memory. This recalculates semantic relativity, gravitational pull,
-        and spacetime coordinate.
+        Update relevance when recalling a memory. This recalculates semantic relativity, memetic similarity,
+        gravitational pull, and spacetime coordinate.
         """
-        # Recalculate semantic similarity with the query vector
+        # Recalculate semantic similarity with the query vector (cosine similarity)
         self.metadata["semantic_relativity"] = self.calculate_cosine_similarity(self.vector, query_vector)
+
+        # Recalculate memetic similarity based on dynamic contextual information
+        self.metadata["memetic_similarity"] = self.calculate_memetic_similarity()
 
         # Update gravitational pull and spacetime coordinate
         self.calculate_gravitational_pull()
         self.calculate_spacetime_coordinate()
+
+    def calculate_memetic_similarity(self) -> float:
+        """
+        Dynamically calculate memetic similarity based on tags, recurrence, or any other contextual factors.
+        This example uses a simple Jaccard similarity between tags, but it can be extended with more complex logic.
+        """
+        if "tags" not in self.metadata:
+            return 1.0  # Default if no tags are present
+
+        # Example: Jaccard similarity between tags and reference tags
+        tags = set(self.metadata.get("tags", []))
+        reference_tags = set(self.metadata.get("reference_tags", []))  # Reference memory or system-level tags
+
+        if not tags or not reference_tags:
+            return 1.0  # No tags to compare, assume full similarity
+
+        intersection = len(tags.intersection(reference_tags))
+        union = len(tags.union(reference_tags))
+
+        if union == 0:
+            return 1.0  # Avoid division by zero
+
+        return intersection / union  # Jaccard similarity as a placeholder for memetic similarity
+
+    @staticmethod
+    def calculate_cosine_similarity(vector_a: List[float], vector_b: List[float]) -> float:
+        """ Calculate cosine similarity between two vectors. """
+        dot_product = sum(a * b for a, b in zip(vector_a, vector_b))
+        magnitude_a = math.sqrt(sum(a ** 2 for a in vector_a))
+        magnitude_b = math.sqrt(sum(b ** 2 for b in vector_b))
+
+        if magnitude_a == 0 or magnitude_b == 0:
+            return 0.0  # Avoid division by zero
+
+        return dot_product / (magnitude_a * magnitude_b)
 
     def to_payload(self) -> Dict[str, Any]:
         """
@@ -75,25 +110,6 @@ class MemoryPacket:
             "metadata": self.metadata
         }
 
-    def increment_recall(self):
-        """
-        Increase recall count and update gravitational pull accordingly.
-        """
-        self.metadata["recall_count"] += 1
-        self.calculate_gravitational_pull()
-
-    @staticmethod
-    def calculate_cosine_similarity(vector_a: List[float], vector_b: List[float]) -> float:
-        """ Calculate cosine similarity between two vectors. """
-        dot_product = sum(a * b for a, b in zip(vector_a, vector_b))
-        magnitude_a = math.sqrt(sum(a ** 2 for a in vector_a))
-        magnitude_b = math.sqrt(sum(b ** 2 for b in vector_b))
-        
-        if magnitude_a == 0 or magnitude_b == 0:
-            return 0.0  # Avoid division by zero
-        
-        return dot_product / (magnitude_a * magnitude_b)
-
     @staticmethod
     def from_payload(payload: Dict[str, Any]):
         """ Recreate a MemoryPacket from a payload. """
@@ -101,9 +117,6 @@ class MemoryPacket:
 
 class MemoryManager:
     def __init__(self, qdrant_host="localhost", qdrant_port=6333, collection_name="Mind"):
-        """
-        Initialize Qdrant connection and set up SentenceTransformer model for vectorization.
-        """
         self.qdrant_client = QdrantClient(host=qdrant_host, port=qdrant_port)
         self.collection_name = collection_name
         self.model = SentenceTransformer('all-MiniLM-L6-v2')  # Semantic vector model
@@ -114,92 +127,60 @@ class MemoryManager:
         Ensure that the Qdrant collection is set up for vectors with cosine distance.
         """
         try:
-            # Check if the collection exists, otherwise create it
             self.qdrant_client.get_collection(self.collection_name)
             logger.info(f"Collection '{self.collection_name}' exists.")
         except Exception:
             logger.info(f"Creating collection '{self.collection_name}'.")
             self.qdrant_client.create_collection(
                 collection_name=self.collection_name,
-                vectors_config=VectorParams(
-                    size=self.model.get_sentence_embedding_dimension(),
-                    distance=Distance.COSINE
-                )
+                vectors_config=VectorParams(size=self.model.get_sentence_embedding_dimension(), distance=Distance.COSINE)
             )
 
     async def create_memory(self, content: str, metadata: Dict[str, Any]):
         """
-        Create a memory from content, vectorize it, and store it in Qdrant asynchronously.
+        Create a memory from content, vectorize it, and store in Qdrant asynchronously.
         """
-        loop = asyncio.get_event_loop()
-        try:
-            # Vectorize the content using the SentenceTransformer model
-            vector = await loop.run_in_executor(None, self.model.encode, content)
-            vector = vector.tolist()
-            memory_packet = MemoryPacket(vector=vector, metadata=metadata)
-            point_id = str(uuid.uuid4())
-            
-            # Upsert (insert or update) the memory packet in Qdrant
-            await loop.run_in_executor(
-                None,
-                self.qdrant_client.upsert,
-                self.collection_name,
-                [PointStruct(id=point_id, vector=vector, payload=memory_packet.to_payload())]
-            )
-            logger.info(f"Memory created successfully with ID: {point_id}")
-        except Exception as e:
-            logger.error(f"Failed to create memory: {e}")
-            raise
+        vector = self.model.encode(content).tolist()
+        memory_packet = MemoryPacket(vector=vector, metadata=metadata)
+        point_id = str(uuid.uuid4())
+        
+        # Insert the memory packet into the Qdrant collection
+        self.qdrant_client.upsert(
+            collection_name=self.collection_name,
+            points=[PointStruct(id=point_id, vector=vector, payload=memory_packet.to_payload())]
+        )
+        logger.info(f"Memory created successfully with ID: {point_id}")
 
     async def recall_memory(self, query_content: str, top_k: int = 5):
         """
-        Recall a memory based on query content and return the top K most relevant memories.
+        Recall a memory based on query content and return top K most relevant memories.
         """
-        loop = asyncio.get_event_loop()
-        try:
-            # Vectorize the query content
-            query_vector = await loop.run_in_executor(None, self.model.encode, query_content)
-            query_vector = query_vector.tolist()
+        query_vector = self.model.encode(query_content).tolist()
 
-            # Perform a semantic search in Qdrant using the query vector and top_k limit
-            results = await loop.run_in_executor(
-                None,
-                self.qdrant_client.search,
-                self.collection_name,
-                query_vector,
-                limit=top_k
-            )
+        # Perform semantic search with Qdrant (using the query vector and top_k limit)
+        results = self.qdrant_client.search(
+            collection_name=self.collection_name,
+            query_vector=query_vector,
+            limit=top_k
+        )
 
-            # Convert results to MemoryPacket instances and return their metadata
-            return [MemoryPacket.from_payload(hit.payload).metadata for hit in results]
-        except Exception as e:
-            logger.error(f"Failed to recall memory: {e}")
-            raise
+        # Format the results
+        memories = [MemoryPacket.from_payload(hit.payload) for hit in results]
+
+        for memory in memories:
+            memory.update_relevance(query_vector)
+
+        return [memory.metadata for memory in memories]
 
     async def prune_memories(self):
         """
-        Prune low relevance memories based on their gravitational pull and spacetime coordinates asynchronously.
+        Prune low relevance memories based on their gravitational pull and spacetime coordinates.
         """
-        loop = asyncio.get_event_loop()
-        try:
-            # Get total points in the collection
-            total_points = await loop.run_in_executor(None, self.qdrant_client.count, self.collection_name)
-            total_points = total_points.count
-
-            if total_points > 1000000:  # Arbitrary limit for memory pruning
-                points = await loop.run_in_executor(None, self.qdrant_client.scroll, self.collection_name, 1000)
-                low_relevance_points = [
-                    p.id for p in points if p.payload['metadata']['gravitational_pull'] < GRAVITATIONAL_THRESHOLD
-                ]
-
-                # Delete low relevance points
-                if low_relevance_points:
-                    await loop.run_in_executor(
-                        None,
-                        self.qdrant_client.delete,
-                        self.collection_name,
-                        low_relevance_points
-                    )
-        except Exception as e:
-            logger.error(f"Failed to prune memories: {e}")
-            raise
+        total_points = self.qdrant_client.count(self.collection_name).count
+        if total_points > 1000000:  # Arbitrary limit
+            points = self.qdrant_client.scroll(self.collection_name, limit=1000)
+            low_relevance_points = [
+                p.id for p in points if p.payload['metadata']['gravitational_pull'] < GRAVITATIONAL_THRESHOLD
+            ]
+            if low_relevance_points:
+                self.qdrant_client.delete(self.collection_name, points_selector=low_relevance_points)
