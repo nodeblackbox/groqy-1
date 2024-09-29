@@ -35,6 +35,7 @@
     "framer-motion": "^11.6.0",
     "gpt-tokenizer": "^2.4.0",
     "groq": "^3.57.4",
+    "groq-sdk": "^0.7.0",
     "highlight.js": "^11.10.0",
     "idb": "^8.0.0",
     "jspdf": "^2.5.2",

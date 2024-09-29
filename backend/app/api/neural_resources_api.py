@@ -44,6 +44,8 @@ async def route_query(message: Message):
         logger.exception(f"Unexpected error in route_query: {str(e)}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
+
+
 @router.post("/set_api_key")
 async def set_api_key(api_key_update: APIKeyUpdate):
     logger.info(f"Received request to update API key for provider: {api_key_update.provider}")
