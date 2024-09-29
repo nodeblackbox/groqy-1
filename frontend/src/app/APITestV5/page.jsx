@@ -1,17 +1,18 @@
-"use client";
+// frontend/src/app/APITestV5/page.jsx
+'use client';
 
-import React, { useState, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from '@/components/ui/tooltip';
 import {
     Dialog,
     DialogContent,
@@ -19,7 +20,7 @@ import {
     DialogTitle,
     DialogFooter,
     DialogBody,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog';
 import {
     Cpu,
     Database,
@@ -43,47 +44,37 @@ import {
     EyeOff,
     Code,
     Send,
-} from 'lucide-react'
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useHotkeys } from 'react-hotkeys-hook'
-import { toast, Toaster } from 'react-hot-toast'
-import Dexie from 'dexie'
+} from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { toast, Toaster } from 'react-hot-toast';
+import Dexie from 'dexie';
 
-// Initialize IndexedDB using Dexie
-const db = new Dexie("ComprehensiveAppDB");
-db.version(1).stores({
-    apiKeys: '++id, provider, key',
-    jsonStructures: '++id, structure',
-    aiLogs: '++id, command, response, timestamp',
-    aiTemplates: '++id, name, command, complexity, isRealTime',
-    databases: '++id, name, type, host, port, tables',
-    queries: '++id, query, timestamp',
-    apiEndpoints: '++id, name, url, method, headers, payload',
-    testHistory: '++id, url, method, result, timestamp',
-    chatHistory: '++id, userMessage, botMessage, timestamp',
-});
+import JSONEditor from '@/components/APITestV5/JSONEditor';
+import QdrantManager from '@/components/APITestV5/QdrantManager';
+import PayloadTester from '@/components/APITestV5/PayloadTester';
+import APIEndpointManager from '@/components/APITestV5/APIEndpointManager';
 
-
-// TreeNode Component for JSON Structure Builder
 const TreeNode = ({ node, onAdd, onDelete, onToggle, onEdit, searchTerm }) => {
-    const [isEditing, setIsEditing] = useState(false)
-    const [nodeType, setNodeType] = useState(node.type)
+    const [isEditing, setIsEditing] = useState(false);
+    const [nodeType, setNodeType] = useState(node.type);
 
     const handleEdit = (e) => {
-        if (e.key === 'Enter') {
-            onEdit(node, 'name', e.target.value)
-            setIsEditing(false)
+        if (e.key === 'Enter')
+        {
+            onEdit(node, 'name', e.target.value);
+            setIsEditing(false);
         }
-    }
+    };
 
     const handleTypeChange = (e) => {
-        onEdit(node, 'type', e.target.value)
-        setNodeType(e.target.value)
-    }
+        onEdit(node, 'type', e.target.value);
+        setNodeType(e.target.value);
+    };
 
-    const matchesSearch = node?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false
+    const matchesSearch = node?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
 
     return (
         <div className={`ml-4 ${searchTerm && !matchesSearch ? 'hidden' : ''}`}>
@@ -165,277 +156,97 @@ const TreeNode = ({ node, onAdd, onDelete, onToggle, onEdit, searchTerm }) => {
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
-// EnhancedAPIManager Component
-const EnhancedAPIManager = ({ onClose }) => {
-    const [apiKeys, setApiKeys] = useState({
-        openai: '',
-        groq: '',
-        anthropic: ''
-    })
-    const [showKeys, setShowKeys] = useState({
-        openai: false,
-        groq: false,
-        anthropic: false
-    })
-    const [selectedProvider, setSelectedProvider] = useState('openai')
-    const [requestType, setRequestType] = useState('GET')
-    const [responseData, setResponseData] = useState('')
-    const [responseHeaders, setResponseHeaders] = useState('')
+// Initialize IndexedDB using Dexie
+const db = new Dexie('ComprehensiveAppDB');
+db.version(1).stores({
+    apiKeys: '++id, provider, key',
+    jsonStructures: '++id, structure',
+    aiLogs: '++id, command, response, timestamp',
+    aiTemplates: '++id, name, command, complexity, isRealTime',
+    databases: '++id, name, type, host, port, tables',
+    queries: '++id, query, timestamp',
+    apiEndpoints: '++id, name, url, method, headers, payload',
+    testHistory: '++id, url, method, result, timestamp',
+    chatHistory: '++id, userMessage, botMessage, timestamp',
+});
 
-    const apiEndpointsConfig = {
-        setApiKey: '/neural_resources/set_api_key',
-        getAvailableModels: '/neural_resources/available_models'
-    }
-
-    useEffect(() => {
-        const fetchAPIKeys = async () => {
-            const keys = await db.apiKeys.toArray();
-            if (keys.length > 0) {
-                const keyObj = keys.reduce((acc, curr) => {
-                    acc[curr.provider] = curr.key;
-                    return acc;
-                }, {});
-                setApiKeys(keyObj);
-            }
-        }
-        fetchAPIKeys();
-    }, [])
-
-    const handleInputChange = (service, value) => {
-        setApiKeys(prev => ({ ...prev, [service]: value }))
-    }
-
-    const toggleShowKey = (service) => {
-        setShowKeys(prev => ({ ...prev, [service]: !prev[service] }))
-    }
-
-    const saveKeys = async () => {
-        await db.apiKeys.clear();
-        const keysToAdd = Object.entries(apiKeys).map(([provider, key]) => ({ provider, key }));
-        await db.apiKeys.bulkAdd(keysToAdd);
-        toast.success('API keys saved successfully!')
-    }
-
-    const formatPayload = (payload) => {
-        return JSON.stringify(payload, null, 2)
-    }
-
-    const simulateRequest = async () => {
-        setResponseData('Loading...')
-        setResponseHeaders('')
-
-        // Simulate API request
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        if (requestType === 'GET') {
-            setResponseData(JSON.stringify({ available_models: ["openai", "groq", "anthropic"] }, null, 2))
-        } else {
-            setResponseData(JSON.stringify({ message: `API key updated for provider ${selectedProvider}` }, null, 2))
-        }
-
-        setResponseHeaders(JSON.stringify({
-            'Content-Type': 'application/json',
-            'X-Request-ID': '1234567890',
-            'Date': new Date().toUTCString()
-        }, null, 2))
-
-        toast.success('Request simulated successfully!')
-    }
-
-    const renderKeyInput = (service, label) => (
-        <div className="mb-4">
-            <Label htmlFor={service} className="block mb-2 text-sm font-medium text-gray-300">
-                {label}
-            </Label>
-            <div className="relative">
-                <Input
-                    type={showKeys[service] ? 'text' : 'password'}
-                    id={service}
-                    value={apiKeys[service]}
-                    onChange={(e) => handleInputChange(service, e.target.value)}
-                    className="bg-gray-700 text-white border-gray-600 focus:border-blue-500 focus:ring-blue-500"
-                    placeholder={`Enter your ${label}`}
-                />
-                <Button
-                    type="button"
-                    onClick={() => toggleShowKey(service)}
-                    className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-400 hover:text-white"
-                >
-                    {showKeys[service] ? <EyeOff size={20} /> : <Eye size={20} />}
-                </Button>
-            </div>
-        </div>
-    )
-
-    return (
-        <div className="min-h-screen bg-gray-900 p-8">
-            <Button onClick={onClose} className="mb-4 bg-gray-700 hover:bg-gray-600">
-                Back
-            </Button>
-            <Card className="w-full max-w-4xl mx-auto bg-gray-800 text-white">
-                <CardHeader>
-                    <CardTitle className="text-3xl font-bold flex items-center text-blue-400">
-                        <Database className="mr-2" /> Neural Resources API Manager
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Tabs defaultValue="keys" className="space-y-4">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="keys">API Keys</TabsTrigger>
-                            <TabsTrigger value="test">Test Requests</TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="keys">
-                            <form onSubmit={(e) => { e.preventDefault(); saveKeys(); }} className="space-y-4">
-                                {renderKeyInput('openai', 'OpenAI API Key')}
-                                {renderKeyInput('groq', 'Groq API Key')}
-                                {renderKeyInput('anthropic', 'Anthropic API Key')}
-                                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-                                    <Save className="mr-2" /> Save API Keys
-                                </Button>
-                            </form>
-                        </TabsContent>
-
-                        <TabsContent value="test" className="space-y-4">
-                            <div className="flex space-x-4">
-                                <Select value={requestType} onValueChange={(value) => setRequestType(value)}>
-                                    <SelectTrigger className="w-[180px] bg-gray-700 text-white">
-                                        <SelectValue placeholder="Select request type">{requestType}</SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="GET">GET</SelectItem>
-                                        <SelectItem value="POST">POST</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {requestType === 'POST' && (
-                                    <Select value={selectedProvider} onValueChange={(value) => setSelectedProvider(value)}>
-                                        <SelectTrigger className="w-[180px] bg-gray-700 text-white">
-                                            <SelectValue placeholder="Select provider">{selectedProvider}</SelectValue>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="openai">OpenAI</SelectItem>
-                                            <SelectItem value="groq">Groq</SelectItem>
-                                            <SelectItem value="anthropic">Anthropic</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                                <Button onClick={simulateRequest} className="bg-green-600 hover:bg-green-700">
-                                    <Play className="mr-2" /> Test Request
-                                </Button>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <h3 className="text-lg font-semibold mb-2 flex items-center">
-                                        <Send className="mr-2" /> Request Details
-                                    </h3>
-                                    <Card className="bg-gray-700 p-4">
-                                        <p><strong>Endpoint:</strong> {requestType === 'GET' ? apiEndpointsConfig.getAvailableModels : apiEndpointsConfig.setApiKey}</p>
-                                        <p><strong>Method:</strong> <span className={`inline-block px-2 py-1 rounded ${requestType === 'GET' ? 'bg-blue-600' : 'bg-green-600'}`}>{requestType}</span></p>
-                                        {requestType === 'POST' && (
-                                            <div>
-                                                <p><strong>Payload:</strong></p>
-                                                <pre className="bg-gray-800 p-2 rounded mt-2 overflow-x-auto">
-                                                    {formatPayload({
-                                                        provider: selectedProvider,
-                                                        api_key: "your_new_api_key_here"
-                                                    })}
-                                                </pre>
-                                            </div>
-                                        )}
-                                    </Card>
-                                </div>
-
-                                <div>
-                                    <h3 className="text-lg font-semibold mb-2 flex items-center">
-                                        <Code className="mr-2" /> Response
-                                    </h3>
-                                    <Card className="bg-gray-700 p-4">
-                                        <p><strong>Headers:</strong></p>
-                                        <pre className="bg-gray-800 p-2 rounded mt-2 overflow-x-auto">
-                                            {responseHeaders || 'No response yet'}
-                                        </pre>
-                                        <p className="mt-4"><strong>Body:</strong></p>
-                                        <pre className="bg-gray-800 p-2 rounded mt-2 overflow-x-auto">
-                                            {responseData || 'No response yet'}
-                                        </pre>
-                                    </Card>
-                                </div>
-                            </div>
-                        </TabsContent>
-                    </Tabs>
-                </CardContent>
-            </Card>
-        </div>
-    )
-}
-
-// Main ComprehensiveComponent integrating all functionalities
-export default function ComprehensiveComponent() {
+export default function APITestV5Page() {
     // State declarations
-    const [darkMode, setDarkMode] = useState(true)
-    const [activeTab, setActiveTab] = useState('structure')
-    const [jsonStructure, setJsonStructure] = useState({})
-    const [searchTerm, setSearchTerm] = useState('')
-    const [aiCommand, setAiCommand] = useState('')
-    const [complexity, setComplexity] = useState(50)
-    const [isRealTime, setIsRealTime] = useState(false)
-    const [aiLogs, setAiLogs] = useState([])
-    const [aiTemplates, setAiTemplates] = useState([])
-    const [databases, setDatabases] = useState([])
-    const [selectedDatabase, setSelectedDatabase] = useState(null)
-    const [queries, setQueries] = useState([])
-    const [currentQuery, setCurrentQuery] = useState('')
-    const [queryResult, setQueryResult] = useState(null)
-    const [queryPage, setQueryPage] = useState(1)
-    const [queryPageSize, setQueryPageSize] = useState(10)
-    const [apiEndpoints, setApiEndpoints] = useState([])
-    const [newEndpoint, setNewEndpoint] = useState({ name: '', url: '', method: 'GET', headers: '{"Content-Type": "application/json"}', payload: '' })
-    const [testUrl, setTestUrl] = useState('')
-    const [testMethod, setTestMethod] = useState('GET')
-    const [testHeaders, setTestHeaders] = useState('{}')
-    const [testPayload, setTestPayload] = useState('')
-    const [testResult, setTestResult] = useState('')
-    const [testHistory, setTestHistory] = useState([])
-    const [authKeys, setAuthKeys] = useState({ openai: '', anthropic: '', groq: '' })
-    const [chatHistory, setChatHistory] = useState([])
-    const [customLayout, setCustomLayout] = useState('default')
-    const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false)
-    const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
-    const [showAPIManager, setShowAPIManager] = useState(false)
+    const [darkMode, setDarkMode] = useState(true);
+    const [activeTab, setActiveTab] = useState('structure');
 
-    // useEffect hooks for localStorage via IndexedDB
+    const [jsonStructure, setJsonStructure] = useState({
+        type: 'object',
+        name: 'root',
+        isOpen: true,
+        children: [],
+    });
+    const [searchTerm, setSearchTerm] = useState('');
+    const [aiCommand, setAiCommand] = useState('');
+    const [complexity, setComplexity] = useState(50);
+    const [isRealTime, setIsRealTime] = useState(false);
+    const [aiLogs, setAiLogs] = useState([]);
+    const [aiTemplates, setAiTemplates] = useState([]);
+    const [databases, setDatabases] = useState([]);
+    const [selectedDatabase, setSelectedDatabase] = useState(null);
+    const [queries, setQueries] = useState([]);
+    const [currentQuery, setCurrentQuery] = useState('');
+    const [queryResult, setQueryResult] = useState(null);
+    const [queryPage, setQueryPage] = useState(1);
+    const [queryPageSize, setQueryPageSize] = useState(10);
+    const [apiEndpoints, setApiEndpoints] = useState([]);
+    const [newEndpoint, setNewEndpoint] = useState({
+        name: '',
+        url: '',
+        method: 'GET',
+        headers: '{"Content-Type": "application/json"}',
+        payload: '',
+    });
+    const [testUrl, setTestUrl] = useState('');
+    const [testMethod, setTestMethod] = useState('GET');
+    const [testHeaders, setTestHeaders] = useState('{}');
+    const [testPayload, setTestPayload] = useState('');
+    const [testResult, setTestResult] = useState('');
+    const [testHistory, setTestHistory] = useState([]);
+    const [authKeys, setAuthKeys] = useState({ openai: '', anthropic: '', groq: '' });
+    const [chatHistory, setChatHistory] = useState([]);
+    const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+    const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+    const [showAPIManager, setShowAPIManager] = useState(false);
+
+    // useEffect hooks for IndexedDB
     useEffect(() => {
         const fetchData = async () => {
-            const storedDarkMode = await db.jsonStructures.toArray()
-            if (storedDarkMode.length > 0) setDarkMode(JSON.parse(storedDarkMode[0].structure.darkMode))
+            const storedDarkMode = await db.jsonStructures.where('id').equals(1).first();
+            if (storedDarkMode) setDarkMode(JSON.parse(storedDarkMode.structure).darkMode);
 
-            const storedJsonStructure = await db.jsonStructures.toArray()
-            if (storedJsonStructure.length > 0) setJsonStructure(JSON.parse(storedJsonStructure[0].structure.jsonStructure))
+            const storedJsonStructure = await db.jsonStructures.where('id').equals(1).first();
+            if (storedJsonStructure) setJsonStructure(JSON.parse(storedJsonStructure.structure).jsonStructure);
 
-            const storedAiLogs = await db.aiLogs.toArray()
-            setAiLogs(storedAiLogs)
+            const storedAiLogs = await db.aiLogs.toArray();
+            setAiLogs(storedAiLogs);
 
-            const storedAiTemplates = await db.aiTemplates.toArray()
-            setAiTemplates(storedAiTemplates)
+            const storedAiTemplates = await db.aiTemplates.toArray();
+            setAiTemplates(storedAiTemplates);
 
-            const storedDatabases = await db.databases.toArray()
-            setDatabases(storedDatabases)
+            const storedDatabases = await db.databases.toArray();
+            setDatabases(storedDatabases);
 
-            const storedQueries = await db.queries.toArray()
-            setQueries(storedQueries)
+            const storedQueries = await db.queries.toArray();
+            setQueries(storedQueries);
 
-            const storedApiEndpoints = await db.apiEndpoints.toArray()
-            setApiEndpoints(storedApiEndpoints)
+            const storedApiEndpoints = await db.apiEndpoints.toArray();
+            setApiEndpoints(storedApiEndpoints);
 
-            const storedTestHistory = await db.testHistory.toArray()
-            setTestHistory(storedTestHistory)
+            const storedTestHistory = await db.testHistory.toArray();
+            setTestHistory(storedTestHistory);
 
-            const storedAuthKeys = await db.apiKeys.toArray()
-            if (storedAuthKeys.length > 0) {
+            const storedAuthKeys = await db.apiKeys.toArray();
+            if (storedAuthKeys.length > 0)
+            {
                 const keyObj = storedAuthKeys.reduce((acc, curr) => {
                     acc[curr.provider] = curr.key;
                     return acc;
@@ -443,311 +254,294 @@ export default function ComprehensiveComponent() {
                 setAuthKeys(keyObj);
             }
 
-            const storedChatHistory = await db.chatHistory.toArray()
-            setChatHistory(storedChatHistory)
+            const storedChatHistory = await db.chatHistory.toArray();
+            setChatHistory(storedChatHistory);
+        };
+        fetchData();
+    }, []);
+
+    // Persist Dark Mode
+    useEffect(() => {
+        db.jsonStructures.put({ id: 1, structure: JSON.stringify({ darkMode }) });
+        if (darkMode)
+        {
+            document.documentElement.classList.add('dark');
+        } else
+        {
+            document.documentElement.classList.remove('dark');
         }
-        fetchData()
-    }, [])
+    }, [darkMode]);
 
+    // Persist JSON Structure
     useEffect(() => {
-        // Save dark mode
-        db.jsonStructures.put({ structure: JSON.stringify({ darkMode }) }, 1)
-        if (darkMode) {
-            document.documentElement.classList.add('dark')
-        } else {
-            document.documentElement.classList.remove('dark')
-        }
-    }, [darkMode])
+        db.jsonStructures.put({ id: 1, structure: JSON.stringify({ jsonStructure }) });
+    }, [jsonStructure]);
 
+    // Persist AI Logs
     useEffect(() => {
-        // Save JSON Structure
-        db.jsonStructures.put({ structure: JSON.stringify({ jsonStructure }) }, 1)
-    }, [jsonStructure])
+        db.aiLogs.bulkPut(aiLogs).catch((err) => {
+            console.error('Failed to bulkPut AI Logs:', err);
+        });
+    }, [aiLogs]);
 
+    // Persist AI Templates
     useEffect(() => {
-        // Save AI Logs
-        db.aiLogs.bulkPut(aiLogs)
-    }, [aiLogs])
+        db.aiTemplates.bulkPut(aiTemplates).catch((err) => {
+            console.error('Failed to bulkPut AI Templates:', err);
+        });
+    }, [aiTemplates]);
 
+    // Persist Databases
     useEffect(() => {
-        // Save AI Templates
-        db.aiTemplates.bulkPut(aiTemplates)
-    }, [aiTemplates])
+        db.databases.bulkPut(databases).catch((err) => {
+            console.error('Failed to bulkPut Databases:', err);
+        });
+    }, [databases]);
 
+    // Persist Queries
     useEffect(() => {
-        // Save Databases
-        db.databases.bulkPut(databases)
-    }, [databases])
+        db.queries.bulkPut(queries).catch((err) => {
+            console.error('Failed to bulkPut Queries:', err);
+        });
+    }, [queries]);
 
+    // Persist API Endpoints
     useEffect(() => {
-        // Save Queries
-        db.queries.bulkPut(queries)
-    }, [queries])
+        db.apiEndpoints.bulkPut(apiEndpoints).catch((err) => {
+            console.error('Failed to bulkPut API Endpoints:', err);
+        });
+    }, [apiEndpoints]);
 
+    // Persist Test History
     useEffect(() => {
-        // Save API Endpoints
-        db.apiEndpoints.bulkPut(apiEndpoints)
-    }, [apiEndpoints])
+        db.testHistory.bulkPut(testHistory).catch((err) => {
+            console.error('Failed to bulkPut Test History:', err);
+        });
+    }, [testHistory]);
 
+    // Persist Auth Keys
     useEffect(() => {
-        // Save Test History
-        db.testHistory.bulkPut(testHistory)
-    }, [testHistory])
+        db.apiKeys
+            .clear()
+            .then(() => {
+                const keysToAdd = Object.entries(authKeys).map(([provider, key]) => ({ provider, key }));
+                return db.apiKeys.bulkAdd(keysToAdd);
+            })
+            .catch((err) => {
+                console.error('Failed to bulkAdd API Keys:', err);
+            });
+    }, [authKeys]);
 
+    // Persist Chat History
     useEffect(() => {
-        // Save Auth Keys
-        db.apiKeys.clear().then(() => {
-            const keysToAdd = Object.entries(authKeys).map(([provider, key]) => ({ provider, key }));
-            db.apiKeys.bulkAdd(keysToAdd)
-        })
-    }, [authKeys])
-
-    useEffect(() => {
-        // Save Chat History
-        db.chatHistory.bulkPut(chatHistory)
-    }, [chatHistory])
+        db.chatHistory.bulkPut(chatHistory).catch((err) => {
+            console.error('Failed to bulkPut Chat History:', err);
+        });
+    }, [chatHistory]);
 
     // Hotkeys
     useHotkeys('ctrl+s, command+s', (event) => {
-        event.preventDefault()
-        handleSaveJSON()
-    }, { enableOnTags: ['INPUT', 'TEXTAREA'] })
+        event.preventDefault();
+        handleSaveJSON();
+    }, { enableOnTags: ['INPUT', 'TEXTAREA'] });
 
     // JSON Structure Handlers
     const addNode = (parent) => {
-        const newNode = { type: 'string', name: 'newField', value: 'value' }
-        if (parent.type === 'object' || parent.type === 'array') {
-            parent.children = parent.children || []
-            parent.children.push(newNode)
-            parent.isOpen = true
-            setJsonStructure({ ...jsonStructure })
+        if (!parent) return; // Guard clause
+        const newNode = { type: 'string', name: 'newField', value: 'value' };
+        if (parent.type === 'object' || parent.type === 'array')
+        {
+            parent.children = parent.children || [];
+            parent.children.push(newNode);
+            parent.isOpen = true;
+            setJsonStructure({ ...jsonStructure });
         }
-    }
+    };
 
     const deleteNode = (nodeToDelete) => {
+        if (!nodeToDelete) return; // Guard clause
         const deleteRecursive = (node) => {
-            if (node.children) {
-                node.children = node.children.filter((child) => child !== nodeToDelete)
-                node.children.forEach(deleteRecursive)
+            if (node.children)
+            {
+                node.children = node.children.filter((child) => child !== nodeToDelete);
+                node.children.forEach(deleteRecursive);
             }
+        };
+        if (jsonStructure !== nodeToDelete)
+        {
+            deleteRecursive(jsonStructure);
+            setJsonStructure({ ...jsonStructure });
         }
-        if (jsonStructure !== nodeToDelete) {
-            deleteRecursive(jsonStructure)
-            setJsonStructure({ ...jsonStructure })
-        }
-    }
+    };
 
     const toggleNode = (node) => {
-        node.isOpen = !node.isOpen
-        setJsonStructure({ ...jsonStructure })
-    }
+        if (!node) return; // Guard clause
+        node.isOpen = !node.isOpen;
+        setJsonStructure({ ...jsonStructure });
+    };
 
     const editNode = (node, field, value) => {
-        node[field] = value
-        setJsonStructure({ ...jsonStructure })
-    }
+        if (!node) return; // Guard clause
+        node[field] = value;
+        setJsonStructure({ ...jsonStructure });
+    };
 
     const handleSaveJSON = () => {
-        toast.success('JSON Structure Saved!')
+        toast.success('JSON Structure Saved!');
         // Already saved via useEffect
-    }
+    };
 
     const handleImportJSON = async (importedJSON) => {
-        if (!importedJSON) return
-        try {
-            const parsed = JSON.parse(importedJSON)
-            setJsonStructure(parsed)
-            toast.success('JSON Structure Imported!')
-        } catch (error) {
-            toast.error('Invalid JSON Structure')
+        if (!importedJSON) return;
+        try
+        {
+            const parsed = JSON.parse(importedJSON);
+            setJsonStructure(parsed);
+            toast.success('JSON Structure Imported!');
+        } catch (error)
+        {
+            toast.error('Invalid JSON Structure');
         }
-    }
+    };
 
     const handleExportJSON = () => {
-        const dataStr = JSON.stringify(jsonStructure, null, 2)
-        const blob = new Blob([dataStr], { type: 'application/json' })
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = 'jsonStructure.json'
-        link.click()
-        toast.success('JSON Structure Exported!')
-    }
+        const dataStr = JSON.stringify(jsonStructure, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'jsonStructure.json';
+        link.click();
+        toast.success('JSON Structure Exported!');
+    };
 
     const validateJSON = () => {
-        try {
-            JSON.stringify(jsonStructure)
-            toast.success('JSON Structure is Valid')
-        } catch (error) {
-            toast.error('Invalid JSON Structure')
+        try
+        {
+            JSON.stringify(jsonStructure);
+            toast.success('JSON Structure is Valid');
+        } catch (error)
+        {
+            toast.error('Invalid JSON Structure');
         }
-    }
+    };
 
     // AI Command Center Handlers
     const handleExecuteAI = () => {
-        if (aiCommand.trim() === '') {
-            toast.error('AI Command cannot be empty')
-            return
+        if (aiCommand.trim() === '')
+        {
+            toast.error('AI Command cannot be empty');
+            return;
         }
         // Mock AI processing
-        const response = `AI Response to "${aiCommand}" with complexity ${complexity}% and ${isRealTime ? 'real-time' : 'batch'} processing.`
-        setAiLogs([...aiLogs, { command: aiCommand, response, timestamp: new Date().toLocaleString() }])
-        setChatHistory([...chatHistory, { userMessage: aiCommand, botMessage: response, timestamp: new Date().toLocaleString() }])
-        setAiCommand('')
-        toast.success('AI Command Executed')
-    }
+        const response = `AI Response to "${aiCommand}" with complexity ${complexity}% and ${isRealTime ? 'real-time' : 'batch'} processing.`;
+        setAiLogs([...aiLogs, { command: aiCommand, response, timestamp: new Date().toLocaleString() }]);
+        setChatHistory([...chatHistory, { userMessage: aiCommand, botMessage: response, timestamp: new Date().toLocaleString() }]);
+        setAiCommand('');
+        toast.success('AI Command Executed');
+    };
 
     const handleSaveTemplate = async (templateName) => {
-        if (!templateName) {
-            toast.error('Template name is required')
-            return
+        if (!templateName)
+        {
+            toast.error('Template name is required');
+            return;
         }
-        setAiTemplates([...aiTemplates, { name: templateName, command: aiCommand, complexity, isRealTime }])
-        toast.success('AI Template Saved')
-    }
+        setAiTemplates([...aiTemplates, { name: templateName, command: aiCommand, complexity, isRealTime }]);
+        toast.success('AI Template Saved');
+    };
 
     const handleLoadTemplate = (template) => {
-        setAiCommand(template.command)
-        setComplexity(template.complexity)
-        setIsRealTime(template.isRealTime)
-        toast.success(`AI Template "${template.name}" Loaded`)
-    }
+        setAiCommand(template.command);
+        setComplexity(template.complexity);
+        setIsRealTime(template.isRealTime);
+        toast.success(`AI Template "${template.name}" Loaded`);
+    };
 
     // Database Interactions Handlers
     const addDatabase = () => {
-        const newDb = { id: Date.now(), name: 'NewDB', type: 'MySQL', host: 'localhost', port: 3306, tables: ['table1', 'table2'] }
-        setDatabases([...databases, newDb])
-        toast.success('Database Added')
-    }
+        const newDb = { id: Date.now(), name: 'NewDB', type: 'MySQL', host: 'localhost', port: 3306, tables: ['table1', 'table2'] };
+        setDatabases([...databases, newDb]);
+        toast.success('Database Added');
+    };
 
     const deleteDatabaseHandler = (dbId) => {
-        setDatabases(databases.filter(db => db.id !== dbId))
-        toast.success('Database Deleted')
-        if (selectedDatabase && selectedDatabase.id === dbId) {
-            setSelectedDatabase(null)
+        setDatabases(databases.filter((db) => db.id !== dbId));
+        toast.success('Database Deleted');
+        if (selectedDatabase && selectedDatabase.id === dbId)
+        {
+            setSelectedDatabase(null);
         }
-    }
+    };
 
     const selectDatabase = (db) => {
-        setSelectedDatabase(db)
-    }
+        setSelectedDatabase(db);
+    };
 
     const executeQuery = () => {
-        if (currentQuery.trim() === '') {
-            toast.error('Query cannot be empty')
-            return
+        if (currentQuery.trim() === '')
+        {
+            toast.error('Query cannot be empty');
+            return;
         }
         // Mock query execution
-        if (!currentQuery.toLowerCase().startsWith('select')) {
-            setQueryResult('Only SELECT queries are supported in this mock.')
-            toast.error('Unsupported Query Type')
-            return
+        if (!currentQuery.toLowerCase().startsWith('select'))
+        {
+            setQueryResult('Only SELECT queries are supported in this mock.');
+            toast.error('Unsupported Query Type');
+            return;
         }
         // Mock result based on selected database
-        let simulatedResult = []
-        if (selectedDatabase) {
+        let simulatedResult = [];
+        if (selectedDatabase)
+        {
             simulatedResult = selectedDatabase.tables.map((table, index) => ({
                 id: index + 1,
                 name: `${table}_name_${index + 1}`,
                 value: Math.floor(Math.random() * 100),
-            }))
-        } else {
+            }));
+        } else
+        {
             simulatedResult = [
                 { id: 1, name: 'Alice', value: 50 },
                 { id: 2, name: 'Bob', value: 70 },
-            ]
+            ];
         }
-        setQueryResult(simulatedResult)
-        setQueries([...queries, currentQuery])
-        setCurrentQuery('')
-        toast.success('Query Executed')
-    }
+        setQueryResult(simulatedResult);
+        setQueries([...queries, currentQuery]);
+        setCurrentQuery('');
+        toast.success('Query Executed');
+    };
 
     const getPaginatedResults = () => {
-        if (!queryResult) return []
-        const start = (queryPage - 1) * queryPageSize
-        return queryResult.slice(start, start + queryPageSize)
-    }
+        if (!queryResult) return [];
+        const start = (queryPage - 1) * queryPageSize;
+        return queryResult.slice(start, start + queryPageSize);
+    };
 
     const suggestQueryOptimization = () => {
         // Mock optimization suggestion
-        toast.info('Consider adding indexes to improve query performance.')
-    }
-
-    // API Tester Handlers
-    const addApiEndpoint = () => {
-        if (newEndpoint.name.trim() === '' || newEndpoint.url.trim() === '') {
-            toast.error('Endpoint name and URL are required')
-            return
-        }
-        try {
-            JSON.parse(newEndpoint.headers)
-            if ((newEndpoint.method === 'POST' || newEndpoint.method === 'PUT') && newEndpoint.payload) {
-                JSON.parse(newEndpoint.payload)
-            }
-        } catch (error) {
-            toast.error('Invalid JSON in headers or payload')
-            return
-        }
-        const endpoint = { ...newEndpoint, id: Date.now() }
-        setApiEndpoints([...apiEndpoints, endpoint])
-        setNewEndpoint({ name: '', url: '', method: 'GET', headers: '{"Content-Type": "application/json"}', payload: '' })
-        toast.success('API Endpoint Added')
-    }
-
-    const deleteApiEndpoint = (id) => {
-        setApiEndpoints(apiEndpoints.filter(ep => ep.id !== id))
-        toast.success('API Endpoint Deleted')
-    }
-
-    const handleTestAPI = async () => {
-        if (testUrl.trim() === '') {
-            toast.error('API URL is required')
-            return
-        }
-        setTestResult('Testing API...')
-        try {
-            const headers = JSON.parse(testHeaders)
-            let options = {
-                method: testMethod,
-                headers,
-            }
-            if (testMethod === 'POST' || testMethod === 'PUT') {
-                options.body = JSON.stringify(JSON.parse(testPayload))
-            }
-            const response = await fetch(testUrl, options)
-            const data = await response.json()
-            const result = `Status: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`
-            setTestResult(result)
-            setTestHistory([{ url: testUrl, method: testMethod, result, timestamp: new Date().toLocaleString() }, ...testHistory])
-            toast.success('API Tested Successfully')
-        } catch (error) {
-            setTestResult(`Error: ${error.message}`)
-            setTestHistory([{ url: testUrl, method: testMethod, result: `Error: ${error.message}`, timestamp: new Date().toLocaleString() }, ...testHistory])
-            toast.error('API Test Failed')
-        }
-    }
-
-    const handleAuthKeysSave = () => {
-        toast.success('Authentication Keys Saved')
-        setIsAuthDialogOpen(false)
-    }
+        toast.info('Consider adding indexes to improve query performance.');
+    };
 
     // Chatbot Handlers
     const handleChat = (message) => {
-        if (message.trim() === '') return
+        if (message.trim() === '') return;
         // Mock chatbot response integrating API access
-        let response = `You said: "${message}". `
-        // Example: If message includes "fetch APIs", list available APIs
-        if (message.toLowerCase().includes('fetch apis')) {
-            response += `Here are the available APIs: ${apiEndpoints.map(ep => ep.name).join(', ')}.`
-        } else if (message.toLowerCase().includes('virtual database')) {
-            response += `Our virtual database includes the following tables: ${databases.map(db => db.tables.join(', ')).flat().join(', ')}.`
-        } else {
-            response += 'I am here to assist you with API testing and database interactions.'
+        let response = `You said: "${message}". `;
+        // Example: If message includes "fetch apis", list available APIs
+        if (message.toLowerCase().includes('fetch apis'))
+        {
+            response += `Here are the available APIs: ${apiEndpoints.map((ep) => ep.name).join(', ')}.`;
+        } else if (message.toLowerCase().includes('virtual database'))
+        {
+            response += `Our virtual database includes the following tables: ${databases.map((db) => db.tables.join(', ')).flat().join(', ')}.`;
+        } else
+        {
+            response += 'I am here to assist you with API testing and database interactions.';
         }
-        setChatHistory([...chatHistory, { userMessage: message, botMessage: response, timestamp: new Date().toLocaleString() }])
-    }
+        setChatHistory([...chatHistory, { userMessage: message, botMessage: response, timestamp: new Date().toLocaleString() }]);
+    };
 
     // Render Component
     return (
@@ -806,7 +600,7 @@ export default function ComprehensiveComponent() {
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" className="h-12 w-12" onClick={() => setShowAPIManager(true)}>
+                            <Button variant="ghost" className="h-12 w-12" onClick={() => setIsAuthDialogOpen(true)}>
                                 <Edit className="w-6 h-6 text-red-400" />
                             </Button>
                         </TooltipTrigger>
@@ -831,7 +625,10 @@ export default function ComprehensiveComponent() {
 
             {/* Main Content */}
             {showAPIManager ? (
-                <EnhancedAPIManager onClose={() => setShowAPIManager(false)} />
+                // Placeholder for API Manager if needed
+                <div className="flex-1 flex items-center justify-center">
+                    <p>API Manager Placeholder</p>
+                </div>
             ) : (
                 <div className={`flex-1 flex flex-col p-8 overflow-auto ${darkMode ? 'bg-gray-900' : 'bg-gray-100'} text-white`}>
                     <h1 className="text-4xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
@@ -848,42 +645,14 @@ export default function ComprehensiveComponent() {
 
                         {/* JSON Structure Tab */}
                         <TabsContent value="structure" className="flex-1 overflow-auto">
-                            <div className="bg-black p-6 rounded-xl mb-4">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-2xl font-semibold">Dynamic JSON Builder</h2>
-                                    <div className="flex space-x-2">
-                                        <Button variant="outline" size="sm" onClick={handleSaveJSON}>
-                                            <Save size={16} className="mr-1" /> Save
-                                        </Button>
-                                        <Button variant="outline" size="sm" onClick={() => handleImportJSON(prompt('Paste JSON here:'))}>
-                                            <Upload size={16} className="mr-1" /> Import
-                                        </Button>
-                                        <Button variant="outline" size="sm" onClick={handleExportJSON}>
-                                            <Download size={16} className="mr-1" /> Export
-                                        </Button>
-                                        <Button variant="outline" size="sm" onClick={validateJSON}>
-                                            <Edit size={16} className="mr-1" /> Validate
-                                        </Button>
-                                    </div>
-                                </div>
-                                <Input
-                                    className="mb-4 bg-gray-800 border-gray-700 text-white"
-                                    placeholder="Search JSON Structure..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    icon={<Search size={16} />}
+                                <JSONEditor
+                                    jsonStructure={jsonStructure}
+                                    setJsonStructure={setJsonStructure}
+                                    handleImportJSON={handleImportJSON}
+                                    handleExportJSON={handleExportJSON}
+                                    validateJSON={validateJSON}
+                                    handleSaveJSON={handleSaveJSON}
                                 />
-                                <div className="border border-gray-700 rounded-lg p-4 max-h-96 overflow-auto">
-                                    <TreeNode
-                                        node={jsonStructure}
-                                        onAdd={addNode}
-                                        onDelete={deleteNode}
-                                        onToggle={toggleNode}
-                                        onEdit={editNode}
-                                        searchTerm={searchTerm}
-                                    />
-                                </div>
-                            </div>
                             <div className="bg-black p-6 rounded-xl">
                                 <h2 className="text-2xl mb-4 font-semibold">JSON Preview</h2>
                                 <pre className="bg-gray-800 p-4 rounded-lg overflow-auto max-h-64">
@@ -924,10 +693,7 @@ export default function ComprehensiveComponent() {
                                 </div>
                                 <div className="flex items-center justify-between mb-4">
                                     <span>Real-time Processing</span>
-                                    <Switch
-                                        checked={isRealTime}
-                                        onCheckedChange={setIsRealTime}
-                                    />
+                                        <Switch checked={isRealTime} onCheckedChange={setIsRealTime} />
                                 </div>
                                 {/* Chatbot Interface */}
                                 <div className="bg-gray-800 p-4 rounded-lg max-h-64 overflow-auto">
@@ -947,9 +713,10 @@ export default function ComprehensiveComponent() {
                                         value={aiCommand}
                                         onChange={(e) => setAiCommand(e.target.value)}
                                         onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleChat(aiCommand)
-                                                setAiCommand('')
+                                            if (e.key === 'Enter')
+                                            {
+                                                handleChat(aiCommand);
+                                                setAiCommand('');
                                             }
                                         }}
                                     />
@@ -992,6 +759,9 @@ export default function ComprehensiveComponent() {
 
                         {/* Database Interactions Tab */}
                         <TabsContent value="database" className="space-y-4">
+                                <QdrantManager collection={jsonStructure.collection || 'default'} setCollection={(col) => {
+                                    setJsonStructure({ ...jsonStructure, collection: col });
+                                }} />
                             <div className="bg-black p-6 rounded-xl">
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-2xl font-semibold">Database Connections</h2>
@@ -1000,13 +770,13 @@ export default function ComprehensiveComponent() {
                                     </Button>
                                 </div>
                                 <ul className="space-y-2">
-                                    {databases.map(db => (
-                                        <li key={db.id} className="flex items-center justify-between bg-gray-800 p-2 rounded cursor-pointer" onClick={() => selectDatabase(db)}>
+                                        {databases.map((dbItem) => (
+                                            <li key={dbItem.id} className="flex items-center justify-between bg-gray-800 p-2 rounded cursor-pointer" onClick={() => selectDatabase(dbItem)}>
                                             <div>
-                                                <p className="font-semibold">{db.name}</p>
-                                                <p className="text-sm">{db.type} - {db.host}:{db.port}</p>
+                                                    <p className="font-semibold">{dbItem.name}</p>
+                                                    <p className="text-sm">{dbItem.type} - {dbItem.host}:{dbItem.port}</p>
                                             </div>
-                                            <Button variant="ghost" size="sm" onClick={() => deleteDatabaseHandler(db.id)}>
+                                                <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); deleteDatabaseHandler(dbItem.id); }}>
                                                 <Trash size={14} />
                                             </Button>
                                         </li>
@@ -1083,107 +853,12 @@ export default function ComprehensiveComponent() {
 
                         {/* API Tester Tab */}
                         <TabsContent value="test" className="space-y-4">
-                            <div className="bg-black p-6 rounded-xl mb-4">
-                                <h2 className="text-2xl mb-4 font-semibold">API Tester</h2>
-                                <div className="flex space-x-4 mb-4 flex-wrap">
-                                    <select
-                                        value={testMethod}
-                                        onChange={(e) => setTestMethod(e.target.value)}
-                                        className="bg-gray-800 border border-gray-700 text-white rounded px-2 py-1"
-                                    >
-                                        <option value="GET">GET</option>
-                                        <option value="POST">POST</option>
-                                        <option value="PUT">PUT</option>
-                                        <option value="DELETE">DELETE</option>
-                                    </select>
-                                    <Input
-                                        className="flex-1 bg-gray-800 border-gray-700 text-white"
-                                        placeholder="Enter API URL to test..."
-                                        value={testUrl}
-                                        onChange={(e) => setTestUrl(e.target.value)}
-                                    />
-                                    {(testMethod === 'POST' || testMethod === 'PUT') && (
-                                        <Input
-                                            className="flex-1 bg-gray-800 border-gray-700 text-white"
-                                            placeholder="Enter JSON payload..."
-                                            value={testPayload}
-                                            onChange={(e) => setTestPayload(e.target.value)}
-                                        />
-                                    )}
-                                    <Input
-                                        className="flex-1 bg-gray-800 border-gray-700 text-white"
-                                        placeholder="Enter JSON headers..."
-                                        value={testHeaders}
-                                        onChange={(e) => setTestHeaders(e.target.value)}
-                                    />
-                                    <Button className="bg-yellow-600 hover:bg-yellow-700" onClick={handleTestAPI}>
-                                        <Play className="mr-2 h-4 w-4" /> Test API
-                                    </Button>
-                                </div>
-                                <div className="bg-gray-800 p-4 rounded-lg">
-                                    <h3 className="text-lg mb-2">Test Result:</h3>
-                                    <pre className="text-sm">{testResult}</pre>
-                                </div>
-                            </div>
-                            <div className="bg-black p-6 rounded-xl mb-4">
-                                <h2 className="text-2xl mb-4 font-semibold">Manage API Endpoints</h2>
-                                <div className="flex space-x-4 mb-4 flex-wrap">
-                                    <Input
-                                        placeholder="Endpoint Name"
-                                        value={newEndpoint.name}
-                                        onChange={(e) => setNewEndpoint({ ...newEndpoint, name: e.target.value })}
-                                        className="bg-gray-800 border-gray-700 text-white"
-                                    />
-                                    <Input
-                                        placeholder="URL"
-                                        value={newEndpoint.url}
-                                        onChange={(e) => setNewEndpoint({ ...newEndpoint, url: e.target.value })}
-                                        className="bg-gray-800 border-gray-700 text-white"
-                                    />
-                                    <select
-                                        value={newEndpoint.method}
-                                        onChange={(e) => setNewEndpoint({ ...newEndpoint, method: e.target.value })}
-                                        className="bg-gray-800 border border-gray-700 text-white rounded px-2 py-1"
-                                    >
-                                        <option value="GET">GET</option>
-                                        <option value="POST">POST</option>
-                                        <option value="PUT">PUT</option>
-                                        <option value="DELETE">DELETE</option>
-                                    </select>
-                                    {(newEndpoint.method === 'POST' || newEndpoint.method === 'PUT') && (
-                                        <Input
-                                            placeholder="Payload (JSON)"
-                                            value={newEndpoint.payload}
-                                            onChange={(e) => setNewEndpoint({ ...newEndpoint, payload: e.target.value })}
-                                            className="bg-gray-800 border-gray-700 text-white"
-                                        />
-                                    )}
-                                    <Input
-                                        placeholder="Headers (JSON)"
-                                        value={newEndpoint.headers}
-                                        onChange={(e) => setNewEndpoint({ ...newEndpoint, headers: e.target.value })}
-                                        className="bg-gray-800 border-gray-700 text-white"
-                                    />
-                                    <Button variant="ghost" onClick={addApiEndpoint}>
-                                        <Plus size={16} />
-                                    </Button>
-                                </div>
-                                <ul className="space-y-2">
-                                    {apiEndpoints.map(ep => (
-                                        <li key={ep.id} className="flex items-center justify-between bg-gray-800 p-2 rounded">
-                                            <div>
-                                                <p className="font-semibold">{ep.name}</p>
-                                                <p className="text-sm">{ep.method} - {ep.url}</p>
-                                                {ep.payload && <pre className="text-xs bg-gray-700 p-1 rounded mt-1">{JSON.stringify(JSON.parse(ep.payload), null, 2)}</pre>}
-                                                {ep.headers && <pre className="text-xs bg-gray-700 p-1 rounded mt-1">{JSON.stringify(JSON.parse(ep.headers), null, 2)}</pre>}
-                                            </div>
-                                            <Button variant="ghost" size="sm" onClick={() => deleteApiEndpoint(ep.id)}>
-                                                <Trash2 size={14} />
-                                            </Button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                                <PayloadTester />
+                                <APIEndpointManager
+                                    apiEndpoints={apiEndpoints}
+                                    setApiEndpoints={setApiEndpoints}
+                                    handleTestAPI={(ep) => handleTestAPI(ep)}
+                                />
                             <div className="bg-black p-6 rounded-xl">
                                 <h2 className="text-2xl mb-4 font-semibold">Test History</h2>
                                 <ul className="space-y-2">
@@ -1211,13 +886,14 @@ export default function ComprehensiveComponent() {
                     <DialogBody>
                         <Input
                             placeholder="Template Name"
+                            value={newEndpoint.name}
                             onChange={(e) => setNewEndpoint({ ...newEndpoint, name: e.target.value })}
                         />
                     </DialogBody>
                     <DialogFooter>
                         <Button onClick={() => {
-                            const templateName = prompt('Enter Template Name:')
-                            if (templateName) handleSaveTemplate(templateName)
+                            const templateName = prompt('Enter Template Name:');
+                            if (templateName) handleSaveTemplate(templateName);
                         }}>
                             Save
                         </Button>
@@ -1234,28 +910,64 @@ export default function ComprehensiveComponent() {
                     <DialogBody>
                         <div className="space-y-4">
                             <div>
-                                <label className="block mb-1">OpenAI API Key</label>
-                                <Input
-                                    value={authKeys.openai}
-                                    onChange={(e) => setAuthKeys({ ...authKeys, openai: e.target.value })}
-                                    placeholder="Enter OpenAI API Key"
-                                />
+                                <Label htmlFor="openai">OpenAI API Key</Label>
+                                <div className="relative">
+                                    <Input
+                                        type={authKeys.openai ? 'password' : 'text'}
+                                        id="openai"
+                                        value={authKeys.openai}
+                                        onChange={(e) => setAuthKeys({ ...authKeys, openai: e.target.value })}
+                                        placeholder="Enter OpenAI API Key"
+                                        className="bg-gray-700 text-white border-gray-600 focus:border-blue-500 focus:ring-blue-500"
+                                    />
+                                    <Button
+                                        type="button"
+                                        onClick={() => setAuthKeys(prev => ({ ...prev, openai: authKeys.openai }))}
+                                        className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-400 hover:text-white"
+                                    >
+                                        {authKeys.openai ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    </Button>
+                                </div>
                             </div>
                             <div>
-                                <label className="block mb-1">Anthropic API Key</label>
-                                <Input
-                                    value={authKeys.anthropic}
-                                    onChange={(e) => setAuthKeys({ ...authKeys, anthropic: e.target.value })}
-                                    placeholder="Enter Anthropic API Key"
-                                />
+                                <Label htmlFor="anthropic">Anthropic API Key</Label>
+                                <div className="relative">
+                                    <Input
+                                        type={authKeys.anthropic ? 'password' : 'text'}
+                                        id="anthropic"
+                                        value={authKeys.anthropic}
+                                        onChange={(e) => setAuthKeys({ ...authKeys, anthropic: e.target.value })}
+                                        placeholder="Enter Anthropic API Key"
+                                        className="bg-gray-700 text-white border-gray-600 focus:border-blue-500 focus:ring-blue-500"
+                                    />
+                                    <Button
+                                        type="button"
+                                        onClick={() => setAuthKeys(prev => ({ ...prev, anthropic: authKeys.anthropic }))}
+                                        className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-400 hover:text-white"
+                                    >
+                                        {authKeys.anthropic ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    </Button>
+                                </div>
                             </div>
                             <div>
-                                <label className="block mb-1">Groq API Key</label>
-                                <Input
-                                    value={authKeys.groq}
-                                    onChange={(e) => setAuthKeys({ ...authKeys, groq: e.target.value })}
-                                    placeholder="Enter Groq API Key"
-                                />
+                                <Label htmlFor="groq">Groq API Key</Label>
+                                <div className="relative">
+                                    <Input
+                                        type={authKeys.groq ? 'password' : 'text'}
+                                        id="groq"
+                                        value={authKeys.groq}
+                                        onChange={(e) => setAuthKeys({ ...authKeys, groq: e.target.value })}
+                                        placeholder="Enter Groq API Key"
+                                        className="bg-gray-700 text-white border-gray-600 focus:border-blue-500 focus:ring-blue-500"
+                                    />
+                                    <Button
+                                        type="button"
+                                        onClick={() => setAuthKeys(prev => ({ ...prev, groq: authKeys.groq }))}
+                                        className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-400 hover:text-white"
+                                    >
+                                        {authKeys.groq ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </DialogBody>
@@ -1267,5 +979,5 @@ export default function ComprehensiveComponent() {
                 </DialogContent>
             </Dialog>
         </div>
-    )
+    );
 }
