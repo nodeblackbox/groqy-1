@@ -87,6 +87,7 @@ def test_neural_resources():
     # Test route_query with default routing
     payload = {
         "content": "Hello, how are you?",
+        "role": "user",
         "model": None
     }
 
@@ -104,6 +105,7 @@ def test_neural_resources():
     # Test route_query with specified model (Ollama)
     payload = {
         "content": "What is the capital of France?",
+        "role": "user",
         "model": "llama3.2:latest"  # Specified Ollama model
     }
     response = requests.post(f"{BASE_URL}/neural_resources/route_query", json=payload)
@@ -117,6 +119,7 @@ def test_neural_resources():
     # Test route_query with empty message
     payload = {
         "content": "",
+        "role": "user",
         "model": None
     }
     response = requests.post(f"{BASE_URL}/neural_resources/route_query", json=payload)
@@ -129,6 +132,7 @@ def test_neural_resources():
     # Test route_query with non-existent model
     payload = {
         "content": "Test message",
+        "role": "user",
         "model": "non_existent_model"
     }
     response = requests.post(f"{BASE_URL}/neural_resources/route_query", json=payload)

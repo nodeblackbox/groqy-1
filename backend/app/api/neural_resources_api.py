@@ -13,6 +13,7 @@ llm_manager = LLMManager()
 
 class Message(BaseModel):
     content: str
+    role: str
     model: Optional[str] = None
 
 class APIKeyUpdate(BaseModel):
@@ -31,7 +32,7 @@ async def route_query(message: Message):
     try:
         # Use a default model if none is provided
         model_to_use = message.model or "llama3.2:latest"  # Set a default model
-        response = llm_manager.route_query(message.content, model_to_use)
+        response = llm_manager.route_query(message.content, message.role, model_to_use)
         
         if "error" in response:
             logger.warning(f"Error in route_query: {response['error']}")

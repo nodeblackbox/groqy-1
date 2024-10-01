@@ -28,7 +28,7 @@ class AnthropicLLM(AIAsset):
         self.client = Anthropic(api_key=api_key)
         logger.info("Anthropic LLM initialized")
 
-    def create_message(self, model: str, message: str) -> Dict[str, Any]:
+    def create_message(self, model: str, role: str, message: str) -> Dict[str, Any]:
         logger.debug(f"Creating message for Anthropic model: {model}")
         if not message.strip():
             logger.warning("Empty message provided to Anthropic LLM")
@@ -36,8 +36,7 @@ class AnthropicLLM(AIAsset):
         try:
             response = self.client.messages.create(
                 model=model,
-                messages=[{"role": "user", "content": message}],
-                max_tokens=1000
+                messages=[{"role": role, "content": message}],
             )
             logger.info(f"Successfully created message with Anthropic model: {model}")
             return response.model_dump()
@@ -54,7 +53,7 @@ class OpenAILLM(AIAsset):
         self.client = openai.OpenAI(api_key=api_key)
         logger.info("OpenAI LLM initialized")
 
-    def create_message(self, model: str, message: str) -> Dict[str, Any]:
+    def create_message(self, model: str, role: str, message: str) -> Dict[str, Any]:
         logger.debug(f"Creating message for OpenAI model: {model}")
         if not message.strip():
             logger.warning("Empty message provided to OpenAI LLM")
@@ -62,8 +61,7 @@ class OpenAILLM(AIAsset):
         try:
             response = self.client.chat.completions.create(
                 model=model,
-                messages=[{"role": "user", "content": message}],
-                max_tokens=1000
+                messages=[{"role": role, "content": message}],
             )
             logger.info(f"Successfully created message with OpenAI model: {model}")
             return response.model_dump()
@@ -80,7 +78,7 @@ class GroqLLM(AIAsset):
         self.client = Groq(api_key=api_key)
         logger.info("Groq LLM initialized")
 
-    def create_message(self, model: str, message: str) -> Dict[str, Any]:
+    def create_message(self, model: str, role: str, message: str) -> Dict[str, Any]:
         logger.debug(f"Creating message for Groq model: {model}")
         if not message.strip():
             logger.warning("Empty message provided to Groq LLM")
@@ -88,8 +86,7 @@ class GroqLLM(AIAsset):
         try:
             response = self.client.chat.completions.create(
                 model=model,
-                messages=[{"role": "user", "content": message}],
-                max_tokens=1000
+                messages=[{"role": role, "content": message}],
             )
             logger.info(f"Successfully created message with Groq model: {model}")
             return response.model_dump()
@@ -106,7 +103,7 @@ class OllamaLLM(AIAsset):
         self.base_url = base_url
         logger.info(f"Ollama LLM initialized with base URL: {base_url}")
 
-    def create_message(self, model: str, message: str) -> Dict[str, Any]:
+    def create_message(self, model: str, role: str, message: str) -> Dict[str, Any]:
         logger.debug(f"Creating message for Ollama model: {model}")
         if not message.strip():
             logger.warning("Empty message provided to Ollama LLM")
@@ -115,6 +112,7 @@ class OllamaLLM(AIAsset):
             url = f"{self.base_url}/api/generate"
             payload = {
                 "model": model,
+                "role": role,
                 "prompt": message,
                 "stream": False
             }
@@ -220,7 +218,7 @@ class LLMManager:
         logger.debug(f"Available models: {', '.join(models)}")
         return models
 
-    def route_query(self, message: str, model: Optional[str] = None) -> Dict[str, Any]:
+    def route_query(self, message: str, role: str, model: Optional[str] = None) -> Dict[str, Any]:
         logger.info(f"Routing query to {'specified model: ' + model if model else 'default model'}")
         if not message.strip():
             logger.warning("Empty message provided to route_query")
@@ -230,7 +228,7 @@ class LLMManager:
             for provider, llm in self.llm_models.items():
                 try:
                     logger.debug(f"Attempting to create message with provider: {provider}, model: {model}")
-                    response = llm.create_message(model, message)
+                    response = llm.create_message(model, role, message)
                     if "error" not in response:
                         logger.info(f"Successfully created message with provider: {provider}, model: {model}")
                         return response
@@ -244,7 +242,7 @@ class LLMManager:
         for provider, llm in self.llm_models.items():
             try:
                 logger.debug(f"Attempting to create message with provider: {provider}")
-                response = llm.create_message(provider, message)
+                response = llm.create_message(provider, role, message)
                 if "error" not in response:
                     logger.info(f"Successfully created message with provider: {provider}")
                     return response
