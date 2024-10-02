@@ -22,11 +22,6 @@ import {
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 
-
-
-
-
-
 // Custom UI Components
 const Button = ({ onClick, children, variant = 'primary', size = 'md', className = '', ...props }) => {
     const baseClasses =
@@ -171,8 +166,17 @@ const Tabs = ({ children }) => {
     return <div>{children}</div>;
 };
 
+// JSON Viewer Component for Beautified Output
+const JSONViewer = ({ json }) => {
+    return (
+        <pre className="bg-gray-800 p-4 rounded-lg overflow-auto text-xs">
+            {JSON.stringify(json, null, 2)}
+        </pre>
+    );
+};
+
 // Main Page Component
-const payloadMakerUI = () => {
+const PayloadMakerUI = () => {
 
     // State Variables
     const [url, setUrl] = useState('');
@@ -445,7 +449,7 @@ const payloadMakerUI = () => {
     };
 
     const executeRoutine = async (routine) => {
-        toast.loading('Executing routine...');
+        toast.loading('Executing routine...', { id: 'routineExecution' });
         for (const payloadId of routine.payloads)
         {
             const payload = payloads.find(p => p.id === payloadId);
@@ -454,8 +458,7 @@ const payloadMakerUI = () => {
                 await executePayloadWithSubtasks(payload);
             }
         }
-        toast.dismiss();
-        toast.success('Routine executed successfully!');
+        toast.success('Routine executed successfully!', { id: 'routineExecution' });
     };
 
     // Payload Execution
@@ -479,18 +482,27 @@ const payloadMakerUI = () => {
                 body: payload.method !== 'GET' ? interpolatedBody : undefined,
             });
 
-            const data = await response.json();
-            setResults(prev => ({ ...prev, [payload.id]: data }));
+            const contentType = response.headers.get('content-type');
+            let data;
+            if (contentType && contentType.includes('application/json'))
+            {
+                data = await response.json();
+            } else
+            {
+                data = await response.text();
+            }
 
-            // Extract variables from response (assuming the entire response is stored)
-            setGlobalVariables(prev => ({ ...prev, [payload.name]: data }));
+            setResults(prev => ({ ...prev, [payload.id]: { url: interpolatedUrl, payload, response: data } }));
+
+            // Optionally, extract variables from response (custom logic needed)
+            // setGlobalVariables(prev => ({ ...prev, [payload.name]: data }));
 
             toast.success(`Payload "${payload.name}" sent successfully!`);
             return data;
         } catch (error)
         {
             console.error('Error sending payload:', error);
-            setResults(prev => ({ ...prev, [payload.id]: { error: error.message } }));
+            setResults(prev => ({ ...prev, [payload.id]: { url: payload.url, payload, response: { error: error.message } } }));
             toast.error(`Failed to send payload "${payload.name}".`);
             return { error: error.message };
         }
@@ -607,12 +619,30 @@ const payloadMakerUI = () => {
 
     const filteredPayloads = sortedPayloads.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    return (
+    // Execute All Payloads
+    const executeAllPayloads = async () => {
+        toast.loading('Executing all payloads...', { id: 'executeAll' });
+        for (const payload of payloads)
+        {
+            await executePayloadWithSubtasks(payload);
+        }
+        toast.success('All payloads executed successfully!', { id: 'executeAll' });
+    };
 
+    // Execute All Routines
+    const executeAllRoutines = async () => {
+        toast.loading('Executing all routines...', { id: 'executeAllRoutines' });
+        for (const routine of routines)
+        {
+            await executeRoutine(routine);
+        }
+        toast.success('All routines executed successfully!', { id: 'executeAllRoutines' });
+    };
+
+    return (
 
         <div className="bg-gradient-to-br from-gray-900 to-black text-white p-4 min-h-screen font-sans">
             <Toaster position="top-right" />
-
 
             {/* Control Buttons */}
             <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg mb-6">
@@ -629,6 +659,16 @@ const payloadMakerUI = () => {
                     <Button onClick={handleExportConfig} variant="destructive" className="w-full">
                         <Download className="mr-2 h-4 w-4" /> Export Config
                     </Button>
+                </div>
+                <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <Button onClick={executeAllPayloads} variant="primary" className="w-full">
+                        <Play className="mr-2 h-4 w-4" /> Execute All Payloads
+                    </Button>
+                    <Button onClick={executeAllRoutines} variant="secondary" className="w-full">
+                        <Play className="mr-2 h-4 w-4" /> Execute All Routines
+                    </Button>
+                    {/* Additional control buttons can be added here */}
+                    <div></div>
                 </div>
             </div>
 
@@ -1003,23 +1043,80 @@ const payloadMakerUI = () => {
                     {/* Global Variables */}
                     <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg">
                         <h2 className="text-2xl font-semibold mb-4">Global Variables</h2>
+                        <div className="flex space-x-2 mb-4">
+                            <Input
+                                value={Object.keys(globalVariables).length > 0 ? '' : ''}
+                                onChange={() => { }}
+                                placeholder="Set Variable Name"
+                                className="flex-1"
+                                readOnly
+                                disabled
+                            />
+                            <Button onClick={() => {
+                                const varName = prompt('Enter variable name:');
+                                if (varName && !globalVariables[varName])
+                                {
+                                    const varValue = prompt('Enter variable value:');
+                                    setGlobalVariables(prev => ({ ...prev, [varName]: varValue }));
+                                    toast.success(`Variable "${varName}" added.`);
+                                } else if (varName && globalVariables[varName])
+                                {
+                                    toast.error(`Variable "${varName}" already exists.`);
+                                }
+                            }}>
+                                <Plus size={16} className="mr-1" /> Add
+                            </Button>
+                        </div>
                         {Object.keys(globalVariables).length === 0 ? (
                             <p className="text-gray-400">No variables available.</p>
                         ) : (
                             <ul className="space-y-2 max-h-64 overflow-auto">
                                 {Object.entries(globalVariables).map(([key, value]) => (
                                     <li key={key} className="flex justify-between items-center bg-gray-700 bg-opacity-50 p-2 rounded">
-                                        <span>{key}</span>
-                                        <Button
-                                            variant="ghost"
-                                            size="xs"
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(JSON.stringify(value, null, 2));
-                                                toast.success(`Variable "${key}" copied to clipboard.`);
-                                            }}
-                                        >
-                                            <Copy size={14} />
-                                        </Button>
+                                        <div>
+                                            <span className="font-semibold">{key}:</span> <span>{value}</span>
+                                        </div>
+                                        <div className="flex space-x-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="xs"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(JSON.stringify(value, null, 2));
+                                                    toast.success(`Variable "${key}" copied to clipboard.`);
+                                                }}
+                                            >
+                                                <Copy size={14} />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="xs"
+                                                onClick={() => {
+                                                    const newValue = prompt(`Enter new value for "${key}":`, value);
+                                                    if (newValue !== null)
+                                                    {
+                                                        setGlobalVariables(prev => ({ ...prev, [key]: newValue }));
+                                                        toast.success(`Variable "${key}" updated.`);
+                                                    }
+                                                }}
+                                            >
+                                                <Edit size={14} />
+                                            </Button>
+                                            <Button
+                                                variant="destructive"
+                                                size="xs"
+                                                onClick={() => {
+                                                    if (confirm(`Delete variable "${key}"?`))
+                                                    {
+                                                        const updatedVariables = { ...globalVariables };
+                                                        delete updatedVariables[key];
+                                                        setGlobalVariables(updatedVariables);
+                                                        toast.success(`Variable "${key}" deleted.`);
+                                                    }
+                                                }}
+                                            >
+                                                <Trash2 size={14} />
+                                            </Button>
+                                        </div>
                                     </li>
                                 ))}
                             </ul>
@@ -1032,15 +1129,24 @@ const payloadMakerUI = () => {
                         {Object.keys(results).length === 0 ? (
                             <p className="text-gray-400">No results yet.</p>
                         ) : (
-                            <div className="max-h-64 overflow-auto space-y-4">
+                                <div className="max-h-96 overflow-auto space-y-4">
                                 {Object.entries(results).map(([id, result]) => {
                                     const payload = payloads.find(p => p.id === id) || routines.find(r => r.id === id);
                                     return payload ? (
                                         <div key={id} className="p-4 bg-gray-700 bg-opacity-50 rounded">
                                             <h3 className="font-semibold">{payload.name}</h3>
-                                            <pre className="bg-gray-800 p-2 rounded-lg overflow-auto text-xs mt-2">
-                                                {JSON.stringify(result, null, 2)}
-                                            </pre>
+                                            <div className="mt-2">
+                                                <p className="font-semibold">URL:</p>
+                                                <p className="text-sm">{result.url}</p>
+                                            </div>
+                                            <div className="mt-2">
+                                                <p className="font-semibold">Payload:</p>
+                                                <JSONViewer json={result.payload} />
+                                            </div>
+                                            <div className="mt-2">
+                                                <p className="font-semibold">Response:</p>
+                                                <JSONViewer json={result.response} />
+                                            </div>
                                         </div>
                                     ) : null;
                                 })}
@@ -1077,4 +1183,4 @@ const payloadMakerUI = () => {
     );
 }
 
-export default payloadMakerUI;
+export default PayloadMakerUI;

@@ -13,7 +13,7 @@ import {
     Search,
     Plus,
     Trash2,
-    ArrowRight,
+    ArrowRight, 
     Copy,
     Bell,
     Menu,
