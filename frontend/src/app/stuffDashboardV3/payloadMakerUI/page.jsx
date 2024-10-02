@@ -496,9 +496,6 @@ const PayloadMakerUI = () => {
 
             setResults(prev => ({ ...prev, [payload.id]: { url: interpolatedUrl, payload, response: data } }));
 
-            // Optionally, extract variables from response (custom logic needed)
-            // setGlobalVariables(prev => ({ ...prev, [payload.name]: data }));
-
             toast.success(`Payload "${payload.name}" sent successfully!`);
             return data;
         } catch (error)
@@ -509,6 +506,7 @@ const PayloadMakerUI = () => {
             return { error: error.message };
         }
     };
+
 
     const executePayloadWithSubtasks = async (payload) => {
         const mainResult = await handleSendPayload(payload);
@@ -1176,15 +1174,20 @@ const PayloadMakerUI = () => {
                                                 <p className={`text-sm ${result.url.trim() === '' ? 'text-red-500' : 'text-sm'}`}>{result.url || <span className="text-red-500">No URL Provided</span>}</p>
                                             </div>
                                             <div className="mt-2">
-                                                <p className="font-semibold">Payload:</p>
                                                 {/* {payload.headers.trim() === '' && <p className="text-red-500 text-xs">Headers are empty.</p>}
                                                 {payload.body.trim() === '' && <p className="text-red-500 text-xs">Body is empty.</p>}
                                                 <JSONViewer json={JSON.parse(payload.headers || '{}')} />
                                                 <JSONViewer json={JSON.parse(payload.body || '{}')} /> */}
-                                                {Object.keys(payload.headers).length === 0 && <p className="text-red-500 text-xs">Headers are empty.</p>}
+                                                {/* --------------------------------- */}
+                                                {/* {Object.keys(payload.headers).length === 0 && <p className="text-red-500 text-xs">Headers are empty.</p>}
                                                 {(typeof payload.body === 'string' ? payload.body.trim() === '' : Object.keys(payload.body).length === 0) && <p className="text-red-500 text-xs">Body is empty.</p>}
                                                 <JSONViewer json={payload.headers} />
-                                                <JSONViewer json={payload.body} />
+                                                <JSONViewer json={payload.body} /> */}
+                                                <p className="font-semibold">Payload:</p>
+                                                {payload.headers.trim() === '{}' && <p className="text-red-500 text-xs">Headers are empty.</p>}
+                                                {payload.body.trim() === '{}' && <p className="text-red-500 text-xs">Body is empty.</p>}
+                                                <JSONViewer json={JSON.parse(payload.headers)} />
+                                                <JSONViewer json={JSON.parse(payload.body)} />
                                             </div>
                                             <div className="mt-2">
                                                 <p className="font-semibold">Response:</p>
