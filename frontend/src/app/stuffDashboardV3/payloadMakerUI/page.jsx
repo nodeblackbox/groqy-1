@@ -189,6 +189,8 @@ const PayloadMakerUI = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importedConfig, setImportedConfig] = useState('');
     const [globalVariables, setGlobalVariables] = useState({});
+    const [newVarName, setNewVarName] = useState('');
+    const [newVarValue, setNewVarValue] = useState('');
     const [routines, setRoutines] = useState([]);
     const [activeRoutine, setActiveRoutine] = useState(null);
     const [isAsyncExecution, setIsAsyncExecution] = useState(false);
@@ -621,6 +623,11 @@ const PayloadMakerUI = () => {
 
     // Execute All Payloads
     const executeAllPayloads = async () => {
+        if (payloads.length === 0)
+        {
+            toast.error('No payloads to execute.');
+            return;
+        }
         toast.loading('Executing all payloads...', { id: 'executeAll' });
         for (const payload of payloads)
         {
@@ -631,6 +638,11 @@ const PayloadMakerUI = () => {
 
     // Execute All Routines
     const executeAllRoutines = async () => {
+        if (routines.length === 0)
+        {
+            toast.error('No routines to execute.');
+            return;
+        }
         toast.loading('Executing all routines...', { id: 'executeAllRoutines' });
         for (const routine of routines)
         {
@@ -641,8 +653,10 @@ const PayloadMakerUI = () => {
 
     return (
 
+
         <div className="bg-gradient-to-br from-gray-900 to-black text-white p-4 min-h-screen font-sans">
             <Toaster position="top-right" />
+
 
             {/* Control Buttons */}
             <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg mb-6">
@@ -1043,29 +1057,46 @@ const PayloadMakerUI = () => {
                     {/* Global Variables */}
                     <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg">
                         <h2 className="text-2xl font-semibold mb-4">Global Variables</h2>
-                        <div className="flex space-x-2 mb-4">
-                            <Input
-                                value={Object.keys(globalVariables).length > 0 ? '' : ''}
-                                onChange={() => { }}
-                                placeholder="Set Variable Name"
-                                className="flex-1"
-                                readOnly
-                                disabled
-                            />
-                            <Button onClick={() => {
-                                const varName = prompt('Enter variable name:');
-                                if (varName && !globalVariables[varName])
-                                {
-                                    const varValue = prompt('Enter variable value:');
-                                    setGlobalVariables(prev => ({ ...prev, [varName]: varValue }));
-                                    toast.success(`Variable "${varName}" added.`);
-                                } else if (varName && globalVariables[varName])
-                                {
-                                    toast.error(`Variable "${varName}" already exists.`);
-                                }
-                            }}>
-                                <Plus size={16} className="mr-1" /> Add
-                            </Button>
+                        <div className="flex flex-col space-y-2 mb-4">
+                            <div className="flex space-x-2">
+                                <Input
+                                    value={newVarName}
+                                    onChange={(e) => setNewVarName(e.target.value)}
+                                    placeholder="Variable Name"
+                                    className="flex-1"
+                                    icon={<Settings size={16} />}
+                                />
+                                <Input
+                                    value={newVarValue}
+                                    onChange={(e) => setNewVarValue(e.target.value)}
+                                    placeholder="Variable Value"
+                                    className="flex-1"
+                                    icon={<User size={16} />}
+                                />
+                                <Button
+                                    onClick={() => {
+                                        if (newVarName.trim() === '' || newVarValue.trim() === '')
+                                        {
+                                            toast.error('Both name and value are required.');
+                                            return;
+                                        }
+                                        if (globalVariables[newVarName])
+                                        {
+                                            toast.error(`Variable "${newVarName}" already exists.`);
+                                            return;
+                                        }
+                                        setGlobalVariables(prev => ({ ...prev, [newVarName]: newVarValue }));
+                                        setNewVarName('');
+                                        setNewVarValue('');
+                                        toast.success(`Variable "${newVarName}" added.`);
+                                    }}
+                                    variant="success"
+                                    className="h-10 w-10 p-0 flex items-center justify-center"
+                                >
+                                    <Plus size={16} />
+                                </Button>
+                            </div>
+                            <p className="text-sm text-gray-400">Add new global variables below.</p>
                         </div>
                         {Object.keys(globalVariables).length === 0 ? (
                             <p className="text-gray-400">No variables available.</p>
@@ -1132,23 +1163,35 @@ const PayloadMakerUI = () => {
                                 <div className="max-h-96 overflow-auto space-y-4">
                                 {Object.entries(results).map(([id, result]) => {
                                     const payload = payloads.find(p => p.id === id) || routines.find(r => r.id === id);
-                                    return payload ? (
-                                        <div key={id} className="p-4 bg-gray-700 bg-opacity-50 rounded">
-                                            <h3 className="font-semibold">{payload.name}</h3>
+                                    if (!payload) return null;
+
+                                    // Check for errors in the response
+                                    const hasError = result.response && result.response.error;
+
+                                    return (
+                                        <div key={id} className={`p-4 bg-gray-700 bg-opacity-50 rounded ${hasError ? 'border-2 border-red-500' : ''}`}>
+                                            <h3 className="font-semibold mb-2">{payload.name}</h3>
                                             <div className="mt-2">
                                                 <p className="font-semibold">URL:</p>
-                                                <p className="text-sm">{result.url}</p>
+                                                <p className={`text-sm ${result.url.trim() === '' ? 'text-red-500' : 'text-sm'}`}>{result.url || <span className="text-red-500">No URL Provided</span>}</p>
                                             </div>
                                             <div className="mt-2">
                                                 <p className="font-semibold">Payload:</p>
-                                                <JSONViewer json={result.payload} />
+                                                {payload.headers.trim() === '' && <p className="text-red-500 text-xs">Headers are empty.</p>}
+                                                {payload.body.trim() === '' && <p className="text-red-500 text-xs">Body is empty.</p>}
+                                                <JSONViewer json={JSON.parse(payload.headers || '{}')} />
+                                                <JSONViewer json={JSON.parse(payload.body || '{}')} />
                                             </div>
                                             <div className="mt-2">
                                                 <p className="font-semibold">Response:</p>
-                                                <JSONViewer json={result.response} />
+                                                {hasError ? (
+                                                    <p className="text-red-500 text-sm">{result.response.error}</p>
+                                                ) : (
+                                                        <JSONViewer json={result.response} />
+                                                )}
                                             </div>
                                         </div>
-                                    ) : null;
+                                    );
                                 })}
                             </div>
                         )}
@@ -1181,6 +1224,7 @@ const PayloadMakerUI = () => {
             )}
         </div>
     );
+
 }
 
 export default PayloadMakerUI;
