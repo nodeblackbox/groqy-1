@@ -1177,10 +1177,14 @@ const PayloadMakerUI = () => {
                                             </div>
                                             <div className="mt-2">
                                                 <p className="font-semibold">Payload:</p>
-                                                {payload.headers.trim() === '' && <p className="text-red-500 text-xs">Headers are empty.</p>}
+                                                {/* {payload.headers.trim() === '' && <p className="text-red-500 text-xs">Headers are empty.</p>}
                                                 {payload.body.trim() === '' && <p className="text-red-500 text-xs">Body is empty.</p>}
                                                 <JSONViewer json={JSON.parse(payload.headers || '{}')} />
-                                                <JSONViewer json={JSON.parse(payload.body || '{}')} />
+                                                <JSONViewer json={JSON.parse(payload.body || '{}')} /> */}
+                                                {Object.keys(payload.headers).length === 0 && <p className="text-red-500 text-xs">Headers are empty.</p>}
+                                                {(typeof payload.body === 'string' ? payload.body.trim() === '' : Object.keys(payload.body).length === 0) && <p className="text-red-500 text-xs">Body is empty.</p>}
+                                                <JSONViewer json={payload.headers} />
+                                                <JSONViewer json={payload.body} />
                                             </div>
                                             <div className="mt-2">
                                                 <p className="font-semibold">Response:</p>
