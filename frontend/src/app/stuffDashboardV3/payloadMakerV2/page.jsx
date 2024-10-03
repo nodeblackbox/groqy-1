@@ -566,8 +566,11 @@ export default function PayloadMakerUI() {
 
         case "neural_model_info": // Getting information about a specific model
           console.log("Handling 'neural_model_info' payload...");
-          // Append the model name to the URL for this request
-          interpolatedUrl = `${interpolatedUrl}/${payload.model}`;
+
+          // Check if payload.model exists, append to URL if available
+          if (payload.model) {
+            interpolatedUrl = `${interpolatedUrl}/${payload.model}`;
+          }
           break;
 
         case "other":
