@@ -504,7 +504,6 @@ export default function PayloadMakerUI() {
       switch (payload.type) {
         case "add": // Creating memory
           console.log("Handling 'add' payload (Creating Memory)...");
-
           interpolatedBody = {
             content: interpolatedBody?.content || "This is a sample memory",
             metadata: {
@@ -516,28 +515,64 @@ export default function PayloadMakerUI() {
 
         case "recall": // Recalling memory
           console.log("Handling 'recall' payload (Recalling Memory)...");
-
-          // Use a base value of top_k of 5 and update the query from payload
           const query = interpolatedBody?.query || "your_query_here";
           const topK = 5; // Default value for top_k
-
           interpolatedBody = {
             query: query,
             top_k: topK,
           };
-          // No need to modify the URL, just ensure we send a POST request
           break;
 
         case "prune": // Pruning memory
           console.log("Handling 'prune' payload (Pruning Memory)...");
-
           interpolatedBody = {}; // Empty body for prune request
+          break;
+
+        case "neural_route": // Sending a query to a model
+          console.log("Handling 'neural_route' payload...");
+          const rawBody = payload.body;
+
+          // Directly parse the incoming body assuming it's in the correct JSON format
+          try {
+            interpolatedBody = JSON.parse(rawBody);
+          } catch (error) {
+            console.error("Error parsing neural_route body:", error);
+            return; // Exit if parsing fails
+          }
+
+          // Prepare the final body to send to the API
+          interpolatedBody = {
+            content: interpolatedBody.content,
+            role: interpolatedBody.role,
+            model: interpolatedBody.model || undefined, // Optional model
+          };
+
+          // Log the final body for debugging
+          console.log("Final body for neural_route:", interpolatedBody);
+          break;
+
+        case "neural_set_key": // Setting the API key
+          console.log("Handling 'neural_set_key' payload...");
+          interpolatedBody = {
+            provider: interpolatedBody?.provider || "default_provider",
+            api_key: interpolatedBody?.api_key || "your_api_key_here",
+          };
+          break;
+
+        case "neural_available": // Retrieving available models
+          console.log("Handling 'neural_available' payload...");
+          // No body needed for GET request, so keep interpolatedBody as undefined
+          break;
+
+        case "neural_model_info": // Getting information about a specific model
+          console.log("Handling 'neural_model_info' payload...");
+          // Append the model name to the URL for this request
+          interpolatedUrl = `${interpolatedUrl}/${payload.model}`;
           break;
 
         case "other":
         default:
           console.log("Handling 'other' or unknown payload...");
-          // No specific handling for 'other', keeping the interpolatedBody as is
           break;
       }
 
@@ -571,14 +606,35 @@ export default function PayloadMakerUI() {
         data = await response.text();
       }
 
-      // Update the results in state
-      setResults((prev) => ({
-        ...prev,
-        [payload.id]: { url: interpolatedUrl, payload, response: data },
-      }));
-
-      toast.success(`Payload "${payload.name}" sent successfully!`);
-      return data;
+      // Check the response status
+      if (response.ok) {
+        // If the response status is 200-299
+        toast.success(`Payload "${payload.name}" sent successfully!`);
+        // Update the results in state
+        setResults((prev) => ({
+          ...prev,
+          [payload.id]: { url: interpolatedUrl, payload, response: data },
+        }));
+        return data;
+      } else {
+        // If the response status is not OK (not in the 200-299 range)
+        console.error("Error response:", data);
+        toast.error(
+          `Failed to send payload "${payload.name}": ${response.status} - ${
+            data.message || data
+          }`
+        );
+        // Update results in state with the error
+        setResults((prev) => ({
+          ...prev,
+          [payload.id]: {
+            url: interpolatedUrl,
+            payload,
+            response: { error: data },
+          },
+        }));
+        return { error: data };
+      }
     } catch (error) {
       console.error("Error sending payload:", error);
 
@@ -592,20 +648,11 @@ export default function PayloadMakerUI() {
         },
       }));
 
-      // Store the error result in localStorage
-      const recentResults =
-        JSON.parse(localStorage.getItem("recentResults")) || {};
-      recentResults[payload.id] = {
-        url: payload.url,
-        payload,
-        response: { error: error.message },
-      };
-      localStorage.setItem("recentResults", JSON.stringify(recentResults));
-
       toast.error(`Failed to send payload "${payload.name}": ${error.message}`);
       return { error: error.message };
     }
   };
+
   const executePayloadWithSubtasks = async (payload) => {
     const mainResult = await handleSendPayload(payload);
     if (payload.subtasks && payload.subtasks.length > 0) {
@@ -813,7 +860,7 @@ export default function PayloadMakerUI() {
               onChange={(e) =>
                 updatePayload(activePayload.id, { body: e.target.value })
               }
-              placeholder="Data to add to Qdrant (JSON)"
+              placeholder="Data to add to Gravrag (JSON)"
               rows={8}
             />
           </>
@@ -835,6 +882,57 @@ export default function PayloadMakerUI() {
 
       case "prune":
         return <>{commonFields}</>;
+
+      case "neural_route":
+        return (
+          <>
+            {commonFields}
+            <Textarea
+              value={activePayload.body}
+              onChange={(e) =>
+                updatePayload(activePayload.id, { body: e.target.value })
+              }
+              placeholder="Request body for Neural Route (JSON)"
+              rows={8}
+            />
+          </>
+        );
+
+      case "neural_set_key":
+        return (
+          <>
+            {commonFields}
+            <Input
+              value={activePayload.apiKey}
+              onChange={(e) =>
+                updatePayload(activePayload.id, { apiKey: e.target.value })
+              }
+              placeholder="API Key for Neural Service"
+            />
+          </>
+        );
+
+      case "neural_available":
+        return (
+          <>
+            {commonFields}
+            <p>No body required for this request.</p>
+          </>
+        );
+
+      case "neural_model_info":
+        return (
+          <>
+            {commonFields}
+            <Input
+              value={activePayload.model}
+              onChange={(e) =>
+                updatePayload(activePayload.id, { model: e.target.value })
+              }
+              placeholder="Model Name or ID"
+            />
+          </>
+        );
 
       default:
         return (
@@ -876,16 +974,34 @@ export default function PayloadMakerUI() {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem onSelect={() => createPayload("add")}>
-                Add to Qdrant
+                Gravrag Add Data
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => createPayload("recall")}>
-                Recall Memory from Qdrant
+                Gravrag Recall Memory
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => createPayload("prune")}>
-                Prune Qdrant
+                Gravrag Prune
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => createPayload("other")}>
                 Other
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => createPayload("neural_route")}>
+                Neural Route Query
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => createPayload("neural_set_key")}
+              >
+                Neural Set API Key
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => createPayload("neural_available")}
+              >
+                Neural Available Models
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => createPayload("neural_model_info")}
+              >
+                Neural Model Info
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
