@@ -458,111 +458,101 @@ export default function PayloadMakerUI() {
     toast.success("Routine executed successfully!", { id: "routineExecution" });
   };
 
-  // Payload Execution
-  //   const handleSendPayload = async (payload) => {
-  //     try {
-  //       const headers = JSON.parse(payload.headers);
-  //       if (useAuth) {
-  //         headers["Authorization"] = `Bearer ${bearerToken}`;
-  //       }
-
-  //       // Replace variables in URL, headers, and body
-  //       const interpolatedUrl = interpolateString(payload.url, globalVariables);
-  //       const interpolatedHeaders = interpolateObject(headers, globalVariables);
-  //       const interpolatedBody = payload.body
-  //         ? interpolateString(payload.body, globalVariables)
-  //         : undefined;
-
-  //       const response = await fetch(
-  //         interpolatedUrl || "/api/qdrant/create-point",
-  //         {
-  //           method: payload.method,
-  //           headers: interpolatedHeaders,
-  //           body: payload.method !== "GET" ? interpolatedBody : undefined,
-  //         }
-  //       );
-
-  //       const contentType = response.headers.get("content-type");
-  //       let data;
-  //       if (contentType && contentType.includes("application/json")) {
-  //         data = await response.json();
-  //       } else {
-  //         data = await response.text();
-  //       }
-
-  //       // Update results in state
-  //       setResults((prev) => ({
-  //         ...prev,
-  //         [payload.id]: { url: interpolatedUrl, payload, response: data },
-  //       }));
-
-  //       // Store the results in localStorage
-  //       const recentResults =
-  //         JSON.parse(localStorage.getItem("recentResults")) || {};
-  //       recentResults[payload.id] = {
-  //         url: interpolatedUrl,
-  //         payload,
-  //         response: data,
-  //       }; // Override if it exists
-  //       localStorage.setItem("recentResults", JSON.stringify(recentResults)); // Save back to localStorage
-
-  //       toast.success(`Payload "${payload.name}" sent successfully!`);
-  //       return data;
-  //     } catch (error) {
-  //       console.error("Error sending payload:", error);
-
-  //       // Update results in state
-  //       setResults((prev) => ({
-  //         ...prev,
-  //         [payload.id]: {
-  //           url: payload.url,
-  //           payload,
-  //           response: { error: error.message },
-  //         },
-  //       }));
-
-  //       // Store the error result in localStorage
-  //       const recentResults =
-  //         JSON.parse(localStorage.getItem("recentResults")) || {};
-  //       recentResults[payload.id] = {
-  //         url: payload.url,
-  //         payload,
-  //         response: { error: error.message },
-  //       };
-  //       localStorage.setItem("recentResults", JSON.stringify(recentResults)); // Save back to localStorage
-
-  //       toast.error(`Failed to send payload "${payload.name}".`);
-  //       return { error: error.message };
-  //     }
-  //   };
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  // Payload Execution:
   const handleSendPayload = async (payload) => {
     try {
+      console.log("Payload details:", payload);
       let headers = {};
+
+      // Parse headers safely and replace single quotes with double quotes
       try {
-        headers = JSON.parse(payload.headers);
+        const sanitizedHeaders = payload.headers.replace(/'/g, '"');
+        headers = JSON.parse(sanitizedHeaders);
       } catch (error) {
         console.error("Error parsing headers:", error);
         toast.error("Invalid headers format. Please check your JSON.");
         return;
       }
 
+      // Add default Content-Type header if none exists
+      if (!headers["Content-Type"]) {
+        headers["Content-Type"] = "application/json";
+      }
+
+      // Add Authorization if needed
       if (useAuth) {
         headers["Authorization"] = `Bearer ${bearerToken}`;
       }
 
-      // Replace variables in URL, headers, and body
-      const interpolatedUrl = interpolateString(payload.url, globalVariables);
+      // Replace variables in URL and headers
+      let interpolatedUrl = interpolateString(payload.url, globalVariables);
       const interpolatedHeaders = interpolateObject(headers, globalVariables);
       let interpolatedBody;
 
-      try {
-        const parsedBody = JSON.parse(payload.body);
-        interpolatedBody = interpolateObject(parsedBody, globalVariables);
-      } catch (error) {
-        console.error("Error parsing body:", error);
-        interpolatedBody = interpolateString(payload.body, globalVariables);
+      // Handle payload type-specific logic
+      switch (payload.type) {
+        case "add": // Creating memory
+          console.log("Handling 'add' payload (Creating Memory)...");
+
+          interpolatedBody = {
+            content: interpolatedBody?.content || "This is a sample memory",
+            metadata: {
+              objective_id: interpolatedBody?.metadata?.objective_id || "obj_1",
+              task_id: interpolatedBody?.metadata?.task_id || "task_1",
+            },
+          };
+          break;
+
+        case "recall": // Recalling memory
+          console.log("Handling 'recall' payload (Recalling Memory)...");
+
+          // Use a base value of top_k of 5 and update the query from payload
+          const query = interpolatedBody?.query || "your_query_here";
+          const topK = 5; // Default value for top_k
+
+          interpolatedBody = {
+            query: query,
+            top_k: topK,
+          };
+          // No need to modify the URL, just ensure we send a POST request
+          break;
+
+        case "prune": // Pruning memory
+          console.log("Handling 'prune' payload (Pruning Memory)...");
+
+          interpolatedBody = {}; // Empty body for prune request
+          break;
+
+        case "other":
+        default:
+          console.log("Handling 'other' or unknown payload...");
+          // No specific handling for 'other', keeping the interpolatedBody as is
+          break;
       }
 
+      // Final console.log for the request details before sending
+      console.log("Sending request with the following details:", {
+        url: interpolatedUrl,
+        method: payload.method,
+        headers: interpolatedHeaders,
+        body:
+          payload.method !== "GET"
+            ? JSON.stringify(interpolatedBody)
+            : undefined,
+      });
+
+      // Send the request
       const response = await fetch(interpolatedUrl, {
         method: payload.method,
         headers: interpolatedHeaders,
@@ -574,27 +564,18 @@ export default function PayloadMakerUI() {
 
       const contentType = response.headers.get("content-type");
       let data;
+
       if (contentType && contentType.includes("application/json")) {
         data = await response.json();
       } else {
         data = await response.text();
       }
 
-      // Update results in state
+      // Update the results in state
       setResults((prev) => ({
         ...prev,
         [payload.id]: { url: interpolatedUrl, payload, response: data },
       }));
-
-      // Store the results in localStorage
-      const recentResults =
-        JSON.parse(localStorage.getItem("recentResults")) || {};
-      recentResults[payload.id] = {
-        url: interpolatedUrl,
-        payload,
-        response: data,
-      };
-      localStorage.setItem("recentResults", JSON.stringify(recentResults));
 
       toast.success(`Payload "${payload.name}" sent successfully!`);
       return data;
@@ -625,7 +606,6 @@ export default function PayloadMakerUI() {
       return { error: error.message };
     }
   };
-
   const executePayloadWithSubtasks = async (payload) => {
     const mainResult = await handleSendPayload(payload);
     if (payload.subtasks && payload.subtasks.length > 0) {
@@ -783,6 +763,7 @@ export default function PayloadMakerUI() {
   const renderPayloadEditWindow = () => {
     if (!activePayload) return null;
 
+    // Common fields for all payloads
     const commonFields = (
       <>
         <Input
@@ -821,7 +802,8 @@ export default function PayloadMakerUI() {
       </>
     );
 
-    switch (payloadType) {
+    // Payload-specific form fields
+    switch (activePayload.type) {
       case "add":
         return (
           <>
@@ -836,6 +818,7 @@ export default function PayloadMakerUI() {
             />
           </>
         );
+
       case "recall":
         return (
           <>
@@ -849,21 +832,10 @@ export default function PayloadMakerUI() {
             />
           </>
         );
+
       case "prune":
-        return (
-          <>
-            {commonFields}
-            <Input
-              value={activePayload.pruneCondition}
-              onChange={(e) =>
-                updatePayload(activePayload.id, {
-                  pruneCondition: e.target.value,
-                })
-              }
-              placeholder="Condition for pruning Qdrant"
-            />
-          </>
-        );
+        return <>{commonFields}</>;
+
       default:
         return (
           <>
