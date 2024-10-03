@@ -165,6 +165,10 @@ export default function PayloadMakerUI() {
   const [sortOption, setSortOption] = useState("name");
   const [payloadType, setPayloadType] = useState("other");
 
+  //Store the Payloads inside the Vector DB:
+  //Run the routines then click on push TO Qdrant:
+  const [pushToDB, setPushToDB] = useState([]);
+
   // Refs for Drag-and-Drop
   const dragItem = useRef();
   const dragOverItem = useRef();
@@ -500,9 +504,13 @@ export default function PayloadMakerUI() {
       const interpolatedHeaders = interpolateObject(headers, globalVariables);
       let interpolatedBody;
 
+      //title - needed to push data to the DB
+      let title = "";
+
       // Handle payload type-specific logic
       switch (payload.type) {
         case "add": // Creating memory
+          title = "Payload for Adding data to the Gravrag  (Creating Memory)";
           console.log("Handling 'add' payload (Creating Memory)...");
           interpolatedBody = {
             content: interpolatedBody?.content || "This is a sample memory",
@@ -514,6 +522,8 @@ export default function PayloadMakerUI() {
           break;
 
         case "recall": // Recalling memory
+          title =
+            "Payload for Pulling data from the Gravrag  (Recalling Memory)";
           console.log("Handling 'recall' payload (Recalling Memory)...");
           const query = interpolatedBody?.query || "your_query_here";
           const topK = 5; // Default value for top_k
@@ -524,11 +534,14 @@ export default function PayloadMakerUI() {
           break;
 
         case "prune": // Pruning memory
+          title = "Payload for Pruning the Gravrag";
           console.log("Handling 'prune' payload (Pruning Memory)...");
           interpolatedBody = {}; // Empty body for prune request
           break;
 
         case "neural_route": // Sending a query to a model
+          title =
+            "Payload for Sending a Query to a Model and getting a response (Neural route Payload)";
           console.log("Handling 'neural_route' payload...");
           const rawBody = payload.body;
 
@@ -552,19 +565,29 @@ export default function PayloadMakerUI() {
           break;
 
         case "neural_set_key": // Setting the API key
-          console.log("Handling 'neural_set_key' payload...");
+          title =
+            "Payload for Adding API Keys to a Model (Neural Set Key Payload)";
+          let body = JSON.parse(payload.apiKey);
+          console.log("handling 'neural_set_key' payload...");
+
           interpolatedBody = {
-            provider: interpolatedBody?.provider || "default_provider",
-            api_key: interpolatedBody?.api_key || "your_api_key_here",
+            provider: body?.provider || "default_provider",
+            api_key:
+              interpolateString(body?.api_key, globalVariables) ||
+              "your_api_key_here",
           };
           break;
 
         case "neural_available": // Retrieving available models
+          title =
+            "Payload for Checking what models are available (Neural Available Models Payload)";
           console.log("Handling 'neural_available' payload...");
           // No body needed for GET request, so keep interpolatedBody as undefined
           break;
 
         case "neural_model_info": // Getting information about a specific model
+          title =
+            "Payload for Getting information about the model (Neural Model Info Payload)";
           console.log("Handling 'neural_model_info' payload...");
 
           // Check if payload.model exists, append to URL if available
@@ -579,8 +602,7 @@ export default function PayloadMakerUI() {
           break;
       }
 
-      // Final console.log for the request details before sending
-      console.log("Sending request with the following details:", {
+      let JsonObjectToSend = {
         url: interpolatedUrl,
         method: payload.method,
         headers: interpolatedHeaders,
@@ -588,16 +610,19 @@ export default function PayloadMakerUI() {
           payload.method !== "GET"
             ? JSON.stringify(interpolatedBody)
             : undefined,
-      });
+      };
+
+      // Final console.log for the request details before sending
+      console.log(
+        "Sending request with the following details:",
+        JsonObjectToSend
+      );
 
       // Send the request
       const response = await fetch(interpolatedUrl, {
-        method: payload.method,
-        headers: interpolatedHeaders,
-        body:
-          payload.method !== "GET"
-            ? JSON.stringify(interpolatedBody)
-            : undefined,
+        method: JsonObjectToSend.method,
+        headers: JsonObjectToSend.headers,
+        body: JsonObjectToSend.body,
       });
 
       const contentType = response.headers.get("content-type");
@@ -611,6 +636,34 @@ export default function PayloadMakerUI() {
 
       // Check the response status
       if (response.ok) {
+        // Update the pushToDB state
+        const payloadTitle = title;
+
+        // Update the pushToDB state
+        setPushToDB((prevState) => {
+          // Find if a payload with the same title already exists
+          const existingIndex = prevState.findIndex(
+            (item) => item.title === payloadTitle
+          );
+
+          // Structure: { title: payload.type, content: JsonObjectToSend }
+          const newPayload = {
+            title: payloadTitle,
+            content: JsonObjectToSend,
+          };
+
+          // If the payload with the same title exists, replace it, otherwise append it
+          if (existingIndex !== -1) {
+            // Payload with the same title exists, overwrite it
+            const updatedArray = [...prevState];
+            updatedArray[existingIndex] = newPayload;
+            return updatedArray;
+          } else {
+            // Payload doesn't exist, append it
+            return [...prevState, newPayload];
+          }
+        });
+
         // If the response status is 200-299
         toast.success(`Payload "${payload.name}" sent successfully!`);
         // Update the results in state
@@ -781,6 +834,56 @@ export default function PayloadMakerUI() {
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  /*
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  */
+  //This function will push all of the payloads into the DB
+  const pushPayloadsToDB = async () => {
+    // Loop through each object in the pushToDB array
+    for (const item of pushToDB) {
+      const { title, content } = item;
+
+      try {
+        // Prepare the metadata object (the content JSON object)
+        const metadataObj = content;
+
+        let baseURL = interpolateString("${baseUrl}", globalVariables);
+
+        // Send POST request to the Vector DB with content and metadata
+        const response = await fetch(`${baseURL}/gravrag/create_memory`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            content: title, // Sending title as the content
+            metadata: metadataObj, // Sending JSON object as metadata
+          }),
+        });
+
+        // Check if the insertion was successful
+        if (!response.ok) {
+          toast.error(
+            `Failed to insert "${title}" into the vector DB. Network response was not ok.`
+          );
+        } else {
+          toast.success(`Successfully inserted "${title}" into the vector DB.`);
+        }
+      } catch (error) {
+        toast.error(
+          `Error inserting "${title}" into the vector DB: ${error.message}`
+        );
+      }
+    }
+  };
   // Execute All Payloads
   const executeAllPayloads = async () => {
     if (payloads.length === 0) {
@@ -1044,6 +1147,13 @@ export default function PayloadMakerUI() {
             className="w-full"
           >
             <Play className="mr-2 h-4 w-4" /> Execute All Routines
+          </Button>
+          <Button
+            onClick={pushPayloadsToDB}
+            variant="default"
+            className="w-full"
+          >
+            <Play className="mr-2 h-4 w-4" /> Push All Payloads To DB
           </Button>
           <div className="col-span-2"></div>
         </div>
