@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: node:20
+    working_dir: /app
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - node_modules:/app/node_modules
+      - ./frontend:/app
+      - ./docker/frontend.sh:/app/entrypoint.sh
+    entrypoint: bash -c /app/entrypoint.sh
+    networks:
+      - groqy
+
+  backend:
+    image: python:3.11.9-slim
+    working_dir: /app
+    depends_on:
+      - qdrant
+    ports:
+      - "8000:8000"
+    volumes:
+      - venv:/app/env
+      - ./backend/app:/app
+      - ./docker/backend.sh:/app/entrypoint.sh
+      - ./docker/wait-for-it.sh:/app/wait-for-it.sh
+    entrypoint: bash -c "/app/wait-for-it.sh -h qdrant -p 6333 && /app/entrypoint.sh"
+    networks:
+      - groqy
+
+  qdrant:
+    image: qdrant/qdrant
+    ports:
+      - "6333:6333"
+    expose:
+      - "6333:6333"
+    volumes:
+      - db:/qdrant/storage
+    networks:
+        - groqy
+
+volumes:
+  db:
+  node_modules:
+  venv:
+
+networks:
+  groqy:

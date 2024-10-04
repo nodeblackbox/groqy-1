@@ -2,7 +2,7 @@ import qdrant_client
 from qdrant_client.http.models import PointIdsSelector  # Ensure correct import
 
 # Connect to Qdrant
-client = qdrant_client.QdrantClient(url="http://localhost:6333")
+client = qdrant_client.QdrantClient(url="http://qdrant:6333")
 
 # Specify the collection and point IDs you want to delete
 try:

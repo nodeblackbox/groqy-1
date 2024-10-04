@@ -1,0 +1,181 @@
+{
+  "projectName": "Campaign 2026: Cyber Outreach",
+  "columns": [
+    {
+      "id": "icebox",
+      "title": "Icebox",
+      "tasks": [
+        {
+          "id": "task_1727145816527_ibao8hacf",
+          "title": "OARC API",
+          "description": "setup the API and allow frontend to access toolset",
+          "assignedTo": "Unassigned",
+          "createdAt": "2024-09-24T02:43:36.527Z",
+          "updatedAt": "2024-09-24T02:43:54.538Z",
+          "dueDate": "2024-10-01",
+          "priority": "Medium",
+          "segment": "Unspecified",
+          "status": "Icebox",
+          "tags": [],
+          "attachments": [],
+          "comments": [],
+          "checklist": [],
+          "estimatedTime": 0,
+          "actualTime": 0,
+          "isArchived": false,
+          "createdBy": "Current User",
+          "lastModifiedBy": "Current User"
+        },
+        {
+          "id": "task_1727145838850_tc8m6o808",
+          "title": "Agent Chef Dataset Library",
+          "description": "collection of templates and dataset requests for strawberry to generate training datasets",
+          "assignedTo": "Unassigned",
+          "createdAt": "2024-09-24T02:43:58.850Z",
+          "updatedAt": "2024-09-24T02:44:29.648Z",
+          "dueDate": "2024-10-01",
+          "priority": "Medium",
+          "segment": "Unspecified",
+          "status": "Icebox",
+          "tags": [],
+          "attachments": [],
+          "comments": [],
+          "checklist": [],
+          "estimatedTime": 0,
+          "actualTime": 0,
+          "isArchived": false,
+          "createdBy": "Current User",
+          "lastModifiedBy": "Current User"
+        }
+      ]
+    },
+    {
+      "id": "todo",
+      "title": "To Do",
+      "tasks": [
+        {
+          "id": "task_1727566328053_gv2snxbuf",
+          "title": "New Task",
+          "description": "",
+          "assignedTo": "Unassigned",
+          "createdAt": "2024-09-28T23:32:08.053Z",
+          "updatedAt": "2024-09-28T23:32:44.957Z",
+          "dueDate": "2024-10-05",
+          "priority": "High",
+          "segment": "Unspecified",
+          "status": "To Do",
+          "tags": [],
+          "attachments": [],
+          "comments": [],
+          "checklist": [],
+          "estimatedTime": 0,
+          "actualTime": 0,
+          "isArchived": false,
+          "createdBy": "Current User",
+          "lastModifiedBy": "Current User"
+        }
+      ]
+    },
+    {
+      "id": "inProgress",
+      "title": "In Progress",
+      "tasks": [
+        {
+          "id": "task_1727566329444_qatco6h9r",
+          "title": "New Task",
+          "description": "",
+          "assignedTo": "Unassigned",
+          "createdAt": "2024-09-28T23:32:09.445Z",
+          "updatedAt": "2024-09-28T23:32:09.445Z",
+          "dueDate": "2024-10-05",
+          "priority": "Medium",
+          "segment": "Unspecified",
+          "status": "In Progress",
+          "tags": [],
+          "attachments": [],
+          "comments": [],
+          "checklist": [],
+          "estimatedTime": 0,
+          "actualTime": 0,
+          "isArchived": false,
+          "createdBy": "Current User",
+          "lastModifiedBy": "Current User"
+        },
+        {
+          "id": "task_1727145736630_x3fyxdi49",
+          "title": "Agent Chef API",
+          "description": "setup the api and allow the frontend to access toolset",
+          "assignedTo": "borch",
+          "createdAt": "2024-09-24T02:42:16.630Z",
+          "updatedAt": "2024-09-24T02:43:07.416Z",
+          "dueDate": "2024-10-01",
+          "priority": "Medium",
+          "segment": "Unspecified",
+          "status": "In Progress",
+          "tags": [],
+          "attachments": [],
+          "comments": [],
+          "checklist": [],
+          "estimatedTime": 0,
+          "actualTime": 0,
+          "isArchived": false,
+          "createdBy": "Current User",
+          "lastModifiedBy": "Current User"
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "title": "Review",
+      "tasks": []
+    },
+    {
+      "id": "done",
+      "title": "Done",
+      "tasks": [
+        {
+          "id": "task_1726959480424_esued562d",
+          "title": "New Task",
+          "description": "",
+          "assignedTo": "Unassigned",
+          "createdAt": "2024-09-21T22:58:00.424Z",
+          "updatedAt": "2024-09-21T22:58:00.424Z",
+          "dueDate": "2024-09-28",
+          "priority": "Medium",
+          "segment": "Unspecified",
+          "status": "Done",
+          "tags": [],
+          "attachments": [],
+          "comments": [],
+          "checklist": [],
+          "estimatedTime": 0,
+          "actualTime": 0,
+          "isArchived": false,
+          "createdBy": "Current User",
+          "lastModifiedBy": "Current User"
+        },
+        {
+          "id": "task_1726959595328_odczzvdq8",
+          "title": "New Task",
+          "description": "",
+          "assignedTo": "Unassigned",
+          "createdAt": "2024-09-21T22:59:55.328Z",
+          "updatedAt": "2024-09-21T22:59:55.328Z",
+          "dueDate": "2024-09-28",
+          "priority": "Medium",
+          "segment": "Unspecified",
+          "status": "Done",
+          "tags": [],
+          "attachments": [],
+          "comments": [],
+          "checklist": [],
+          "estimatedTime": 0,
+          "actualTime": 0,
+          "isArchived": false,
+          "createdBy": "Current User",
+          "lastModifiedBy": "Current User"
+        }
+      ]
+    }
+  ]
+}
