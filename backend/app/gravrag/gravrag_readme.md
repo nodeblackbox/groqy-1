@@ -1,195 +1,163 @@
-# **Gravitational Retrieval Augmented Generation (GravRAG)**
+# GravRAG: Gravitational **Retrieval-Augmented Generation (RAG)** System
 
-This README provides an in-depth explanation of the **Gravitational Retrieval Augmented Generation (GravRAG)** system. GravRAG is a powerful AI system designed to store, recall, and prune memories using gravitational concepts applied to semantic vectors, for enhanced retrieval-augmented generation. It integrates Qdrant for vector storage and retrieval, and utilizes Sentence Transformers to embed text into high-dimensional vectors for semantic similarity.
+## Overview
 
-## **Core Concepts of GravRAG**
+**GravRAG** is an enhanced **Retrieval-Augmented Generation (RAG)** system, incorporating advanced memory management features through **gravitational pull**-based ranking and **metadata integration**. It enhances traditional RAG systems by introducing concepts like **semantic relativity**, **memetic similarity**, and **spacetime decay**, all of which contribute to a more contextually aware and long-term efficient memory recall system.
 
-### 1. **Gravitational Pull in Memory Management**
-Gravitational pull is the central concept in GravRAG that quantifies the importance of each memory. It is determined by several factors:
-- **Vector Magnitude**: The strength of the memory based on its semantic representation.
-- **Recall Count**: The frequency at which the memory has been retrieved.
-- **Memetic Similarity**: The relevance of the memory based on context, recurrence, and shared tags with reference memories.
-- **Semantic Relativity**: The similarity between the stored memory and the incoming query.
+GravRAG optimizes **retrieval** of information by balancing the relevance of past memories (data) with their dynamic importance in the current context, offering enhanced **generation** of outputs using the most relevant information.
 
-These factors together create a dynamic system where memories with higher gravitational pull have a higher likelihood of being recalled.
+## Key Features
 
-### 2. **Spacetime Coordinate**
-Spacetime coordinate is a decaying function that incorporates both **gravitational pull** and **time**. The longer a memory goes unaccessed, the more its relevance decays, mimicking the concept of gravitational decay over time. This concept ensures that outdated memories become less prominent in the recall process unless frequently accessed.
+1. **Dual Retrieval Mechanism**:
+   - **Semantic Search**: Memories are vectorized using a **sentence transformer model** and can be recalled via free-text queries based on **semantic similarity**.
+   - **Metadata Search**: Memories are tagged with **rich metadata** (e.g., `user_id`, `task_id`, `project_id`) and can be recalled directly through metadata filtering.
 
-### 3. **Memetic Similarity**
-Memetic similarity is calculated dynamically to represent the contextual alignment of a memory with respect to the query or other reference memories. The concept relies on tags and shared attributes to assess how relevant a memory is in the broader context. It supports context-aware recall, making memories more valuable when they are related to current events or topics.
+2. **Gravitational Pull Ranking**:
+   - Memories are ranked not only by their semantic similarity but also by their **gravitational pull**, which is dynamically calculated based on memory relevance, frequency of use, and recency.
 
-### 4. **Semantic Relativity**
-Semantic relativity measures the closeness of a query to a stored memory in vector space. Cosine similarity is used to compute how semantically similar the two are. The higher the similarity, the more relevant the memory is for the query.
+3. **Spacetime Decay**:
+   - Older memories gradually lose importance over time unless frequently recalled, ensuring that irrelevant or outdated information naturally decays, optimizing performance in the long term.
 
-### 5. **Dynamic Memory Pruning**
-GravRAG ensures the memory store does not become cluttered by **pruning** low-relevance memories. Memories with low gravitational pull and low spacetime coordinates are periodically removed to maintain a relevant and efficient knowledge base.
+4. **Efficient Memory Management**:
+   - GravRAG offers **pruning** of low-relevance memories and **purging** capabilities to maintain system efficiency. These memory management tools prevent the system from being bogged down by stale data.
 
----
+5. **Enhanced Recall for Generation**:
+   - When used in a **generation system** (like a GPT or other language model), GravRAG ensures that the generated responses are supported by the most relevant and contextually significant data, improving the overall quality and reliability of generated outputs.
 
-## **How GravRAG Works**
+## How GravRAG Works
 
-### 1. **Memory Creation**
-When a new memory is created, GravRAG:
-- **Embeds the content** using a Sentence Transformer to convert it into a high-dimensional semantic vector.
-- **Calculates gravitational pull**, **memetic similarity**, and **spacetime coordinates** based on content and metadata.
-- **Stores the memory** in a Qdrant collection for efficient vector-based retrieval.
+### 1. **Memory Creation**:
+   - When new data (memories) is created, it's stored in vectorized form using semantic embeddings. These memories are enriched with **metadata** (tags, timestamps, etc.) for later filtering or recall. 
 
-**Steps in Detail**:
-1. **Vectorize Content**: The content is passed through the Sentence Transformer model to generate its vector.
-2. **Metadata Enrichment**: The metadata includes information such as timestamp, tags, recall count, and initial similarity measures.
-3. **Gravitational Calculations**: Gravitational pull, spacetime coordinates, and memetic similarity are computed to quantify the significance of the memory.
+### 2. **Memory Recall**:
+   - **Semantic Recall**: The user can provide a **free-text query**, which is matched against the stored memories based on their **vectorized semantic similarity**.
+   - **Metadata Recall**: Alternatively, users can recall memories based on structured **metadata filters**, such as retrieving all memories tagged to a specific project or user.
 
-### 2. **Memory Recall**
-GravRAG retrieves the most relevant memories based on a query. The process involves:
-1. **Vectorizing the Query**: The query text is transformed into a semantic vector using the same Sentence Transformer.
-2. **Searching the Memory Store**: A semantic search is conducted in the Qdrant vector store to find the memories most similar to the query.
-3. **Updating Relevance**: The retrieved memories’ gravitational pull, semantic relativity, and memetic similarity are updated based on the query.
-4. **Returning Results**: The most relevant memories are returned to the user, sorted by their gravitational pull and spacetime coordinate.
+### 3. **Gravitational Pull & Ranking**:
+   - Memories are dynamically ranked based on their **gravitational pull**, which combines factors like **semantic similarity**, **frequency of recall**, and **relevance to the current context**.
+   - This ensures that the most important and contextually appropriate memories are prioritized during recall, especially in **generation tasks** where relevance directly impacts output quality.
 
-**Steps in Detail**:
-1. **Query Vectorization**: The input query is embedded into a vector.
-2. **Vector Search**: Qdrant performs a nearest-neighbor search to find memories with the closest vectors.
-3. **Relevance Update**: For each recalled memory, semantic relativity and gravitational pull are updated to reflect its current relevance to the query.
+### 4. **Decay and Pruning**:
+   - Memories are assigned a **spacetime coordinate**, representing their relevance decay over time. Memories that are not frequently recalled gradually lose their gravitational pull and can be **pruned** (removed) when they fall below a certain threshold of importance.
 
-### 3. **Memory Pruning**
-Over time, memories that are no longer relevant (low gravitational pull and low spacetime coordinate) are pruned to keep the memory store optimized. This prevents stale memories from overwhelming the system and ensures efficient retrieval.
+## Benefits Over Traditional RAG Systems
 
----
+GravRAG addresses some of the limitations found in traditional Retrieval-Augmented Generation systems:
 
-## **GravRAG's Gravitational Calculations**
+### 1. **Dynamic Memory Relevance**:
+   - Traditional RAG systems rely solely on **static vector-based retrieval**, which doesn't take into account how **relevant** or **frequently accessed** a memory might be.
+   - GravRAG, by contrast, dynamically recalculates a memory's **gravitational pull**, ensuring that **frequently used** and **important memories** remain prioritized.
 
-### **Gravitational Pull Formula**
-The gravitational pull is computed as:
+### 2. **Structured Metadata Retrieval**:
+   - While many RAG systems are limited to semantic search, GravRAG integrates **metadata-based recall**, allowing for more structured and **targeted retrieval** of specific memories. This is especially useful in use cases where organizational structure (e.g., tasks, projects, user activity) needs to be referenced directly.
 
-\[
-\text{Gravitational Pull} = \text{Vector Magnitude} \times (1 + \log(1 + \text{Recall Count})) \times \text{Memetic Similarity} \times \text{Semantic Relativity}
-\]
+### 3. **Efficient Long-Term Memory Management**:
+   - Over time, traditional RAG systems can become overloaded with **stale data**, impacting both performance and recall accuracy. GravRAG addresses this with a **spacetime decay model**, ensuring that memories naturally decay unless they remain contextually significant.
+   - **Pruning** and **purging** tools ensure that the system remains clean and performant even as memory usage grows.
 
-Where:
-- **Vector Magnitude**: The strength of the memory’s vector.
-- **Recall Count**: The number of times the memory has been accessed.
-- **Memetic Similarity**: The contextual similarity between the memory and reference points (tags, themes).
-- **Semantic Relativity**: The similarity between the query vector and the memory vector.
+### 4. **Improved Output Quality for Generation Tasks**:
+   - By incorporating **dynamic relevance factors** (e.g., gravitational pull), GravRAG ensures that only the **most relevant data** is used during generation tasks. This enhances the quality, accuracy, and contextual alignment of generated content.
 
-### **Spacetime Coordinate**
-The spacetime coordinate decays over time based on gravitational pull:
+## How GravRAG Benefits End Users
 
-\[
-\text{Spacetime Coordinate} = \frac{\text{Gravitational Pull}}{1 + (\text{Current Time} - \text{Timestamp})}
-\]
+### 1. **Faster and More Relevant Information Retrieval**:
+   - Users can find information quickly using **free-text search**, or through **targeted metadata queries**, without the burden of navigating through stale or irrelevant data.
+   - Memories related to recent or frequently accessed data are ranked higher, improving the speed and relevance of retrieval.
 
----
+### 2. **Personalized and Context-Aware Generation**:
+   - When used with **language models** or other AI-generation tools, GravRAG ensures that outputs are generated from the most **contextually appropriate data**, improving the quality of the generated content.
+   - This makes it ideal for **chatbots**, **AI assistants**, and other **interactive systems** where context and relevance are paramount.
 
-## **GravRAG Usage**
+### 3. **Scalable and Long-Term Efficiency**:
+   - For teams or enterprises managing **large datasets**, GravRAG's pruning and decaying memory model ensures that the system doesn't slow down or produce irrelevant results over time, making it highly scalable for **long-term projects**.
 
-### **1. Memory Creation**
+## Use Cases
 
-```python
-await memory_manager.create_memory(
-    content="This is a memory about machine learning.",
-    metadata={
-        "session_id": "session1",
-        "tags": ["AI", "ML", "research"],
-        "objective_id": "obj_1",
-        "task_id": "task_1"
+### 1. **AI-Powered Assistants**:
+   - GravRAG can power **intelligent assistants** that provide context-aware responses, drawing from a combination of recent and important memories, whether the assistant is helping with scheduling, project management, or other tasks.
+   
+### 2. **Knowledge Base Management**:
+   - Organizations that rely on **knowledge bases** can use GravRAG to retrieve the most relevant documents or information. By integrating **metadata** and **semantic search**, GravRAG ensures that users always find the most pertinent information without wading through outdated or irrelevant entries.
+
+### 3. **Long-Term Project Management**:
+   - Teams working on long-term projects can use GravRAG to efficiently recall memories tied to specific tasks, objectives, or users, while also benefiting from the system's ability to decay older, irrelevant information over time.
+
+### 4. **Content Generation Systems**:
+   - For applications requiring **contextual text generation** (e.g., blogs, emails, product descriptions), GravRAG can be integrated with **GPT-style models** to ensure that content is generated based on the most contextually significant data.
+
+## Example API Payloads
+
+### 1. **Create Memory**
+- **Endpoint**: `/gravrag/create_memory`
+- **Example Payload**:
+  ```json
+  {
+    "content": "User completed the onboarding task for Project X",
+    "metadata": {
+      "objective_id": "project_x",
+      "task_id": "onboarding_task",
+      "tags": ["user_interaction", "onboarding", "project_x"],
+      "user_id": "user_123",
+      "timestamp": "2024-10-06T15:45:00Z"
     }
-)
-```
+  }
+  ```
+  - **Utility**: This memory might be related to a user's interaction with a project task. It's stored both with **semantic data** (the content) and **metadata** (tags, project identifiers).
 
-### **2. Memory Recall**
+### 2. **Recall Memory (Semantic Search)**
+- **Endpoint**: `/gravrag/recall_memory`
+- **Example Payload**:
+  ```json
+  {
+    "query": "onboarding task completion",
+    "top_k": 5
+  }
+  ```
+  - **Utility**: This performs a **semantic search** to retrieve the top 5 memories most similar to the query. Useful for general memory recall.
 
-```python
-results = await memory_manager.recall_memory(query_content="What is machine learning?", top_k=5)
-```
-
-### **3. Memory Pruning**
-
-```python
-await memory_manager.prune_memories()
-```
-
----
-
-## **GravRAG Architecture Overview**
-
-### **1. MemoryPacket Class**
-- Responsible for encapsulating each memory.
-- Handles vector storage, metadata management, and the calculation of key metrics like gravitational pull and spacetime coordinate.
-
-### **2. MemoryManager Class**
-- Manages the interaction with the Qdrant vector store.
-- Handles memory creation, recall, and pruning processes.
-- Responsible for ensuring the integrity of the memory store and efficiently managing storage and retrieval.
-
----
-
-## **GravRAG and Qdrant**
-
-GravRAG utilizes **Qdrant**, a powerful vector database, to store and retrieve high-dimensional semantic vectors. It relies on **Qdrant’s nearest-neighbor search** capabilities to efficiently find the most relevant memories for a given query.
-
-### **Why Qdrant?**
-- **High Performance**: Qdrant supports fast and scalable vector searches.
-- **Cosine Distance**: Qdrant enables cosine similarity searches, which is ideal for text embeddings.
-- **Flexible Schema**: Qdrant’s flexible schema allows for easy storage of both vectors and associated metadata.
-
----
-
-## **Installation and Setup**
-
-### **Requirements**
-- Python 3.7+
-- Qdrant Server (or cloud-hosted Qdrant)
-- Sentence Transformer Model (`all-MiniLM-L6-v2`)
-
-### **Installation**
-1. Install Qdrant client and dependencies:
-    ```bash
-    pip install qdrant-client sentence-transformers
-    ```
-
-2. Install and run Qdrant:
-    - [Qdrant Quickstart Guide](https://qdrant.tech/documentation/quickstart/)
-
-3. Set up your environment variables for Qdrant connection:
-    ```bash
-    export QDRANT_HOST="localhost"
-    export QDRANT_PORT="6333"
-    ```
-
----
-
-## **Example Usage in Production**
-
-### Memory Creation:
-
-```python
-await memory_manager.create_memory(
-    content="What is Quantum Computing?",
-    metadata={
-        "tags": ["quantum", "computing", "AI"],
-        "session_id": "session_xyz"
+### 3. **Recall Memory (Metadata Search)**
+- **Endpoint**: `/gravrag/recall_with_metadata`
+- **Example Payload**:
+  ```json
+  {
+    "metadata": {
+      "objective_id": "project_x",
+      "user_id": "user_123"
     }
-)
-```
+  }
+  ```
+  - **Utility**: This query searches for memories based on **metadata filters**, retrieving all memories related to **user_123** and **project_x**.
 
-### Memory Recall:
+### 4. **Prune Memories**
+- **Endpoint**: `/gravrag/prune_memories`
+- **Example Payload**:
+  ```json
+  {}
+  ```
+  - **Utility**: This prunes low-relevance memories that have decayed over time or have insufficient gravitational pull. Helps keep the system efficient by removing irrelevant data.
 
-```python
-results = await memory_manager.recall_memory(
-    query_content="Tell me about AI and Quantum Computing.",
-    top_k=5
-)
-```
+### 5. **Delete Memory by Metadata**
+- **Endpoint**: `/gravrag/delete_by_metadata`
+- **Example Payload**:
+  ```json
+  {
+    "metadata": {
+      "objective_id": "project_x"
+    }
+  }
+  ```
+  - **Utility**: This deletes memories tied to a specific **objective** or task, ideal for project transitions or data cleanups.
 
-### Pruning Outdated Memories:
+### 6. **Purge All Memories**
+- **Endpoint**: `/gravrag/purge_memories`
+- **
 
-```python
-await memory_manager.prune_memories()
-```
+Example Payload**:
+  ```json
+  {}
+  ```
+  - **Utility**: This performs a **complete system reset**, purging all stored memories. Useful in testing environments or when preparing the system for new data.
 
----
+## Conclusion
 
-## **Conclusion**
-
-GravRAG enhances memory management by integrating **gravitational concepts** with **retrieval-augmented generation (RAG)** techniques, ensuring that relevant memories are always prioritized based on their importance and relevance. This makes it an essential tool for complex AI systems that need to manage and recall large quantities of knowledge efficiently.
+GravRAG offers a significant leap over traditional RAG solutions by introducing **dynamic relevance ranking**, **metadata-based filtering**, and **long-term efficiency** through memory decay. Whether it's for **AI assistants**, **knowledge management**, or **generation systems**, GravRAG ensures that only the most **contextually relevant** and **high-utility** memories are utilized, making it an essential tool for modern, data-driven applications.
