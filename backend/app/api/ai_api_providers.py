@@ -1,7 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Dict, Any, List
+<<<<<<< Updated upstream
 from agentchef_resources.agentchef_resources import LLMManager, model_data, OpenAILLM, OllamaLLM
+=======
+from backend.app.agentchef_resources.agentchef_resources import LLMManager, model_data, OpenAILLM, OllamaLLM
+>>>>>>> Stashed changes
 
 router = APIRouter()
 
@@ -16,7 +20,7 @@ class APIKeyUpdate(BaseModel):
     api_key: str
 
 def get_llm_manager():
-    from agentchef_resources import LLMManager
+    from backend.app.agentchef_resources.agentchef_resources import LLMManager
     return LLMManager()
 
 # Dependency to get the LLMManager instance
