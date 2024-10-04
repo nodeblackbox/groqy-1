@@ -4,7 +4,7 @@ import uvicorn
 
 # Importing Routers
 # from api.agentChef_api import router as agentchef_router
-from api.gravrag_api import router as gravrag_router
+from backend.app.gravrag.gravrag_api import router as gravrag_router
 
 
 app = FastAPI(title="Backend API", description="API for managing AI agents and models")
