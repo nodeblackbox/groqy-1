@@ -514,7 +514,7 @@
     
     # URLs for both APIs
     AGENT_CHEF_API_URL = "http://localhost:8888"
-    GRAV_RAG_API_URL = "http://localhost:6333"
+    GRAV_RAG_API_URL = "http://qdrant:6333"
     
     def prepare_dataset(source, template, num_samples, output_file):
         response = requests.post(f"{AGENT_CHEF_API_URL}/prepare_dataset", json={

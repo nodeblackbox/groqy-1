@@ -1,7 +1,7 @@
 import requests
 import json
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://backend:8000"
 
 def test_create_memory():
     payload = {

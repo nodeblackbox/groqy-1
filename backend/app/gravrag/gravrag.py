@@ -116,7 +116,7 @@ class MemoryPacket:
         return MemoryPacket(payload["vector"], payload["metadata"])
 
 class MemoryManager:
-    def __init__(self, qdrant_host="localhost", qdrant_port=6333, collection_name="Mind"):
+    def __init__(self, qdrant_host="qdrant", qdrant_port=6333, collection_name="Mind"):
         self.qdrant_client = QdrantClient(host=qdrant_host, port=qdrant_port)
         self.collection_name = collection_name
         self.model = SentenceTransformer('all-MiniLM-L6-v2')  # Semantic vector model

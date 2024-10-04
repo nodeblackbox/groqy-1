@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 # from agentChef import DatasetKitchen, TemplateManager, FileHandler
-from backend.app.gravrag.gravrag import Knowledge
+from gravrag.gravrag import MemoryManager
 import uvicorn
 import asyncio
 
@@ -138,7 +138,7 @@ class MemoryInputModel(BaseModel):
 @app.post("/gravrag/memory/create")
 async def create_memory(memory_input: MemoryInputModel):
     try:
-        await Knowledge.create_memory(memory_input.content, memory_input.metadata)
+        await MemoryManager.create_memory(memory_input.content, memory_input.metadata)
         return {"message": "Memory created successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
@@ -146,7 +146,7 @@ async def create_memory(memory_input: MemoryInputModel):
 @app.get("/gravrag/memory/recall")
 async def recall_memory(query: str, top_k: int = 5):
     try:
-        results = await Knowledge.recall_memory(query, top_k)
+        results = await MemoryManager.recall_memory(query, top_k)
         return {"results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
@@ -154,7 +154,7 @@ async def recall_memory(query: str, top_k: int = 5):
 @app.post("/gravrag/memory/prune")
 async def prune_memories():
     try:
-        await Knowledge.prune_memories()
+        await MemoryManager.prune_memories()
         return {"message": "Pruning complete"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
