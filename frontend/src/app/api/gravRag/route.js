@@ -2,7 +2,7 @@
 
 import { NextResponse } from 'next/server';
 
-const API_BASE_URL = 'http://qdrant:6333/gravrag';
+const API_BASE_URL = 'http://localhost:6333/gravrag';
 
 async function makeRequest(endpoint, method, body) {
     const url = `${API_BASE_URL}${endpoint}`;
