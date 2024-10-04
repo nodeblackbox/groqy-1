@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PlusCircle, Trash2, Save, Upload, Settings } from 'lucide-react';
+import { PlusCircle, Trash2, Handle, Save, Upload, Settings } from 'lucide-react';
 
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -69,10 +69,12 @@ const QuantumNode = ({ data }) => {
                 <div className="mt-4">
                     <Label className="text-cyan-400">Inputs</Label>
                     {data.inputs.map((input, index) => (
-                        <div key={input.id} className="my-2">
-                            <div
-                                className="w-4 h-4 rounded-full bg-cyan-500 absolute -left-2"
-                                style={{ top: `${50 + index * 40}px` }}
+                        <div key={input.id} className="my-2 relative">
+                            <Handle
+                                type="target"
+                                position={Position.Left}
+                                id={`input-${input.id}`}
+                                style={{ left: -8, top: '50%', background: '#00FFFF' }}
                             />
                             <span className="text-xs text-cyan-400 ml-4">{input.label}</span>
                         </div>
@@ -81,10 +83,12 @@ const QuantumNode = ({ data }) => {
                 <div className="mt-4">
                     <Label className="text-cyan-400">Outputs</Label>
                     {data.outputs.map((output, index) => (
-                        <div key={output.id} className="my-2">
-                            <div
-                                className="w-4 h-4 rounded-full bg-cyan-500 absolute -right-2"
-                                style={{ top: `${50 + index * 40}px` }}
+                        <div key={output.id} className="my-2 relative">
+                            <Handle
+                                type="source"
+                                position={Position.Right}
+                                id={`output-${output.id}`}
+                                style={{ right: -8, top: '50%', background: '#00FFFF' }}
                             />
                             <span className="text-xs text-cyan-400 mr-4 float-right">{output.label}</span>
                         </div>

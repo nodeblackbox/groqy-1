@@ -13,7 +13,7 @@
 // - /api/openai/v1/codeAnalyzer
 
 // Step-by-step implementation:
-
+// \api\openai\v1\completions
 // 1. Create a model fetcher function:
 function fetchAvailableModels() {
     // Fetch models from Ollama, Groq, and OpenAI

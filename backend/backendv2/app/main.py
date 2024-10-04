@@ -1,0 +1,37 @@
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from prometheus_client import make_asgi_app
+
+from app.api import gravrag, neural_resources
+
+app = FastAPI(title="Cogenesis Backend API")
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
+# Prometheus metrics
+metrics_app = make_asgi_app()
+app.mount("/metrics", metrics_app)
+
+# Include routers
+app.include_router(gravrag.router, prefix="/gravrag", tags=["GravRag"])
+app.include_router(neural_resources.router, prefix="/neural_resources", tags=["Neural Resources"])
+
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the Cogenesis Backend API"}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
