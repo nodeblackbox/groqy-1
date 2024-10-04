@@ -6,7 +6,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BASE_URL = "http://backend:8000/gravrag"
+BASE_URL = "http://localhost:8000/gravrag"
 
 def test_create_memory():
     payload = {
