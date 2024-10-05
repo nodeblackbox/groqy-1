@@ -37,7 +37,7 @@ import Input from "@/components/ui/input";
 import Textarea from "@/components/ui/textarea";
 
 
-const DynamicKanbanBoard = dynamic(() => import("../../components/KanbanBoard"), { ssr: false });
+const DynamicKanbanBoard = dynamic(() => import("@/components/kanpanComponents/KanbanBoard"), { ssr: false });
 
 
 const QuantumContainer = ({ children, className = "" }) => (
