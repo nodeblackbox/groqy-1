@@ -1,0 +1,241 @@
+Here's a set of mixed examples using various data structures from the GravRAG API, along with detailed explanations to help your frontend developers understand the utility and potential use cases for each structure. These examples show how to leverage the API for creating, recalling, and managing memories in a way that can be applied to different real-world scenarios.
+
+### 1. **Create Memory with Contextual Metadata**
+This shows how to create a memory with rich contextual metadata. The metadata can help in retrieving specific types of memories based on tasks, objectives, or tags.
+
+- **Use Case**: Store a user interaction or specific event related to a task or objective.
+  
+- **Example Payload**:
+  ```json
+  {
+    "content": "User completed task A on Project X",
+    "metadata": {
+      "objective_id": "project_x",
+      "task_id": "task_a",
+      "tags": ["user_interaction", "task_completion", "project_x"],
+      "user_id": "user_001",
+      "completion_time": "2024-10-05T15:30:00Z"
+    }
+  }
+  ```
+
+  **Explanation**: 
+  - `content` holds the text description of the memory, such as a log or event.
+  - `metadata` includes specific identifiers like `objective_id` (`project_x`) and `task_id` (`task_a`), allowing easy recall of project-specific interactions.
+  - `tags` can categorize this memory for easy filtering (e.g., all "task_completion" memories).
+
+  **Potential Utility**: 
+  - This allows you to track all tasks associated with a project and recall them later based on user actions, projects, or even completion times.
+
+---
+
+### 2. **Recall Memory Based on Semantic Search**
+This example shows how the frontend can recall memories that match specific semantic content. The GravRAG API uses vector-based search to find memories that are close to the input query, even if the exact wording differs.
+
+- **Use Case**: Find recent user interactions related to a project.
+  
+- **Example Payload**:
+  ```json
+  {
+    "query": "User completed task",
+    "top_k": 5
+  }
+  ```
+
+  **Explanation**: 
+  - `query` allows searching semantically for memories that are similar to "User completed task". Even if the exact phrase does not match, the system will find similar ones.
+  - `top_k` limits the number of returned memories to the 5 closest matches.
+
+  **Example Response**:
+  ```json
+  {
+    "memories": [
+      {
+        "content": "User completed task A on Project X",
+        "metadata": {
+          "objective_id": "project_x",
+          "task_id": "task_a",
+          "tags": ["user_interaction", "task_completion", "project_x"],
+          "user_id": "user_001",
+          "completion_time": "2024-10-05T15:30:00Z",
+          "gravitational_pull": 0.87,
+          "semantic_relativity": 0.95
+        }
+      }
+    ]
+  }
+  ```
+
+  **Potential Utility**:
+  - Perfect for building dashboards where users can search for actions, completed tasks, or project-related events using natural language.
+
+---
+
+### 3. **Recall Memory with Metadata Matching**
+This example demonstrates retrieving memories based on specific metadata attributes. This method allows pinpointing memories tied to specific tags or objectives without needing to perform semantic matching.
+
+- **Use Case**: Fetch memories tied to a specific user and task.
+
+- **Example Payload**:
+  ```json
+  {
+    "metadata": {
+      "user_id": "user_001",
+      "task_id": "task_a"
+    }
+  }
+  ```
+
+  **Explanation**:
+  - `metadata` allows a structured query that directly matches fields like `user_id` and `task_id`, making it efficient for recalling relevant events or logs associated with a user or task.
+
+  **Example Response**:
+  ```json
+  {
+    "memories": [
+      {
+        "content": "User completed task A on Project X",
+        "metadata": {
+          "objective_id": "project_x",
+          "task_id": "task_a",
+          "tags": ["user_interaction", "task_completion", "project_x"],
+          "user_id": "user_001",
+          "completion_time": "2024-10-05T15:30:00Z",
+          "gravitational_pull": 0.87,
+          "semantic_relativity": 0.95
+        }
+      }
+    ]
+  }
+  ```
+
+  **Potential Utility**:
+  - Use this for advanced filtering options in dashboards, such as showing all actions a specific user took on a particular task, or all memories linked to a given project.
+
+---
+
+### 4. **Prune Low-Relevance Memories**
+This operation helps maintain an efficient database by removing memories that have low relevance. These memories might have a weak "gravitational pull" and therefore are considered less important or relevant.
+
+- **Use Case**: Regular cleanup of the system to remove outdated or irrelevant memories.
+
+- **Example Payload**:
+  ```json
+  {}
+  ```
+
+  **Explanation**:
+  - No payload is needed here, as the system will automatically assess which memories have low relevance based on their `gravitational_pull` or `spacetime_coordinate`.
+
+  **Example Response**:
+  ```json
+  {
+    "message": "Memory pruning completed successfully"
+  }
+  ```
+
+  **Potential Utility**:
+  - This ensures the system doesn’t become bloated with irrelevant data. It’s particularly useful in long-running projects where older events might lose relevance.
+
+---
+
+### 5. **Delete Memories by Metadata**
+This example shows how to delete memories that match specific metadata attributes.
+
+- **Use Case**: Remove all memories related to a specific project that has been completed or archived.
+
+- **Example Payload**:
+  ```json
+  {
+    "metadata": {
+      "objective_id": "project_x"
+    }
+  }
+  ```
+
+  **Explanation**:
+  - `metadata` allows specifying which memories to delete by matching attributes such as `objective_id`.
+
+  **Example Response**:
+  ```json
+  {
+    "message": "Memory deletion by metadata completed successfully"
+  }
+  ```
+
+  **Potential Utility**:
+  - Useful for project management systems, where you might want to clean up all data associated with completed or deprecated projects.
+
+---
+
+### 6. **Purge All Memories**
+This endpoint is useful when a total reset of the system is needed.
+
+- **Use Case**: Reset the memory storage, usually for testing environments or when starting fresh after major changes.
+
+- **Example Payload**:
+  ```json
+  {}
+  ```
+
+  **Example Response**:
+  ```json
+  {
+    "message": "All memories have been purged successfully"
+  }
+  ```
+
+  **Potential Utility**:
+  - This can be used to reset the memory system in a sandbox environment, or when switching from one project to another.
+
+---
+
+### 7. **Recall Matching Memories for Decision Support**
+You can combine the vector recall and metadata recall features to build an intelligent search system. For instance, by combining semantic search and metadata matching, the frontend can retrieve relevant memories that assist in decision-making.
+
+- **Use Case**: Build a suggestion or recommendation engine where users can search based on a description of a problem, and the system recalls relevant past solutions or actions.
+  
+- **Example Payload**:
+  ```json
+  {
+    "query": "Resolved issue in task A",
+    "metadata": {
+      "tags": ["issue", "resolution"]
+    },
+    "top_k": 10
+  }
+  ```
+
+  **Explanation**:
+  - `query` performs a semantic search, and the additional `metadata` parameter narrows down the search to specific categories (like `issue` and `resolution`).
+
+  **Example Response**:
+  ```json
+  {
+    "memories": [
+      {
+        "content": "Resolved issue in task A",
+        "metadata": {
+          "objective_id": "project_x",
+          "task_id": "task_a",
+          "tags": ["issue", "resolution"],
+          "user_id": "user_001",
+          "timestamp": 1728026987.000000
+        }
+      }
+    ]
+  }
+  ```
+
+  **Potential Utility**:
+  - This allows the frontend to create sophisticated search filters that combine both the semantic meaning of the search query and structured metadata matching, making the system versatile for user queries.
+
+---
+
+### Summary of Utility for Front-End:
+1. **Task/Project Management**: Use metadata to track and filter tasks, objectives, and actions across projects.
+2. **Search and Recall**: Provide semantic search for related actions or events, and allow structured metadata-based search for specific recalls.
+3. **Efficiency Maintenance**: Prune outdated or irrelevant memories and use deletion for clearing out specific project data.
+4. **Reset and Purge**: Use purging for testing or when clearing out an environment.
+
+These example payloads and scenarios should give your front-end developers a robust understanding of how to leverage GravRAG API’s memory storage and retrieval capabilities. This enables them to build intelligent, responsive user interfaces.
