@@ -2,6 +2,8 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ReactFlow, {
+    Handle,
+    Position,
     addEdge,
     Background,
     Controls,
@@ -9,6 +11,7 @@ import ReactFlow, {
     ReactFlowProvider,
     useNodesState,
     useEdgesState,
+    useReactFlow,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Button } from "@/components/ui/button";
@@ -17,17 +20,37 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PlusCircle, Trash2, Handle, Save, Upload, Settings } from 'lucide-react';
-
+import { PlusCircle, Trash2, Save, Upload, Settings } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast"
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuTrigger,
+    ContextMenuSub,
+    ContextMenuSubTrigger,
+    ContextMenuSubContent,
+} from "@/components/ui/context-menu"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 const nodeTypes = {};
 
-const QuantumNode = ({ data }) => {
+const defaultColors = [
+    '#00FFFF', // Cyan
+    '#FF00FF', // Magenta
+    '#FFFF00', // Yellow
+    '#FF0000', // Red
+    '#00FF00', // Green
+    '#0000FF', // Blue
+];
+
+const QuantumNode = ({ data, id }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedData, setEditedData] = useState(data);
+    const { getNode, setNodes, getEdges, setEdges } = useReactFlow();
+    const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
     const handleSave = () => {
         data.onUpdate(editedData);
@@ -38,64 +61,167 @@ const QuantumNode = ({ data }) => {
         });
     };
 
+    const disconnectWire = (nodeId, handleId) => {
+        setEdges((eds) => eds.filter(
+            (edge) => !(
+                (edge.source === nodeId && edge.sourceHandle === handleId) ||
+                (edge.target === nodeId && edge.targetHandle === handleId)
+            )
+        ));
+        toast({
+            title: "Wire Disconnected",
+            description: "The selected wire has been removed.",
+        });
+    };
+
+    const disconnectAllWires = (nodeId) => {
+        setEdges((eds) => eds.filter(
+            (edge) => edge.source !== nodeId && edge.target !== nodeId
+        ));
+        toast({
+            title: "All Wires Disconnected",
+            description: "All wires connected to the node have been removed.",
+        });
+    };
+
+    const changeNodeColor = (color) => {
+        setNodes((nds) => nds.map((node) => {
+            if (node.id === id)
+            {
+                return { ...node, data: { ...node.data, color } };
+            }
+            return node;
+        }));
+        setIsColorPickerOpen(false);
+        toast({
+            title: "Node Color Changed",
+            description: `The node color has been changed to ${color}.`,
+        });
+    };
+
+    const getInputColor = (inputId) => {
+        const incomingEdge = getEdges().find(edge => edge.target === id && edge.targetHandle === `input-${inputId}`);
+        if (incomingEdge)
+        {
+            const sourceNode = getNode(incomingEdge.source);
+            return sourceNode.data.color;
+        }
+        return data.color;
+    };
+
     return (
-        <Card className="w-64 bg-gray-900 border-cyan-500 border-2 rounded-lg overflow-hidden shadow-lg shadow-cyan-500/50">
-            <CardHeader className="p-4 bg-gray-800">
-                <CardTitle className="text-lg font-bold text-cyan-400">{data.label}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-                {isEditing ? (
-                    <div className="space-y-4">
+        <ContextMenu>
+            <ContextMenuTrigger>
+                <Card className="w-96 bg-gray-900 border-2 rounded-lg overflow-hidden shadow-lg" style={{ borderColor: data.color }}>
+                    <CardHeader className="p-4 bg-gray-800">
+                        <CardTitle className="text-xl font-bold" style={{ color: data.color }}>{data.label}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                        {isEditing ? (
+                            <div className="space-y-4">
+                                <Input
+                                    value={editedData.label}
+                                    onChange={(e) => setEditedData({ ...editedData, label: e.target.value })}
+                                    placeholder="Task Label"
+                                    className="bg-gray-700 border-cyan-500"
+                                    style={{ color: data.color }}
+                                />
+                                <Textarea
+                                    value={editedData.description}
+                                    onChange={(e) => setEditedData({ ...editedData, description: e.target.value })}
+                                    placeholder="Task Description"
+                                    className="bg-gray-700 border-cyan-500"
+                                    style={{ color: data.color }}
+                                />
+                                <Button onClick={handleSave} className="bg-cyan-600 hover:bg-cyan-700 text-white">Save</Button>
+                            </div>
+                        ) : (
+                            <>
+                                <p className="text-sm mb-4" style={{ color: data.color }}>{data.description}</p>
+                                <Button onClick={() => setIsEditing(true)} className="bg-cyan-600 hover:bg-cyan-700 text-white">Edit</Button>
+                            </>
+                        )}
+                        <div className="mt-4">
+                            <Label className="text-cyan-400">Inputs</Label>
+                            {data.inputs.map((input, index) => (
+                                <div key={input.id} className="my-2">
+                                    <Handle
+                                        type="target"
+                                        position={Position.Left}
+                                        id={`input-${input.id}`}
+                                        style={{ left: -8, top: 60 + index * 40, background: getInputColor(input.id), width: 12, height: 12 }}
+                                    />
+                                    <span className="text-xs ml-4" style={{ color: data.color }}>{input.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-4">
+                            <Label className="text-cyan-400">Outputs</Label>
+                            {data.outputs.map((output, index) => (
+                                <div key={output.id} className="my-2">
+                                    <Handle
+                                        type="source"
+                                        position={Position.Right}
+                                        id={`output-${output.id}`}
+                                        style={{ right: -8, top: 60 + index * 40, background: data.color, width: 12, height: 12 }}
+                                    />
+                                    <span className="text-xs mr-4 float-right" style={{ color: data.color }}>{output.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            </ContextMenuTrigger>
+            <ContextMenuContent>
+                <ContextMenuSub>
+                    <ContextMenuSubTrigger>Change Node Color</ContextMenuSubTrigger>
+                    <ContextMenuSubContent className="w-36">
+                        {defaultColors.map((color) => (
+                            <ContextMenuItem key={color} onSelect={() => changeNodeColor(color)}>
+                                <div className="flex items-center">
+                                    <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: color }}></div>
+                                    {color}
+                                </div>
+                            </ContextMenuItem>
+                        ))}
+                        <ContextMenuItem onSelect={() => setIsColorPickerOpen(true)}>
+                            Custom Color
+                        </ContextMenuItem>
+                    </ContextMenuSubContent>
+                </ContextMenuSub>
+                <ContextMenuItem onSelect={() => disconnectAllWires(id)}>
+                    Disconnect All Wires
+                </ContextMenuItem>
+                {data.inputs.map(input => (
+                    <ContextMenuItem key={input.id} onSelect={() => disconnectWire(id, `input-${input.id}`)}>
+                        Disconnect {input.label}
+                    </ContextMenuItem>
+                ))}
+                {data.outputs.map(output => (
+                    <ContextMenuItem key={output.id} onSelect={() => disconnectWire(id, `output-${output.id}`)}>
+                        Disconnect {output.label}
+                    </ContextMenuItem>
+                ))}
+            </ContextMenuContent>
+            <Popover open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
+                <PopoverTrigger asChild>
+                    <div style={{ display: 'none' }}></div>
+                </PopoverTrigger>
+                <PopoverContent className="w-64">
+                    <div className="flex flex-col space-y-2">
+                        <Label htmlFor="custom-color">Custom Color</Label>
                         <Input
-                            value={editedData.label}
-                            onChange={(e) => setEditedData({ ...editedData, label: e.target.value })}
-                            placeholder="Task Label"
-                            className="bg-gray-700 text-cyan-400 border-cyan-500"
+                            id="custom-color"
+                            type="color"
+                            value={data.color}
+                            onChange={(e) => changeNodeColor(e.target.value)}
+                            className="h-10"
                         />
-                        <Textarea
-                            value={editedData.description}
-                            onChange={(e) => setEditedData({ ...editedData, description: e.target.value })}
-                            placeholder="Task Description"
-                            className="bg-gray-700 text-cyan-400 border-cyan-500"
-                        />
-                        <Button onClick={handleSave} className="bg-cyan-600 hover:bg-cyan-700 text-white">Save</Button>
+                        <Button onClick={() => setIsColorPickerOpen(false)}>Apply Color</Button>
                     </div>
-                ) : (
-                    <>
-                        <p className="text-sm text-cyan-300 mb-4">{data.description}</p>
-                        <Button onClick={() => setIsEditing(true)} className="bg-cyan-600 hover:bg-cyan-700 text-white">Edit</Button>
-                    </>
-                )}
-                <div className="mt-4">
-                    <Label className="text-cyan-400">Inputs</Label>
-                    {data.inputs.map((input, index) => (
-                        <div key={input.id} className="my-2 relative">
-                            <Handle
-                                type="target"
-                                position={Position.Left}
-                                id={`input-${input.id}`}
-                                style={{ left: -8, top: '50%', background: '#00FFFF' }}
-                            />
-                            <span className="text-xs text-cyan-400 ml-4">{input.label}</span>
-                        </div>
-                    ))}
-                </div>
-                <div className="mt-4">
-                    <Label className="text-cyan-400">Outputs</Label>
-                    {data.outputs.map((output, index) => (
-                        <div key={output.id} className="my-2 relative">
-                            <Handle
-                                type="source"
-                                position={Position.Right}
-                                id={`output-${output.id}`}
-                                style={{ right: -8, top: '50%', background: '#00FFFF' }}
-                            />
-                            <span className="text-xs text-cyan-400 mr-4 float-right">{output.label}</span>
-                        </div>
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
+                </PopoverContent>
+            </Popover>
+        </ContextMenu>
     );
 };
 
@@ -109,6 +235,7 @@ const QuantumNexusWorkflowBuilder = () => {
         description: '',
         inputs: [{ id: 'input1', label: 'Input 1' }],
         outputs: [{ id: 'output1', label: 'Output 1' }],
+        color: '#00FFFF',
     });
     const reactFlowWrapper = useRef(null);
     const [isAddingTask, setIsAddingTask] = useState(false);
@@ -119,21 +246,19 @@ const QuantumNexusWorkflowBuilder = () => {
     const [errorLog, setErrorLog] = useState([]);
 
     const onConnect = useCallback((params) => {
-        setEdges((eds) =>
-            addEdge(
-                {
-                    ...params,
-                    animated: true,
-                    style: { stroke: '#00FFFF', strokeWidth: 2 },
-                },
-                eds
-            )
-        );
+        const sourceNode = nodes.find(node => node.id === params.source);
+        const newEdge = {
+            ...params,
+            type: 'smoothstep',
+            animated: true,
+            style: { stroke: sourceNode.data.color, strokeWidth: 2 },
+        };
+        setEdges((eds) => addEdge(newEdge, eds));
         toast({
             title: "Connection Established",
             description: "Nodes connected successfully.",
         });
-    }, [setEdges]);
+    }, [nodes, setEdges]);
 
     const onDragOver = useCallback((event) => {
         event.preventDefault();
@@ -159,7 +284,7 @@ const QuantumNexusWorkflowBuilder = () => {
                     onUpdate: (updatedData) => {
                         setNodes((nds) =>
                             nds.map((node) =>
-                                node.id === `quantum-${nodes.length + 1}` ? { ...node, data: { ...node.data, ...updatedData } } : node
+                                node.id === newNode.id ? { ...node, data: { ...node.data, ...updatedData } } : node
                             )
                         );
                     },
@@ -172,6 +297,7 @@ const QuantumNexusWorkflowBuilder = () => {
                 description: '',
                 inputs: [{ id: 'input1', label: 'Input 1' }],
                 outputs: [{ id: 'output1', label: 'Output 1' }],
+                color: '#00FFFF',
             });
             setIsAddingTask(false);
             toast({
@@ -332,6 +458,16 @@ const QuantumNexusWorkflowBuilder = () => {
                                     ))}
                                     <Button onClick={addOutput} variant="outline" size="sm" className="text-cyan-400 border-cyan-500">Add Output</Button>
                                 </div>
+                                <div>
+                                    <Label htmlFor="nodeColor" className="text-cyan-400">Node Color</Label>
+                                    <Input
+                                        id="nodeColor"
+                                        type="color"
+                                        value={newTaskData.color}
+                                        onChange={(e) => setNewTaskData({ ...newTaskData, color: e.target.value })}
+                                        className="h-10 bg-gray-700 text-cyan-400 border-cyan-500"
+                                    />
+                                </div>
                             </div>
                             <Button
                                 onClick={() => {
@@ -344,7 +480,7 @@ const QuantumNexusWorkflowBuilder = () => {
                                             onUpdate: (updatedData) => {
                                                 setNodes((nds) =>
                                                     nds.map((node) =>
-                                                        node.id === `quantum-${nodes.length + 1}` ? { ...node, data: { ...node.data, ...updatedData } } : node
+                                                        node.id === newNode.id ? { ...node, data: { ...node.data, ...updatedData } } : node
                                                     )
                                                 );
                                             },
@@ -434,9 +570,7 @@ const QuantumNexusWorkflowBuilder = () => {
                         fitView
                         snapToGrid
                         snapGrid={[15, 15]}
-                        connectionLineStyle={{ stroke: '#00FFFF', strokeWidth: 2 }}
                         defaultEdgeOptions={{
-                            style: { stroke: '#00FFFF', strokeWidth: 2 },
                             animated: true,
                             type: 'smoothstep'
                         }}
@@ -444,14 +578,8 @@ const QuantumNexusWorkflowBuilder = () => {
                         <Background color="#00FFFF" variant="dots" gap={12} size={1} />
                         <Controls className="bg-gray-800 text-cyan-400 border-cyan-500" />
                         <MiniMap
-                            nodeStrokeColor={(n) => {
-                                if (n.type === 'quantumNode') return '#00FFFF';
-                                return '#eee';
-                            }}
-                            nodeColor={(n) => {
-                                if (n.type === 'quantumNode') return '#00FFFF';
-                                return '#fff';
-                            }}
+                            nodeStrokeColor={(n) => n.data.color}
+                            nodeColor={(n) => n.data.color}
                         />
                     </ReactFlow>
                 </div>
