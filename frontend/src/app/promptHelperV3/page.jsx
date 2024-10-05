@@ -70,7 +70,7 @@ class CosmicAgent {
                 },
                 body: JSON.stringify({
                     messages: [{ role: "user", content: userMessage }],
-                    model: "llama-3.1-70b-versatile",
+                    model: "llama-3.2-90b-text-preview",
                 }),
             });
 
@@ -131,7 +131,7 @@ class CosmicAgentFactory {
                             content: `Divide the following cosmic prompt into a sequence of transcendent tasks:\n${prompt}`,
                         },
                     ],
-                    model: "llama-3.1-8b-instant",
+                    model: "llama-3.2-90b-text-preview",
                     max_tokens: 500,
                     temperature: 0.7,
                 }),
@@ -241,7 +241,7 @@ const CosmicNexusOrchestrator = () => {
         selectedFiles: [],
         fileStructure: null,
         analysis: "",
-        selectedModel: "llama-3.1-70b-versatile",
+        selectedModel: "llama-3.2-90b-text-preview",
         knowledgeBase: "",
         debugInfo: "",
         fileContents: {},
@@ -763,9 +763,9 @@ const CosmicNexusOrchestrator = () => {
                                             <SelectValue placeholder="Select Cosmic Model" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="llama-3.1-70b-versatile">Cosmic Llama 70B Versatile</SelectItem>
-                                            <SelectItem value="llama3-groq-70b-8192-tool-use-preview">Cosmic Llama 70B Tool Use</SelectItem>
-                                            <SelectItem value="llama-3.1-8b-instant">Cosmic Llama 8B Instant</SelectItem>
+                                            <SelectItem value="llama-3.2-90b-text-preview">Cosmic Llama 70B Versatile</SelectItem>
+                                            <SelectItem value="llama-3.2-90b-text-preview">Cosmic Llama 70B Tool Use</SelectItem>
+                                            <SelectItem value="llama-3.2-90b-text-preview">Cosmic Llama 8B Instant</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <textarea
