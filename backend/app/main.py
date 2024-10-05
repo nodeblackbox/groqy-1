@@ -4,10 +4,10 @@ import uvicorn
 
 # Importing Routers
 # from api.agentChef_api import router as agentchef_router
-from api.gravrag_API import router as gravrag_router
-from api.neural_resources_api import router as neural_resources_router  # New neural resources router
+from backend.app.gravrag.gravrag_api import router as gravrag_router
 
-app = FastAPI(title="Cogenesis Backend API", description="API for managing AI agents and models")
+
+app = FastAPI(title="Backend API", description="API for managing AI agents and models")
 
 # Configure CORS
 app.add_middleware(
@@ -21,8 +21,6 @@ app.add_middleware(
 # Include routers for each module
 # app.include_router(agentchef_router, prefix="/agentchef", tags=["AgentChef API"])
 app.include_router(gravrag_router, prefix="/gravrag", tags=["GravRAG API"])
-app.include_router(neural_resources_router, prefix="/neural_resources", tags=["Neural Resources API"])  # Adding neural resources
-
 
 if __name__ == "__main__":
     import uvicorn

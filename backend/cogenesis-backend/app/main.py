@@ -22,7 +22,6 @@ app.mount("/metrics", metrics_app)
 
 # Include routers
 app.include_router(gravrag.router, prefix="/gravrag", tags=["GravRag"])
-app.include_router(neural_resources.router, prefix="/neural_resources", tags=["Neural Resources"])
 
 @app.get("/")
 async def root():
