@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
 
-from app.api import gravrag, neural_resources
+from api import gravrag
 
 app = FastAPI(title="Cogenesis Backend API")
 

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import logging
-from app.models.gravrag import MemoryManager
+from models.gravrag import MemoryManager
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
