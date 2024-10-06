@@ -8,6 +8,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def generate_tree(startpath):
     tree = []
     for root, dirs, files in os.walk(startpath):
+        # Exclude venv directory
+        if 'venv' in dirs:
+            dirs.remove('venv')
+        
         level = root.replace(startpath, '').count(os.sep)
         indent = '│   ' * (level - 1) + '├── ' if level > 0 else ''
         tree.append(f"{indent}{os.path.basename(root)}/")
@@ -47,7 +51,6 @@ def get_file_language(file_extension):
         '.jsx': 'jsx',
         '.tsx': 'tsx',
         '.py': 'python',
-        '.md': 'markdown',
         '.yml': 'yaml',
         '.env': 'plaintext'
     }
@@ -62,9 +65,13 @@ def generate_readme(folder_path):
     readme_content += "## File Contents and Implementation Guidelines\n\n"
 
     for root, dirs, files in os.walk(folder_path):
+        # Exclude venv directory
+        if 'venv' in dirs:
+            dirs.remove('venv')
+        
         for file in files:
             file_extension = os.path.splitext(file)[1]
-            if file_extension in ['.js', '.ts', '.jsx', '.tsx', '.py', '.env', '.md', '.yml']:
+            if file_extension in ['.js', '.ts', '.jsx', '.tsx', '.py', '.env', '.yml']:
                 file_path = os.path.join(root, file)
                 relative_path = os.path.relpath(file_path, folder_path)
                 content = read_file_content(file_path)
