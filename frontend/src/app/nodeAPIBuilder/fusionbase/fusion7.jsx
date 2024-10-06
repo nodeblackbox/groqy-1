@@ -143,13 +143,7 @@ const QuantumNode = ({ data, id }) => {
     return (
         <ContextMenu>
             <ContextMenuTrigger>
-                <Card 
-                    className="w-96 bg-gray-900 border-2 rounded-lg overflow-hidden shadow-lg transition-all duration-300" 
-                    style={{ 
-                        borderColor: data.color,
-                        boxShadow: `0 0 20px ${data.color}`,
-                    }}
-                >
+                <Card className="w-96 bg-gray-900 border-2 rounded-lg overflow-hidden shadow-lg" style={{ borderColor: data.color }}>
                     <CardHeader className="p-4 bg-gray-800">
                         <CardTitle className="text-xl font-bold" style={{ color: data.color }}>{data.label}</CardTitle>
                     </CardHeader>
@@ -462,7 +456,6 @@ const QuantumNexusWorkflowBuilder = () => {
                         );
                     },
                 },
-                draggable: true,
             };
             setNodes((nds) => nds.concat(newNode));
             toast({
@@ -543,23 +536,7 @@ const QuantumNexusWorkflowBuilder = () => {
                 const content = e.target.result;
                 try {
                     const workflow = JSON.parse(content);
-                    setNodes(workflow.nodes.map(node => ({
-                        ...node,
-                        position: node.position.x === null || node.position.y === null
-                            ? { x: Math.random() * 500, y: Math.random() * 500 }
-                            : node.position,
-                        data: {
-                            ...node.data,
-                            onUpdate: (updatedData) => {
-                                setNodes((nds) =>
-                                    nds.map((n) =>
-                                        n.id === node.id ? { ...n, data: { ...n.data, ...updatedData } } : n
-                                    )
-                                );
-                            },
-                        },
-                        draggable: true,
-                    })));
+                    setNodes(workflow.nodes || []);
                     setEdges(workflow.edges || []);
                     toast({
                         title: "Workflow Loaded",
@@ -793,7 +770,6 @@ const QuantumNexusWorkflowBuilder = () => {
                         onDrop={onDrop}
                         nodeTypes={nodeTypes}
                         fitView
-                        snapToGrid={false}
                     >
                         <Background color="#4a5568" gap={16} />
                         <Controls />

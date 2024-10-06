@@ -143,13 +143,7 @@ const QuantumNode = ({ data, id }) => {
     return (
         <ContextMenu>
             <ContextMenuTrigger>
-                <Card 
-                    className="w-96 bg-gray-900 border-2 rounded-lg overflow-hidden shadow-lg transition-all duration-300" 
-                    style={{ 
-                        borderColor: data.color,
-                        boxShadow: `0 0 20px ${data.color}`,
-                    }}
-                >
+                <Card className="w-96 bg-gray-900 border-2 rounded-lg overflow-hidden shadow-lg" style={{ borderColor: data.color }}>
                     <CardHeader className="p-4 bg-gray-800">
                         <CardTitle className="text-xl font-bold" style={{ color: data.color }}>{data.label}</CardTitle>
                     </CardHeader>
@@ -393,7 +387,6 @@ const QuantumNexusWorkflowBuilder = () => {
                     );
                 },
             },
-            draggable: true,
         };
 
         setNodes((nds) => nds.concat(newNode));
@@ -430,62 +423,26 @@ const QuantumNexusWorkflowBuilder = () => {
         [createNewNode]
     );
 
-    const handleCopy = useCallback(() => {
-        const selectedNodes = nodes.filter(node => node.selected);
-        if (selectedNodes.length === 1) {
-            setCopiedNode(JSON.parse(JSON.stringify(selectedNodes[0])));
-            toast({
-                title: "Node Copied",
-                description: "The selected node has been copied.",
-            });
-        }
-    }, [nodes]);
-
-    const handlePaste = useCallback((event) => {
-        if (copiedNode) {
-            const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-            const position = {
-                x: event.clientX - reactFlowBounds.left,
-                y: event.clientY - reactFlowBounds.top,
-            };
-            const newNode = {
-                ...copiedNode,
-                id: `quantum-${nodes.length + 1}`,
-                position,
-                data: {
-                    ...copiedNode.data,
-                    onUpdate: (updatedData) => {
-                        setNodes((nds) =>
-                            nds.map((node) =>
-                                node.id === newNode.id ? { ...node, data: { ...node.data, ...updatedData } } : node
-                            )
-                        );
-                    },
-                },
-                draggable: true,
-            };
-            setNodes((nds) => nds.concat(newNode));
-            toast({
-                title: "Node Pasted",
-                description: "A new node has been created from the copied data.",
-            });
-        }
-    }, [copiedNode, nodes, setNodes]);
+    const onPaste = useCallback(
+        (event) => {
+            if (copiedNode && event.target === reactFlowWrapper.current) {
+                const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+                const position = {
+                    x: event.clientX - reactFlowBounds.left,
+                    y: event.clientY - reactFlowBounds.top,
+                };
+                createNewNode(position, JSON.parse(copiedNode));
+            }
+        },
+        [copiedNode, createNewNode]
+    );
 
     useEffect(() => {
-        const handleKeyDown = (event) => {
-            if (event.ctrlKey && event.key === 'c') {
-                handleCopy();
-            } else if (event.ctrlKey && event.key === 'v') {
-                handlePaste(event);
-            }
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('paste', onPaste);
         return () => {
-            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('paste', onPaste);
         };
-    }, [handleCopy, handlePaste]);
+    }, [onPaste]);
 
     const addInput = () => {
         setNewTaskData((prev) => ({
@@ -514,7 +471,7 @@ const QuantumNexusWorkflowBuilder = () => {
     );
 
     const addNewTask = () => {
-        const position = { x: 100, y: 100 };
+        const position = { x: 100, y: 100 }; // Default position, you can adjust this
         createNewNode(position);
     };
 
@@ -543,23 +500,7 @@ const QuantumNexusWorkflowBuilder = () => {
                 const content = e.target.result;
                 try {
                     const workflow = JSON.parse(content);
-                    setNodes(workflow.nodes.map(node => ({
-                        ...node,
-                        position: node.position.x === null || node.position.y === null
-                            ? { x: Math.random() * 500, y: Math.random() * 500 }
-                            : node.position,
-                        data: {
-                            ...node.data,
-                            onUpdate: (updatedData) => {
-                                setNodes((nds) =>
-                                    nds.map((n) =>
-                                        n.id === node.id ? { ...n, data: { ...n.data, ...updatedData } } : n
-                                    )
-                                );
-                            },
-                        },
-                        draggable: true,
-                    })));
+                    setNodes(workflow.nodes || []);
                     setEdges(workflow.edges || []);
                     toast({
                         title: "Workflow Loaded",
@@ -776,9 +717,14 @@ const QuantumNexusWorkflowBuilder = () => {
                     ref={reactFlowWrapper}
                     onKeyDown={(e) => {
                         if (e.ctrlKey && e.key === 'c') {
-                            handleCopy();
-                        } else if (e.ctrlKey && e.key === 'v') {
-                            handlePaste(e);
+                            const selectedNodes = nodes.filter(node => node.selected);
+                            if (selectedNodes.length === 1) {
+                                setCopiedNode(JSON.stringify(selectedNodes[0].data));
+                                toast({
+                                    title: "Node Copied",
+                                    description: "The selected node has been copied to clipboard.",
+                                });
+                            }
                         }
                     }}
                     tabIndex={0}
@@ -793,7 +739,6 @@ const QuantumNexusWorkflowBuilder = () => {
                         onDrop={onDrop}
                         nodeTypes={nodeTypes}
                         fitView
-                        snapToGrid={false}
                     >
                         <Background color="#4a5568" gap={16} />
                         <Controls />

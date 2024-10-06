@@ -9,7 +9,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import the FastAPI app and the agentchef router
 from app.main import app
-from app.api.agentChef_api import router as agentchef_router
 
 # Use TestClient for testing FastAPI applications
 from fastapi.testclient import TestClient
