@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ReactFlow, {
@@ -14,15 +14,15 @@ import ReactFlow, {
     useReactFlow,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { PlusCircle, Trash2, Save, Upload, Settings, Play } from 'lucide-react'
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { PlusCircle, Trash2, Save, Upload, Settings, Play } from 'lucide-react';
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast"
 import {
     ContextMenu,
@@ -341,42 +341,6 @@ const QuantumNexusWorkflowBuilder = () => {
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
-    const createNewNode = useCallback((position) => {
-        const newNode = {
-            id: `quantum-${nodes.length + 1}`,
-            type: 'quantumNode',
-            position,
-            data: {
-                ...newTaskData,
-                onUpdate: (updatedData) => {
-                    setNodes((nds) =>
-                        nds.map((node) =>
-                            node.id === newNode.id ? { ...node, data: { ...node.data, ...updatedData } } : node
-                        )
-                    );
-                },
-            },
-        };
-
-        setNodes((nds) => nds.concat(newNode));
-        setNewTaskData({
-            label: '',
-            description: '',
-            inputs: [{ id: 'input1', label: 'Input 1' }],
-            outputs: [{ id: 'output1', label: 'Output 1' }],
-            color: '#00FFFF',
-            url: '',
-            method: 'GET',
-            headers: '{}',
-            payload: '{}',
-        });
-        setIsAddingTask(false);
-        toast({
-            title: "Task Added",
-            description: "New quantum task has been added to the workflow.",
-        });
-    }, [nodes, newTaskData, setNodes]);
-
     const onDrop = useCallback(
         (event) => {
             event.preventDefault();
@@ -387,9 +351,41 @@ const QuantumNexusWorkflowBuilder = () => {
                 y: event.clientY - reactFlowBounds.top,
             };
 
-            createNewNode(position);
+            const newNode = {
+                id: `quantum-${nodes.length + 1}`,
+                type: 'quantumNode',
+                position,
+                data: {
+                    ...newTaskData,
+                    onUpdate: (updatedData) => {
+                        setNodes((nds) =>
+                            nds.map((node) =>
+                                node.id === newNode.id ? { ...node, data: { ...node.data, ...updatedData } } : node
+                            )
+                        );
+                    },
+                },
+            };
+
+            setNodes((nds) => nds.concat(newNode));
+            setNewTaskData({
+                label: '',
+                description: '',
+                inputs: [{ id: 'input1', label: 'Input 1' }],
+                outputs: [{ id: 'output1', label: 'Output 1' }],
+                color: '#00FFFF',
+                url: '',
+                method: 'GET',
+                headers: '{}',
+                payload: '{}',
+            });
+            setIsAddingTask(false);
+            toast({
+                title: "Task Added",
+                description: "New quantum task has been added to the workflow.",
+            });
         },
-        [createNewNode]
+        [nodes, newTaskData, setNodes]
     );
 
     const addInput = () => {
@@ -417,11 +413,6 @@ const QuantumNexusWorkflowBuilder = () => {
         },
         [setNodes, setEdges]
     );
-
-    const addNewTask = () => {
-        const position = { x: 100, y: 100 }; // Default position, you can adjust this
-        createNewNode(position);
-    };
 
     const saveWorkflow = () => {
         const workflow = { nodes, edges };
@@ -596,7 +587,7 @@ const QuantumNexusWorkflowBuilder = () => {
                                 </div>
                             </div>
                             <DialogFooter>
-                                <Button onClick={addNewTask} className="bg-cyan-600 hover:bg-cyan-700 text-white">Create Task</Button>
+                                <Button onClick={() => setIsAddingTask(false)} className="bg-cyan-600 hover:bg-cyan-700 text-white">Create Task</Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
