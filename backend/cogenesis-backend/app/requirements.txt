@@ -1,0 +1,12 @@
+anthropic==0.2.8
+anyio==4.6.0
+asgiref==3.8.1
+fastapi==0.68.0
+fsspec @ file:///home/conda/feedstock_root/build_artifacts/fsspec_1725543257300/work
+groq==0.11.0
+openai==0.27.0
+pydantic==1.10.18
+python-dateutil==2.9.0.post0
+pywin32==306
+qdrant-client==0.11.0
+sentence-transformers==2.1.0
