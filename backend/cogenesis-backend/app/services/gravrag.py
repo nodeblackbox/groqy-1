@@ -1,4 +1,3 @@
-
 from app.core.config import settings
 from app.models.gravrag import MemoryPacket
 import time
@@ -97,6 +96,9 @@ class MemoryPacket:
     @staticmethod
     def calculate_cosine_similarity(vector_a: List[float], vector_b: List[float]) -> float:
         """ Calculate cosine similarity between two vectors. """
+        if not vector_a or not vector_b:
+            return 0.0
+
         dot_product = sum(a * b for a, b in zip(vector_a, vector_b))
         magnitude_a = math.sqrt(sum(a ** 2 for a in vector_a))
         magnitude_b = math.sqrt(sum(b ** 2 for b in vector_b))
@@ -130,9 +132,8 @@ class MemoryPacket:
         
         return MemoryPacket(vector=vector, content=content, metadata=metadata)
 
-
 class MemoryManager:
-    def __init__(self, qdrant_host="localhost", qdrant_port=6333, collection_name="Mind"):
+    def __init__(self, qdrant_host: str = settings.QDRANT_HOST, qdrant_port: int = settings.QDRANT_PORT, collection_name: str = "Mind"):
         self.qdrant_client = QdrantClient(host=qdrant_host, port=qdrant_port)
         self.collection_name = collection_name
         self.model = SentenceTransformer('all-MiniLM-L6-v2')  # Semantic vector model
@@ -167,7 +168,7 @@ class MemoryManager:
         )
         logger.info(f"Memory created successfully with ID: {point_id}")
 
-    async def recall_memory(self, query_content: str, top_k: int = 5):
+    async def recall_memory(self, query_content: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """ Recall a memory based on query content and return the original content along with metadata. """
         query_vector = self.model.encode(query_content).tolist()
 
@@ -204,15 +205,18 @@ class MemoryManager:
         """
         Prune low relevance memories based on their gravitational pull and spacetime coordinates.
         """
-        total_points = self.qdrant_client.count(self.collection_name).count
-        if total_points > 1000000:  # Arbitrary limit
-            points = self.qdrant_client.scroll(self.collection_name, limit=1000)
+        total_points = self.qdrant_client.count(collection_name=self.collection_name).count
+        if total_points > 1000000:  # Arbitrary limit; adjust as needed
+            points = self.qdrant_client.scroll(collection_name=self.collection_name, limit=1000)
             low_relevance_points = [
                 p.id for p in points if p.payload['metadata']['gravitational_pull'] < GRAVITATIONAL_THRESHOLD
             ]
             if low_relevance_points:
-                self.qdrant_client.delete(self.collection_name, points_selector=low_relevance_points)
-    
+                self.qdrant_client.delete(collection_name=self.collection_name, points_selector=low_relevance_points)
+                logger.info(f"Pruned {len(low_relevance_points)} low-relevance memories.")
+            else:
+                logger.info("No low-relevance memories found to prune.")
+
     async def purge_all_memories(self):
         """
         Deletes all memories from the Qdrant collection.
@@ -228,7 +232,7 @@ class MemoryManager:
             logger.error(f"Error purging all memories: {str(e)}")
             raise e
 
-    async def recall_memory_with_metadata(self, query_content: str, search_metadata: Dict[str, Any], top_k: int = 10):
+    async def recall_memory_with_metadata(self, query_content: str, search_metadata: Dict[str, Any], top_k: int = 10) -> Dict[str, Any]:
         """
         Recall memories based on query content, and further filter by matching metadata.
         """
@@ -257,7 +261,7 @@ class MemoryManager:
                     })
 
             if not matching_memories:
-                return {"message": "No matching memories found"}
+                return {"memories": []}
 
             return {"memories": matching_memories}
         
@@ -265,35 +269,30 @@ class MemoryManager:
             logger.error(f"Error recalling memories by metadata: {str(e)}")
             raise e
 
-
     async def delete_memories_by_metadata(self, metadata: Dict[str, Any]):
         """
         Delete memories where the metadata matches the given metadata criteria.
         """
         try:
             # Scroll through all memories in the collection
-            scroll_result = self.qdrant_client.scroll(self.collection_name, limit=1000)
+            scroll_result = self.qdrant_client.scroll(collection_name=self.collection_name, limit=1000)
 
-            # Check if result is a list of points, otherwise handle it as a tuple
-            if isinstance(scroll_result, tuple):
-                points = scroll_result[0]
-            else:
-                points = scroll_result
-            
+            # Check if result is a list of points
+            points = scroll_result if isinstance(scroll_result, list) else []
+
             # List to store the IDs of memories to be deleted
             memories_to_delete = []
             
             for point in points:
-                if isinstance(point, dict) and 'payload' in point:
-                    point_metadata = point['payload']['metadata']
-                    
-                    # Check if the point's metadata matches the provided metadata
-                    if all(point_metadata.get(key) == value for key, value in metadata.items()):
-                        memories_to_delete.append(point["id"])
+                point_metadata = point.payload.get('metadata', {})
+                
+                # Check if the point's metadata matches the provided metadata
+                if all(point_metadata.get(key) == value for key, value in metadata.items()):
+                    memories_to_delete.append(point.id)
             
             # Delete the memories that match the metadata criteria
             if memories_to_delete:
-                self.qdrant_client.delete(self.collection_name, points_selector=memories_to_delete)
+                self.qdrant_client.delete(collection_name=self.collection_name, points_selector=memories_to_delete)
                 logger.info(f"Deleted {len(memories_to_delete)} memories matching the metadata.")
             else:
                 logger.info("No memories found matching the specified metadata.")
@@ -301,4 +300,5 @@ class MemoryManager:
             logger.error(f"Error deleting memories by metadata: {str(e)}")
             raise e
 
+# Initialize the MemoryManager instance
 memory_manager = MemoryManager()
