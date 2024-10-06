@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
@@ -10,7 +9,7 @@ app = FastAPI(title="Cogenesis Backend API")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],  # Allows all origins; adjust as needed for production
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
@@ -21,7 +20,7 @@ metrics_app = make_asgi_app()
 app.mount("/metrics", metrics_app)
 
 # Include routers
-app.include_router(gravrag.router, prefix="/gravrag", tags=["GravRag"])
+app.include_router(gravrag_router, prefix="/gravrag", tags=["GravRag"])
 
 @app.get("/")
 async def root():

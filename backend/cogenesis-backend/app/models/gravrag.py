@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 
@@ -28,8 +27,6 @@ class RecallRequest(BaseModel):
 
 class PruneRequest(BaseModel):
     gravity_threshold: Optional[float] = 1e-5
-
-
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
