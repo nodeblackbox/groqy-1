@@ -210,19 +210,19 @@ const JSONViewer = ({ json }) => {
 
 // Main Page Component
 export default function PayloadMakerUI2() {
-  // State Variables
-  const [url, setUrl] = useState("");
-  const [payloads, setPayloads] = useState([]);
+  // State Variables without Local Storage Initialization
+  const [url, setUrl] = useState(""); // Default to empty string
+  const [payloads, setPayloads] = useState([]); // Start with empty array
   const [activePayload, setActivePayload] = useState(null);
-  const [results, setResults] = useState({});
-  const [useAuth, setUseAuth] = useState(false);
+  const [results, setResults] = useState([]); // Start with empty array
+  const [useAuth, setUseAuth] = useState(false); // Default to false
   const [bearerToken, setBearerToken] = useState("");
   const [jsonStructure, setJsonStructure] = useState({
     id: "root",
     name: "root",
     children: [],
     isOpen: true,
-  });
+  }); // Default structure
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importedConfig, setImportedConfig] = useState("");
   const [globalVariables, setGlobalVariables] = useState({});
@@ -240,9 +240,10 @@ export default function PayloadMakerUI2() {
   const dragItem = useRef();
   const dragOverItem = useRef();
 
-  // Load from Local Storage on Mount
+  // Load from Local Storage on Mount (only in client)
   useEffect(() => {
-    try {
+    if (typeof window !== "undefined") {
+      // Check if running in the browser
       const storedPayloads = JSON.parse(
         localStorage.getItem("payloads") || "[]"
       );
@@ -257,31 +258,47 @@ export default function PayloadMakerUI2() {
           '{"id":"root","name":"root","children":[],"isOpen":true}'
       );
       const storedConfigs = JSON.parse(localStorage.getItem("configs") || "[]");
-      setPayloads(storedPayloads);
-      setGlobalVariables(storedGlobalVariables);
-      setRoutines(storedRoutines);
-      setJsonStructure(storedJsonStructure);
-      setConfigs(storedConfigs);
-    } catch (error) {
-      console.error("Error loading from localStorage:", error);
-      toast.error("Failed to load saved data.");
+      const storedResults = JSON.parse(localStorage.getItem("results") || "[]");
+
+      // Set state only if stored data exists
+      if (storedPayloads.length) setPayloads(storedPayloads);
+      if (Object.keys(storedGlobalVariables).length)
+        setGlobalVariables(storedGlobalVariables);
+      if (storedRoutines.length) setRoutines(storedRoutines);
+      setJsonStructure(storedJsonStructure); // Always set, as it has a default
+      if (storedConfigs.length) setConfigs(storedConfigs);
+      if (storedResults.length) setResults(storedResults);
+
+      console.log("Loaded data from localStorage:", {
+        payloads: storedPayloads,
+        globalVariables: storedGlobalVariables,
+        routines: storedRoutines,
+        jsonStructure: storedJsonStructure,
+        configs: storedConfigs,
+        results: storedResults,
+      });
     }
-  }, []);
+  }, []); // Run only once on component mount
 
   // Save to Local Storage on Changes
   useEffect(() => {
-    try {
-      localStorage.setItem("payloads", JSON.stringify(payloads));
-      localStorage.setItem("globalVariables", JSON.stringify(globalVariables));
-      localStorage.setItem("routines", JSON.stringify(routines));
-      localStorage.setItem("jsonStructure", JSON.stringify(jsonStructure));
-      localStorage.setItem("configs", JSON.stringify(configs));
-    } catch (error) {
-      console.error("Error saving to localStorage:", error);
-      toast.error("Failed to save data.");
+    if (typeof window !== "undefined") {
+      // Ensure localStorage is available
+      try {
+        localStorage.setItem("payloads", JSON.stringify(payloads));
+        localStorage.setItem(
+          "globalVariables",
+          JSON.stringify(globalVariables)
+        );
+        localStorage.setItem("routines", JSON.stringify(routines));
+        localStorage.setItem("jsonStructure", JSON.stringify(jsonStructure));
+        localStorage.setItem("configs", JSON.stringify(configs));
+        localStorage.setItem("results", JSON.stringify(results));
+      } catch (error) {
+        console.error("Error saving to localStorage:", error);
+      }
     }
-  }, [payloads, globalVariables, routines, jsonStructure, configs]);
-
+  }, [payloads, globalVariables, routines, jsonStructure, configs, results]);
   // Payload Management Functions
   const createPayload = () => {
     const newPayload = {
@@ -295,24 +312,32 @@ export default function PayloadMakerUI2() {
       subtasks: [],
       createdAt: new Date().toISOString(),
     };
-    setPayloads([...payloads, newPayload]);
+    const updatedPayloads = [...payloads, newPayload];
+    setPayloads(updatedPayloads);
     setActivePayload(newPayload);
+    localStorage.setItem("payloads", JSON.stringify(updatedPayloads));
     toast.success("New payload created.");
   };
 
   const updatePayload = (id, updates) => {
-    setPayloads(payloads.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+    const updatedPayloads = payloads.map((p) =>
+      p.id === id ? { ...p, ...updates } : p
+    );
+    setPayloads(updatedPayloads);
     if (activePayload && activePayload.id === id) {
       setActivePayload({ ...activePayload, ...updates });
     }
+    localStorage.setItem("payloads", JSON.stringify(updatedPayloads));
   };
 
   const deletePayload = (id) => {
     if (confirm("Are you sure you want to delete this payload?")) {
-      setPayloads(payloads.filter((p) => p.id !== id));
+      const updatedPayloads = payloads.filter((p) => p.id !== id);
+      setPayloads(updatedPayloads);
       if (activePayload && activePayload.id === id) {
         setActivePayload(null);
       }
+      localStorage.setItem("payloads", JSON.stringify(updatedPayloads));
       toast.success("Payload deleted.");
     }
   };
@@ -702,27 +727,6 @@ export default function PayloadMakerUI2() {
     });
   };
 
-  const loadConfig = (configId) => {
-    const config = configs.find((c) => c.id === configId);
-    if (config) {
-      setPayloads(config.payloads || []);
-      setJsonStructure(
-        config.jsonStructure || {
-          id: "root",
-          name: "root",
-          children: [],
-          isOpen: true,
-        }
-      );
-      setGlobalVariables(config.globalVariables || {});
-      setRoutines(config.routines || []);
-      setActiveConfig(config);
-      toast.success("Configuration loaded successfully!");
-    } else {
-      toast.error("Failed to load configuration.");
-    }
-  };
-
   // Config Management
   const createConfig = () => {
     const newConfig = {
@@ -770,12 +774,15 @@ export default function PayloadMakerUI2() {
           >
             <Plus className="mr-2 h-4 w-4" /> New Routine
           </Button>
+          <Button onClick={createConfig} variant="success" className="w-full">
+            <Plus className="mr-2 h-4 w-4" /> New Config
+          </Button>
           <Button
             onClick={() => setIsImportModalOpen(true)}
             variant="success"
             className="w-full"
           >
-            <Upload className="mr-2 h-4 w-4" /> Import Config
+            <Upload className="mr-2 h-4 w-4" /> Import Setup
           </Button>
           <Button
             onClick={handleExportConfig}
@@ -799,9 +806,6 @@ export default function PayloadMakerUI2() {
             className="w-full"
           >
             <Play className="mr-2 h-4 w-4" /> Execute All Routines
-          </Button>
-          <Button onClick={createConfig} variant="success" className="w-full">
-            <Plus className="mr-2 h-4 w-4" /> New Config
           </Button>
         </div>
       </div>
@@ -901,13 +905,6 @@ export default function PayloadMakerUI2() {
                   >
                     {config.name}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => loadConfig(config.id)}
-                  >
-                    Load
-                  </Button>
                 </li>
               ))}
             </ul>
@@ -1263,17 +1260,76 @@ export default function PayloadMakerUI2() {
                 <h3 className="text-xl font-semibold mb-2">
                   Routines in Config
                 </h3>
-                {/* ... (rest of the Config Editor remains the same) */}
+                {activeConfig.routines.length === 0 ? (
+                  <p className="text-gray-400">
+                    No routines added to this config.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {activeConfig.routines.map((routineId) => {
+                      const routine = routines.find((r) => r.id === routineId);
+                      return routine ? (
+                        <li
+                          key={routineId}
+                          className="flex justify-between items-center bg-gray-700 bg-opacity-50 p-2 rounded"
+                        >
+                          <span>{routine.name}</span>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              const updatedRoutines =
+                                activeConfig.routines.filter(
+                                  (id) => id !== routineId
+                                );
+                              updateConfig(activeConfig.id, {
+                                routines: updatedRoutines,
+                              });
+                            }}
+                          >
+                            <Trash2 size={12} />
+                          </Button>
+                        </li>
+                      ) : null;
+                    })}
+                  </ul>
+                )}
+                <div className="mt-4">
+                  <select
+                    onChange={(e) => {
+                      const selectedRoutineId = e.target.value;
+                      if (selectedRoutineId !== "") {
+                        const updatedRoutines = [
+                          ...activeConfig.routines,
+                          selectedRoutineId,
+                        ];
+                        updateConfig(activeConfig.id, {
+                          routines: updatedRoutines,
+                        });
+                        e.target.value = "";
+                      }
+                    }}
+                    className="px-3 py-2 bg-gray-700 bg-opacity-50 text-white rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 w-full"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      Add routine to config
+                    </option>
+                    {routines.map((routine) => (
+                      <option key={routine.id} value={routine.id}>
+                        {routine.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="flex space-x-2">
-                  <Button onClick={saveConfig}>
-                    <Save size={16} className="mr-1" /> Save Config
-                  </Button>
                   <Button
                     onClick={() => {
                       toast.loading("Executing config...", {
                         id: "executeConfig",
                       });
                       activeConfig.routines.forEach(async (routineId) => {
+                        console.log(routineId);
                         const routine = routines.find(
                           (r) => r.id === routineId
                         );
