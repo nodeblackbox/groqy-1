@@ -9,6 +9,7 @@ export default function QdrantQueryForm() {
   const [topK, setTopK] = useState(5);
   const [response, setResponse] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState(""); // State for custom prompt
 
   // Function to handle memory creation
   const handleSubmit = async (e) => {
@@ -18,35 +19,26 @@ export default function QdrantQueryForm() {
     try {
       let metadataObj;
       try {
-        // Parse metadata input as JSON
-        metadataObj = JSON.parse(metadata);
+        metadataObj = JSON.parse(metadata); // Parse metadata input as JSON
       } catch (error) {
         setResponse("Error: Invalid JSON in metadata");
         setIsLoading(false);
         return;
       }
 
-      // Create memory POST request
-      const response = await fetch(
-        "http://localhost:8000/gravrag/create_memory",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            content: title,
-            metadata: metadataObj,
-          }),
-        }
-      );
+      const response = await fetch("/api/tools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: title,
+          metadata: metadataObj,
+        }),
+      });
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
+      if (!response.ok) throw new Error("Network response was not ok");
 
       const data = await response.json();
-      setResponse(JSON.stringify(data, null, 2)); // Display the full response data
+      setResponse(JSON.stringify(data, null, 2)); // Display full response data
     } catch (error) {
       console.error("Error:", error);
       setResponse("Error occurred while creating memory");
@@ -61,30 +53,50 @@ export default function QdrantQueryForm() {
     setIsLoading(true);
 
     try {
-      // Recall memory POST request
-      const response = await fetch(
-        "http://localhost:8000/gravrag/recall_memory",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query: query,
-            top_k: topK,
-          }),
-        }
-      );
+      const response = await fetch("/api/tools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: query,
+          top_k: topK,
+        }),
+      });
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
+      if (!response.ok) throw new Error("Network response was not ok");
 
       const data = await response.json();
       setResponse(JSON.stringify(data.memories, null, 2)); // Display the memories
     } catch (error) {
       console.error("Error:", error);
       setResponse("Error occurred while recalling memories");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Function to handle custom prompt to the GravRAG API
+  const handleCustomPrompt = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/tools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: customPrompt,
+          customPrompt: customPrompt,
+          context: { user: "Test User" }, // Add any additional context here
+        }),
+      });
+
+      if (!response.ok) throw new Error("Network response was not ok");
+
+      const data = await response.json();
+      setResponse(JSON.stringify(data, null, 2)); // Display API response
+    } catch (error) {
+      console.error("Error:", error);
+      setResponse("Error occurred while processing the custom prompt");
     } finally {
       setIsLoading(false);
     }
@@ -154,7 +166,28 @@ export default function QdrantQueryForm() {
             {isLoading ? "Recalling..." : "Recall Memory"}
           </button>
         </form>
+
+        {/* Custom Prompt Form */}
+        <form onSubmit={handleCustomPrompt} className="space-y-4 mt-8">
+          <div>
+            <input
+              type="text"
+              placeholder="Enter custom prompt"
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-purple-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition duration-200 ease-in-out"
+          >
+            {isLoading ? "Processing..." : "Send Prompt"}
+          </button>
+        </form>
       </div>
+
       <div className="bg-gray-50 border-t border-gray-200 p-4">
         <div className="w-full">
           <h3 className="text-lg font-semibold mb-2 text-gray-700">
