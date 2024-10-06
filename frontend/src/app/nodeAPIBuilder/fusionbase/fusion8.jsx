@@ -462,7 +462,6 @@ const QuantumNexusWorkflowBuilder = () => {
                         );
                     },
                 },
-                draggable: true,
             };
             setNodes((nds) => nds.concat(newNode));
             toast({
@@ -543,23 +542,7 @@ const QuantumNexusWorkflowBuilder = () => {
                 const content = e.target.result;
                 try {
                     const workflow = JSON.parse(content);
-                    setNodes(workflow.nodes.map(node => ({
-                        ...node,
-                        position: node.position.x === null || node.position.y === null
-                            ? { x: Math.random() * 500, y: Math.random() * 500 }
-                            : node.position,
-                        data: {
-                            ...node.data,
-                            onUpdate: (updatedData) => {
-                                setNodes((nds) =>
-                                    nds.map((n) =>
-                                        n.id === node.id ? { ...n, data: { ...n.data, ...updatedData } } : n
-                                    )
-                                );
-                            },
-                        },
-                        draggable: true,
-                    })));
+                    setNodes(workflow.nodes || []);
                     setEdges(workflow.edges || []);
                     toast({
                         title: "Workflow Loaded",

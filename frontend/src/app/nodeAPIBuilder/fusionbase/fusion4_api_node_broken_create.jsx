@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ReactFlow, {
@@ -14,15 +14,15 @@ import ReactFlow, {
     useReactFlow,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { PlusCircle, Trash2, Save, Upload, Settings, Play, ChevronDown, ChevronUp, Copy } from 'lucide-react'
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { PlusCircle, Trash2, Save, Upload, Settings, Play } from 'lucide-react';
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast"
 import {
     ContextMenu,
@@ -51,8 +51,6 @@ const QuantumNode = ({ data, id }) => {
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
     const [isTestingOpen, setIsTestingOpen] = useState(false);
     const [testResult, setTestResult] = useState("");
-    const [isResultsOpen, setIsResultsOpen] = useState(false);
-    const [reRunCount, setReRunCount] = useState(0);
 
     const handleSave = () => {
         data.onUpdate(editedData);
@@ -118,14 +116,12 @@ const QuantumNode = ({ data, id }) => {
             });
             const result = await response.json();
             setTestResult(JSON.stringify(result, null, 2));
-            setIsResultsOpen(true);
             toast({
                 title: "API Test Completed",
                 description: "The API test has been executed successfully.",
             });
         } catch (error) {
             setTestResult(`Error: ${error.message}`);
-            setIsResultsOpen(true);
             toast({
                 title: "API Test Failed",
                 description: error.message,
@@ -134,22 +130,10 @@ const QuantumNode = ({ data, id }) => {
         }
     };
 
-    const handleReRun = async () => {
-        for (let i = 0; i < reRunCount; i++) {
-            await handleTestAPI();
-        }
-    };
-
     return (
         <ContextMenu>
             <ContextMenuTrigger>
-                <Card 
-                    className="w-96 bg-gray-900 border-2 rounded-lg overflow-hidden shadow-lg transition-all duration-300" 
-                    style={{ 
-                        borderColor: data.color,
-                        boxShadow: `0 0 20px ${data.color}`,
-                    }}
-                >
+                <Card className="w-96 bg-gray-900 border-2 rounded-lg overflow-hidden shadow-lg" style={{ borderColor: data.color }}>
                     <CardHeader className="p-4 bg-gray-800">
                         <CardTitle className="text-xl font-bold" style={{ color: data.color }}>{data.label}</CardTitle>
                     </CardHeader>
@@ -272,9 +256,6 @@ const QuantumNode = ({ data, id }) => {
                         Disconnect {output.label}
                     </ContextMenuItem>
                 ))}
-                <ContextMenuItem onSelect={() => navigator.clipboard.writeText(JSON.stringify(data))}>
-                    Copy Node
-                </ContextMenuItem>
             </ContextMenuContent>
             <Popover open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
                 <PopoverTrigger asChild>
@@ -303,26 +284,9 @@ const QuantumNode = ({ data, id }) => {
                         <Button onClick={handleTestAPI} className="bg-purple-600 hover:bg-purple-700 text-white">
                             Run Test
                         </Button>
-                        {reRunCount > 0 && (
-                            <Button onClick={handleReRun} className="bg-blue-600 hover:bg-blue-700 text-white ml-2">
-                                Re-run {reRunCount} time{reRunCount > 1 ? 's' : ''}
-                            </Button>
-                        )}
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-semibold">Test Results</h3>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setIsResultsOpen(!isResultsOpen)}
-                            >
-                                {isResultsOpen ? <ChevronUp /> : <ChevronDown />}
-                            </Button>
-                        </div>
-                        {isResultsOpen && (
-                            <pre className="bg-gray-900 p-4 rounded-lg overflow-auto max-h-60">
-                                {testResult || "No test results yet."}
-                            </pre>
-                        )}
+                        <pre className="bg-gray-900 p-4 rounded-lg overflow-auto max-h-60">
+                            {testResult || "No test results yet."}
+                        </pre>
                     </div>
                 </DialogContent>
             </Dialog>
@@ -356,7 +320,6 @@ const QuantumNexusWorkflowBuilder = () => {
     const [isDarkMode, setIsDarkMode] = useState(true);
     const [errorLog, setErrorLog] = useState([]);
     const [workflowTestResults, setWorkflowTestResults] = useState({});
-    const [copiedNode, setCopiedNode] = useState(null);
 
     const onConnect = useCallback((params) => {
         const sourceNode = nodes.find(node => node.id === params.source);
@@ -378,43 +341,6 @@ const QuantumNexusWorkflowBuilder = () => {
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
-    const createNewNode = useCallback((position, data = newTaskData) => {
-        const newNode = {
-            id: `quantum-${nodes.length + 1}`,
-            type: 'quantumNode',
-            position,
-            data: {
-                ...data,
-                onUpdate: (updatedData) => {
-                    setNodes((nds) =>
-                        nds.map((node) =>
-                            node.id === newNode.id ? { ...node, data: { ...node.data, ...updatedData } } : node
-                        )
-                    );
-                },
-            },
-            draggable: true,
-        };
-
-        setNodes((nds) => nds.concat(newNode));
-        setNewTaskData({
-            label: '',
-            description: '',
-            inputs: [{ id: 'input1', label: 'Input 1' }],
-            outputs: [{ id: 'output1', label: 'Output 1' }],
-            color: '#00FFFF',
-            url: '',
-            method: 'GET',
-            headers: '{}',
-            payload: '{}',
-        });
-        setIsAddingTask(false);
-        toast({
-            title: "Task Added",
-            description: "New quantum task has been added to the workflow.",
-        });
-    }, [nodes, newTaskData, setNodes]);
-
     const onDrop = useCallback(
         (event) => {
             event.preventDefault();
@@ -425,35 +351,12 @@ const QuantumNexusWorkflowBuilder = () => {
                 y: event.clientY - reactFlowBounds.top,
             };
 
-            createNewNode(position);
-        },
-        [createNewNode]
-    );
-
-    const handleCopy = useCallback(() => {
-        const selectedNodes = nodes.filter(node => node.selected);
-        if (selectedNodes.length === 1) {
-            setCopiedNode(JSON.parse(JSON.stringify(selectedNodes[0])));
-            toast({
-                title: "Node Copied",
-                description: "The selected node has been copied.",
-            });
-        }
-    }, [nodes]);
-
-    const handlePaste = useCallback((event) => {
-        if (copiedNode) {
-            const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-            const position = {
-                x: event.clientX - reactFlowBounds.left,
-                y: event.clientY - reactFlowBounds.top,
-            };
             const newNode = {
-                ...copiedNode,
                 id: `quantum-${nodes.length + 1}`,
+                type: 'quantumNode',
                 position,
                 data: {
-                    ...copiedNode.data,
+                    ...newTaskData,
                     onUpdate: (updatedData) => {
                         setNodes((nds) =>
                             nds.map((node) =>
@@ -462,30 +365,28 @@ const QuantumNexusWorkflowBuilder = () => {
                         );
                     },
                 },
-                draggable: true,
             };
+
             setNodes((nds) => nds.concat(newNode));
-            toast({
-                title: "Node Pasted",
-                description: "A new node has been created from the copied data.",
+            setNewTaskData({
+                label: '',
+                description: '',
+                inputs: [{ id: 'input1', label: 'Input 1' }],
+                outputs: [{ id: 'output1', label: 'Output 1' }],
+                color: '#00FFFF',
+                url: '',
+                method: 'GET',
+                headers: '{}',
+                payload: '{}',
             });
-        }
-    }, [copiedNode, nodes, setNodes]);
-
-    useEffect(() => {
-        const handleKeyDown = (event) => {
-            if (event.ctrlKey && event.key === 'c') {
-                handleCopy();
-            } else if (event.ctrlKey && event.key === 'v') {
-                handlePaste(event);
-            }
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [handleCopy, handlePaste]);
+            setIsAddingTask(false);
+            toast({
+                title: "Task Added",
+                description: "New quantum task has been added to the workflow.",
+            });
+        },
+        [nodes, newTaskData, setNodes]
+    );
 
     const addInput = () => {
         setNewTaskData((prev) => ({
@@ -513,11 +414,6 @@ const QuantumNexusWorkflowBuilder = () => {
         [setNodes, setEdges]
     );
 
-    const addNewTask = () => {
-        const position = { x: 100, y: 100 };
-        createNewNode(position);
-    };
-
     const saveWorkflow = () => {
         const workflow = { nodes, edges };
         const json = JSON.stringify(workflow);
@@ -543,23 +439,7 @@ const QuantumNexusWorkflowBuilder = () => {
                 const content = e.target.result;
                 try {
                     const workflow = JSON.parse(content);
-                    setNodes(workflow.nodes.map(node => ({
-                        ...node,
-                        position: node.position.x === null || node.position.y === null
-                            ? { x: Math.random() * 500, y: Math.random() * 500 }
-                            : node.position,
-                        data: {
-                            ...node.data,
-                            onUpdate: (updatedData) => {
-                                setNodes((nds) =>
-                                    nds.map((n) =>
-                                        n.id === node.id ? { ...n, data: { ...n.data, ...updatedData } } : n
-                                    )
-                                );
-                            },
-                        },
-                        draggable: true,
-                    })));
+                    setNodes(workflow.nodes || []);
                     setEdges(workflow.edges || []);
                     toast({
                         title: "Workflow Loaded",
@@ -707,7 +587,7 @@ const QuantumNexusWorkflowBuilder = () => {
                                 </div>
                             </div>
                             <DialogFooter>
-                                <Button onClick={addNewTask} className="bg-cyan-600 hover:bg-cyan-700 text-white">Create Task</Button>
+                                <Button onClick={() => setIsAddingTask(false)} className="bg-cyan-600 hover:bg-cyan-700 text-white">Create Task</Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -771,18 +651,7 @@ const QuantumNexusWorkflowBuilder = () => {
                 </div>
             </div>
             <ReactFlowProvider>
-                <div 
-                    className="flex-grow bg-gray-900" 
-                    ref={reactFlowWrapper}
-                    onKeyDown={(e) => {
-                        if (e.ctrlKey && e.key === 'c') {
-                            handleCopy();
-                        } else if (e.ctrlKey && e.key === 'v') {
-                            handlePaste(e);
-                        }
-                    }}
-                    tabIndex={0}
-                >
+                <div className="flex-grow bg-gray-900" ref={reactFlowWrapper}>
                     <ReactFlow
                         nodes={nodes}
                         edges={edges}
@@ -793,7 +662,6 @@ const QuantumNexusWorkflowBuilder = () => {
                         onDrop={onDrop}
                         nodeTypes={nodeTypes}
                         fitView
-                        snapToGrid={false}
                     >
                         <Background color="#4a5568" gap={16} />
                         <Controls />
