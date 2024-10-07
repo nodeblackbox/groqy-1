@@ -77,6 +77,7 @@ function selectModel(task, availableModels) {
 async function unifiedApiCall(model, messages, parameters) {
     switch (model.provider) {
         case 'ollama':
+
             const ollamaApi = new OllamaApi();
             const ollamaResponse = await ollamaApi.chat({
                 model: model.name,
@@ -86,6 +87,7 @@ async function unifiedApiCall(model, messages, parameters) {
             return ollamaResponse;
 
         case 'groq':
+
             const groqApi = new GroqApi(process.env.GROQ_API_KEY);
             const groqResponse = await groqApi.chat.completions.create({
                 model: model.name,
@@ -95,6 +97,7 @@ async function unifiedApiCall(model, messages, parameters) {
             return groqResponse;
 
         case 'openai':
+
             const openaiConfig = new Configuration({ apiKey: process.env.OPENAI_API_KEY });
             const openaiApi = new OpenAIApi(openaiConfig);
             const openaiResponse = await openaiApi.createChatCompletion({
