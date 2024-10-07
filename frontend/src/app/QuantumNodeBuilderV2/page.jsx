@@ -59,6 +59,8 @@ const QuantumNexusWorkflowBuilder = () => {
                         )
                     );
                 },
+                selectedInputs: data.selectedInputs || {},
+                selectedOutputs: data.selectedOutputs || {},
             },
             draggable: true,
         };

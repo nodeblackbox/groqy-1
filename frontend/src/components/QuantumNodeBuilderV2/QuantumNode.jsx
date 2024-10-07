@@ -37,9 +37,11 @@ const QuantumNode = ({ data, id }) => {
     const [isTestingOpen, setIsTestingOpen] = useState(false);
     const [testResult, setTestResult] = useState("");
     const [isResultsOpen, setIsResultsOpen] = useState(false);
+    const [selectedInputs, setSelectedInputs] = useState(data.selectedInputs || {});
+    const [selectedOutputs, setSelectedOutputs] = useState(data.selectedOutputs || {});
 
     const handleSave = () => {
-        data.onUpdate(editedData);
+        data.onUpdate({ ...editedData, selectedInputs, selectedOutputs });
         setIsEditing(false);
         toast({
             title: "Task Updated",
@@ -260,6 +262,21 @@ const QuantumNode = ({ data, id }) => {
                                                 }}
                                                 className="bg-gray-700 border-cyan-500"
                                             />
+                                            <Select
+                                                value={selectedInputs[input.id] || ''}
+                                                onValueChange={(value) => setSelectedInputs({...selectedInputs, [input.id]: value})}
+                                            >
+                                                <SelectTrigger className="bg-gray-700 border-cyan-500">
+                                                    <SelectValue placeholder="Select API" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {editedData.apiCalls.map((api, apiIndex) => (
+                                                        <SelectItem key={apiIndex} value={`api-${apiIndex}`}>
+                                                            {api.url}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                             <Button onClick={() => removeInput(index)} className="bg-red-600 hover:bg-red-700 text-white">
                                                 <Minus className="h-4 w-4" />
                                             </Button>
@@ -282,6 +299,21 @@ const QuantumNode = ({ data, id }) => {
                                                 }}
                                                 className="bg-gray-700 border-cyan-500"
                                             />
+                                            <Select
+                                                value={selectedOutputs[output.id] || ''}
+                                                onValueChange={(value) => setSelectedOutputs({...selectedOutputs, [output.id]: value})}
+                                            >
+                                                <SelectTrigger className="bg-gray-700 border-cyan-500">
+                                                    <SelectValue placeholder="Select API" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {editedData.apiCalls.map((api, apiIndex) => (
+                                                        <SelectItem key={apiIndex} value={`api-${apiIndex}`}>
+                                                            {api.url}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                             <Button onClick={() => removeOutput(index)} className="bg-red-600 hover:bg-red-700 text-white">
                                                 <Minus className="h-4 w-4" />
                                             </Button>
