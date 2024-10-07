@@ -2,9 +2,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Rnd } from 'react-rnd'; // Import Rnd from react-rnd
-import { X } from 'lucide-react'; // Import X icon for closing
-import { Button } from "@/components/ui/button"; // Assuming you have a Button component
+import { Rnd } from 'react-rnd';
+import { X } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 const WorkflowTestResults = ({ workflowTestResults, onClose }) => {
     const [position, setPosition] = useState({ x: 100, y: 100 });
