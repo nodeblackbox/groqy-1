@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PlusCircle, Trash2, Save, Upload, Settings, Play, ChevronDown, ChevronUp, Copy } from 'lucide-react';
+import { PlusCircle, Minus, Save, ChevronDown, ChevronUp, Copy } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -26,12 +26,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import CustomColorPicker from './CustomColorPicker';
 
 const defaultColors = [
-    '#00FFFF', // Cyan
-    '#FF00FF', // Magenta
-    '#FFFF00', // Yellow
-    '#FF0000', // Red
-    '#00FF00', // Green
-    '#0000FF', // Blue
+    '#00FFFF', '#FF00FF', '#FFFF00', '#FF0000', '#00FF00', '#0000FF',
 ];
 
 const QuantumNode = ({ data, id }) => {
@@ -42,7 +37,6 @@ const QuantumNode = ({ data, id }) => {
     const [isTestingOpen, setIsTestingOpen] = useState(false);
     const [testResult, setTestResult] = useState("");
     const [isResultsOpen, setIsResultsOpen] = useState(false);
-    const [reRunCount, setReRunCount] = useState(0);
 
     const handleSave = () => {
         data.onUpdate(editedData);
@@ -99,35 +93,70 @@ const QuantumNode = ({ data, id }) => {
         return data.color;
     };
 
-    const handleTestAPI = async () => {
+    const handleTestAPI = async (apiCall) => {
         try {
-            const response = await fetch(editedData.url, {
-                method: editedData.method,
-                headers: JSON.parse(editedData.headers),
-                body: editedData.method !== 'GET' ? editedData.payload : undefined,
+            const response = await fetch(apiCall.url, {
+                method: apiCall.method,
+                headers: JSON.parse(apiCall.headers),
+                body: apiCall.method !== 'GET' ? apiCall.payload : undefined,
             });
             const result = await response.json();
-            setTestResult(JSON.stringify(result, null, 2));
-            setIsResultsOpen(true);
-            toast({
-                title: "API Test Completed",
-                description: "The API test has been executed successfully.",
-            });
+            return JSON.stringify(result, null, 2);
         } catch (error) {
-            setTestResult(`Error: ${error.message}`);
-            setIsResultsOpen(true);
-            toast({
-                title: "API Test Failed",
-                description: error.message,
-                variant: "destructive",
-            });
+            return `Error: ${error.message}`;
         }
     };
 
-    const handleReRun = async () => {
-        for (let i = 0; i < reRunCount; i++) {
-            await handleTestAPI();
-        }
+    const runAllTests = async () => {
+        const results = await Promise.all(editedData.apiCalls.map(handleTestAPI));
+        setTestResult(results.join('\n\n'));
+        setIsResultsOpen(true);
+        toast({
+            title: "API Tests Completed",
+            description: "All API tests have been executed.",
+        });
+    };
+
+    const addApiCall = () => {
+        setEditedData({
+            ...editedData,
+            apiCalls: [...editedData.apiCalls, { url: '', method: 'GET', headers: '{}', payload: '{}' }],
+        });
+    };
+
+    const removeApiCall = (index) => {
+        setEditedData({
+            ...editedData,
+            apiCalls: editedData.apiCalls.filter((_, i) => i !== index),
+        });
+    };
+
+    const addInput = () => {
+        setEditedData({
+            ...editedData,
+            inputs: [...editedData.inputs, { id: `input-${editedData.inputs.length + 1}`, label: `Input ${editedData.inputs.length + 1}` }],
+        });
+    };
+
+    const removeInput = (index) => {
+        setEditedData({
+            ...editedData,
+            inputs: editedData.inputs.filter((_, i) => i !== index),
+        });
+    };
+
+    const addOutput = () => {
+        setEditedData({
+            ...editedData,
+            outputs: [...editedData.outputs, { id: `output-${editedData.outputs.length + 1}`, label: `Output ${editedData.outputs.length + 1}` }],
+        });
+    };
+
+    const removeOutput = (index) => {
+        setEditedData({
+            ...editedData,
+            outputs: editedData.outputs.filter((_, i) => i !== index),
+        });
     };
 
     return (
@@ -160,45 +189,115 @@ const QuantumNode = ({ data, id }) => {
                                     className="bg-gray-700 border-cyan-500"
                                     style={{ color: data.color }}
                                 />
-                                <Input
-                                    value={editedData.url}
-                                    onChange={(e) => setEditedData({ ...editedData, url: e.target.value })}
-                                    placeholder="API URL"
-                                    className="bg-gray-700 border-cyan-500"
-                                />
-                                <Select
-                                    value={editedData.method}
-                                    onValueChange={(value) => setEditedData({ ...editedData, method: value })}
-                                >
-                                    <SelectTrigger className="bg-gray-700 border-cyan-500">
-                                        <SelectValue placeholder="Select Method" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="GET">GET</SelectItem>
-                                        <SelectItem value="POST">POST</SelectItem>
-                                        <SelectItem value="PUT">PUT</SelectItem>
-                                        <SelectItem value="DELETE">DELETE</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <Textarea
-                                    value={editedData.headers}
-                                    onChange={(e) => setEditedData({ ...editedData, headers: e.target.value })}
-                                    placeholder="Headers (JSON)"
-                                    className="bg-gray-700 border-cyan-500"
-                                />
-                                <Textarea
-                                    value={editedData.payload}
-                                    onChange={(e) => setEditedData({ ...editedData, payload: e.target.value })}
-                                    placeholder="Payload (JSON)"
-                                    className="bg-gray-700 border-cyan-500"
-                                />
+                                {editedData.apiCalls.map((apiCall, index) => (
+                                    <div key={index} className="space-y-2 p-2 border border-gray-700 rounded">
+                                        <Input
+                                            value={apiCall.url}
+                                            onChange={(e) => {
+                                                const newApiCalls = [...editedData.apiCalls];
+                                                newApiCalls[index].url = e.target.value;
+                                                setEditedData({ ...editedData, apiCalls: newApiCalls });
+                                            }}
+                                            placeholder="API URL"
+                                            className="bg-gray-700 border-cyan-500"
+                                        />
+                                        <Select
+                                            value={apiCall.method}
+                                            onValueChange={(value) => {
+                                                const newApiCalls = [...editedData.apiCalls];
+                                                newApiCalls[index].method = value;
+                                                setEditedData({ ...editedData, apiCalls: newApiCalls });
+                                            }}
+                                        >
+                                            <SelectTrigger className="bg-gray-700 border-cyan-500">
+                                                <SelectValue placeholder="Select Method" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="GET">GET</SelectItem>
+                                                <SelectItem value="POST">POST</SelectItem>
+                                                <SelectItem value="PUT">PUT</SelectItem>
+                                                <SelectItem value="DELETE">DELETE</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Textarea
+                                            value={apiCall.headers}
+                                            onChange={(e) => {
+                                                const newApiCalls = [...editedData.apiCalls];
+                                                newApiCalls[index].headers = e.target.value;
+                                                setEditedData({ ...editedData, apiCalls: newApiCalls });
+                                            }}
+                                            placeholder="Headers (JSON)"
+                                            className="bg-gray-700 border-cyan-500"
+                                        />
+                                        <Textarea
+                                            value={apiCall.payload}
+                                            onChange={(e) => {
+                                                const newApiCalls = [...editedData.apiCalls];
+                                                newApiCalls[index].payload = e.target.value;
+                                                setEditedData({ ...editedData, apiCalls: newApiCalls });
+                                            }}
+                                            placeholder="Payload (JSON)"
+                                            className="bg-gray-700 border-cyan-500"
+                                        />
+                                        <Button onClick={() => removeApiCall(index)} className="bg-red-600 hover:bg-red-700 text-white">
+                                            <Minus className="mr-2 h-4 w-4" /> Remove API Call
+                                        </Button>
+                                    </div>
+                                ))}
+                                <Button onClick={addApiCall} className="bg-green-600 hover:bg-green-700 text-white">
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Add API Call
+                                </Button>
+                                <div>
+                                    <Label className="text-cyan-400">Inputs</Label>
+                                    {editedData.inputs.map((input, index) => (
+                                        <div key={input.id} className="flex items-center space-x-2 my-2">
+                                            <Input
+                                                value={input.label}
+                                                onChange={(e) => {
+                                                    const newInputs = [...editedData.inputs];
+                                                    newInputs[index].label = e.target.value;
+                                                    setEditedData({ ...editedData, inputs: newInputs });
+                                                }}
+                                                className="bg-gray-700 border-cyan-500"
+                                            />
+                                            <Button onClick={() => removeInput(index)} className="bg-red-600 hover:bg-red-700 text-white">
+                                                <Minus className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    <Button onClick={addInput} className="mt-2 bg-cyan-600 hover:bg-cyan-700 text-white">
+                                        <PlusCircle className="mr-2 h-4 w-4" /> Add Input
+                                    </Button>
+                                </div>
+                                <div>
+                                    <Label className="text-cyan-400">Outputs</Label>
+                                    {editedData.outputs.map((output, index) => (
+                                        <div key={output.id} className="flex items-center space-x-2 my-2">
+                                            <Input
+                                                value={output.label}
+                                                onChange={(e) => {
+                                                    const newOutputs = [...editedData.outputs];
+                                                    newOutputs[index].label = e.target.value;
+                                                    setEditedData({ ...editedData, outputs: newOutputs });
+                                                }}
+                                                className="bg-gray-700 border-cyan-500"
+                                            />
+                                            <Button onClick={() => removeOutput(index)} className="bg-red-600 hover:bg-red-700 text-white">
+                                                <Minus className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    <Button onClick={addOutput} className="mt-2 bg-cyan-600 hover:bg-cyan-700 text-white">
+                                        <PlusCircle className="mr-2 h-4 w-4" /> Add Output
+                                    </Button>
+                                </div>
                                 <Button onClick={handleSave} className="bg-cyan-600 hover:bg-cyan-700 text-white">Save</Button>
                             </div>
                         ) : (
                             <>
                                 <p className="text-sm mb-4" style={{ color: data.color }}>{data.description}</p>
                                 <Button onClick={() => setIsEditing(true)} className="bg-cyan-600 hover:bg-cyan-700 text-white mr-2">Edit</Button>
-                                <Button onClick={() => setIsTestingOpen(true)} className="bg-purple-600 hover:bg-purple-700 text-white">Test API</Button>
+                                <Button onClick={() => setIsTestingOpen(true)} className="bg-purple-600 hover:bg-purple-700 text-white">Test APIs</Button>
                             </>
                         )}
                         <div className="mt-4">
@@ -280,14 +379,9 @@ const QuantumNode = ({ data, id }) => {
                         <DialogTitle>API Test Results</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
-                        <Button onClick={handleTestAPI} className="bg-purple-600 hover:bg-purple-700 text-white">
-                            Run Test
+                        <Button onClick={runAllTests} className="bg-purple-600 hover:bg-purple-700 text-white">
+                            Run All Tests
                         </Button>
-                        {reRunCount > 0 && (
-                            <Button onClick={handleReRun} className="bg-blue-600 hover:bg-blue-700 text-white ml-2">
-                                Re-run {reRunCount} time{reRunCount > 1 ? 's' : ''}
-                            </Button>
-                        )}
                         <div className="flex justify-between items-center">
                             <h3 className="text-lg font-semibold">Test Results</h3>
                             <Button
