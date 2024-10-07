@@ -3,6 +3,7 @@
     "paths": {
       "@/*": ["./src/*"]
     },
+    "lib": ["esnext", "dom"],
     "types": ["estree"]
   },
   "include": ["**/*.js", "**/*.jsx"]
