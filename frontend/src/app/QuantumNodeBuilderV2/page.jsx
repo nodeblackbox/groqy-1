@@ -62,7 +62,7 @@ const QuantumNexusWorkflowBuilder = () => {
             },
             draggable: true,
         };
-
+    
         setNodes((nds) => nds.concat(newNode));
         toast({
             title: "Task Added",
@@ -207,29 +207,55 @@ const QuantumNexusWorkflowBuilder = () => {
         }
     };
 
+    // Updated runWorkflowTests function in page.jsx
+
     const runWorkflowTests = async () => {
         const results = {};
+
+        // Iterate over all nodes in the workflow
         for (const node of nodes) {
-            try {
-                const response = await fetch(node.data.url, {
-                    method: node.data.method,
-                    headers: JSON.parse(node.data.headers),
-                    body: node.data.method !== 'GET' ? node.data.payload : undefined,
-                });
-                const result = await response.json();
+            // Check if the node has apiCalls defined in its data
+            if (node.data.apiCalls && node.data.apiCalls.length > 0) {
+                try {
+                    // Iterate over all apiCalls within the node
+                    for (const apiCall of node.data.apiCalls) {
+                        const response = await fetch(apiCall.url, {
+                            method: apiCall.method,
+                            headers: JSON.parse(apiCall.headers),
+                            body: apiCall.method !== 'GET' ? apiCall.payload : undefined,
+                        });
+                        const result = await response.json();
+
+                        // If multiple API calls exist, append each to the node's results
+                        if (!results[node.id]) {
+                            results[node.id] = {
+                                status: 'success',
+                                data: [result],
+                            };
+                        } else {
+                            results[node.id].data.push(result);
+                        }
+                    }
+                } catch (error) {
+                    // Capture errors for any failed API requests
+                    results[node.id] = {
+                        status: 'error',
+                        message: error.message,
+                    };
+                }
+            } else {
+                // Handle nodes without any API calls
                 results[node.id] = {
-                    status: 'success',
-                    data: result,
-                };
-            } catch (error) {
-                results[node.id] = {
-                    status: 'error',
-                    message: error.message,
+                    status: 'no-api-calls',
+                    message: 'No API calls defined for this node.',
                 };
             }
         }
+
+        // Set workflow results and open the results pop-up
         setWorkflowTestResults(results);
-        setIsTestResultsOpen(true); // Open the pop-up after running tests
+        setIsTestResultsOpen(true);
+
         toast({
             title: "Workflow Tests Completed",
             description: "All API tests in the workflow have been executed.",
