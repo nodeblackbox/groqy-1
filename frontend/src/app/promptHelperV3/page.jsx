@@ -62,7 +62,7 @@ class CosmicAgent {
         const userMessage = `${this.systemPrompt}\n\nUser Input: ${input}\n\nCosmic Knowledge Base Data: ${JSON.stringify(this.knowledgeBase)}`;
 
         try {
-            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            const response = await fetch("https://localhost/openai/v1/chat/completions", {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${apiKey}`,
