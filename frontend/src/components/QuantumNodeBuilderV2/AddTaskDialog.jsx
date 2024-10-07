@@ -20,6 +20,8 @@ const AddTaskDialog = ({ onAddTask }) => {
         color: '#00FFFF',
         apiCalls: [{ url: '', method: 'GET', headers: '{}', payload: '{}' }],
     });
+    const [selectedInputs, setSelectedInputs] = useState({});
+    const [selectedOutputs, setSelectedOutputs] = useState({});
 
     const addInput = () => {
         setNewTaskData((prev) => ({
@@ -64,7 +66,11 @@ const AddTaskDialog = ({ onAddTask }) => {
     };
 
     const handleCreateTask = () => {
-        onAddTask(newTaskData);
+        onAddTask({
+            ...newTaskData,
+            selectedInputs,
+            selectedOutputs,
+        });
         // Reset form
         setNewTaskData({
             label: '',
@@ -74,6 +80,8 @@ const AddTaskDialog = ({ onAddTask }) => {
             color: '#00FFFF',
             apiCalls: [{ url: '', method: 'GET', headers: '{}', payload: '{}' }],
         });
+        setSelectedInputs({});
+        setSelectedOutputs({});
     };
 
     return (
@@ -117,6 +125,21 @@ const AddTaskDialog = ({ onAddTask }) => {
                                     }}
                                     className="flex-grow bg-gray-700 text-cyan-400 border-cyan-500"
                                 />
+                                <Select
+                                    value={selectedInputs[input.id] || ''}
+                                    onValueChange={(value) => setSelectedInputs({...selectedInputs, [input.id]: value})}
+                                >
+                                    <SelectTrigger className="bg-gray-700 border-cyan-500">
+                                        <SelectValue placeholder="Select API" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {newTaskData.apiCalls.map((api, apiIndex) => (
+                                            <SelectItem key={apiIndex} value={`api-${apiIndex}`}>
+                                                {api.url}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 <Button onClick={() => removeInput(index)} className="ml-2 bg-red-600 hover:bg-red-700">
                                     <Minus className="h-4 w-4" />
                                 </Button>
@@ -137,6 +160,21 @@ const AddTaskDialog = ({ onAddTask }) => {
                                     }}
                                     className="flex-grow bg-gray-700 text-cyan-400 border-cyan-500"
                                 />
+                                <Select
+                                    value={selectedOutputs[output.id] || ''}
+                                    onValueChange={(value) => setSelectedOutputs({...selectedOutputs, [output.id]: value})}
+                                >
+                                    <SelectTrigger className="bg-gray-700 border-cyan-500">
+                                        <SelectValue placeholder="Select API" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {newTaskData.apiCalls.map((api, apiIndex) => (
+                                            <SelectItem key={apiIndex} value={`api-${apiIndex}`}>
+                                                {api.url}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 <Button onClick={() => removeOutput(index)} className="ml-2 bg-red-600 hover:bg-red-700">
                                     <Minus className="h-4 w-4" />
                                 </Button>
@@ -179,7 +217,9 @@ const AddTaskDialog = ({ onAddTask }) => {
                                 <Textarea
                                     value={apiCall.headers}
                                     onChange={(e) => {
-                                        const updatedApiCalls = [...newTaskData.apiCalls];
+                                        const updatedApiCalls = [...new
+
+TaskData.apiCalls];
                                         updatedApiCalls[index].headers = e.target.value;
                                         setNewTaskData({ ...newTaskData, apiCalls: updatedApiCalls });
                                     }}
