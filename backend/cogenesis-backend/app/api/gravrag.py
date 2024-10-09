@@ -9,22 +9,27 @@ logger = logging.getLogger(__name__)
 memory_manager = MemoryManager()
 
 class MemoryRequest(BaseModel):
+    print("Base model for Memory Request ",BaseModel)
     content: str
     metadata: Optional[Dict[str, Any]] = None
 
 class RecallRequest(BaseModel):
+    print("Base model for Recall Request ",BaseModel)
     query: str
     top_k: Optional[int] = 5
 
 class PruneRequest(BaseModel):
+    print("Base model for Prune Request ",BaseModel)
     gravity_threshold: Optional[float] = 1e-5
 
 class RecallWithMetadataRequest(BaseModel):
+    print("Base model Metadata  for Recall Request ",BaseModel)
     query: str
     metadata: Dict[str, Any]
     top_k: Optional[int] = 10
 
 class DeleteByMetadataRequest(BaseModel):
+    print("Base model for Delete By Metadata ",BaseModel)
     metadata: Dict[str, Any]
 
 @router.post("/create_memory")
