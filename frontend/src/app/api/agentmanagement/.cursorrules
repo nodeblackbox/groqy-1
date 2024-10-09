@@ -2817,3 +2817,1290 @@ By following this comprehensive guide, you can effectively transition your exist
 Remember to continuously refer to Next.js 14's official documentation and best practices to stay updated with the latest features and recommendations.
 
 If you require further assistance with specific implementations or have additional questions, feel free to ask!
+
+
+
+I'm glad to see that you've outlined a detailed plan for transitioning your Express.js project to Next.js 14. This guide covers the implementation of various API routes, each with its own purpose and key components/functions.
+
+Here's a summary of the key points:
+
+
+
+
+
+
+// So we need to convert all of the code below which is an express and we're going to convert it into nextjs
+// and we're going to use the same exact endpoints and the same exact functionality but we're going to convert it into nextjs
+    
+
+
+
+
+
+
+
+
+
+        
+// import express from 'express';
+// import path from 'path';
+// import { existsSync, mkdirSync } from 'fs';
+// import cors from 'cors';
+// import bcrypt from 'bcrypt';
+// import jwt from 'jsonwebtoken';
+// import { fileURLToPath } from 'url';
+// import multer from 'multer';
+// import mongoose from 'mongoose';
+// import sanitizeHtml from 'sanitize-html';
+// import { User, Project, Task, Submission, Comment, Notification, Email, Leaderboard } from './models.js';
+
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+
+// const app = express();
+// const PORT = process.env.NODE_ENV === 'test' ? 4001 : (process.env.PORT || 4000);
+// const SECRET_KEY = process.env.SECRET_KEY || 'banana';
+
+// // Middleware setup
+// app.use(cors({
+//     origin: ['https://groqy.com', 'https://groqy.com/admin', 'https://groqy.com/test3'],
+//     credentials: true
+// }));
+// app.use(express.json({ limit: '50mb' }));
+// app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+
+// // Secure file serving middleware
+// const secureFileServe = (req, res, next) => {
+//   const filePath = path.join(__dirname, req.url);
+//   if (filePath.startsWith(path.join(__dirname, 'uploads'))) {
+//     // Check if the user is authenticated (you may want to use your existing auth middleware)
+//     if (req.user) {
+//       // Check if the file exists
+//       fs.access(filePath, fs.constants.F_OK, (err) => {
+//         if (err) {
+//           res.status(404).send('File not found');
+//         } else {
+//           // Serve the file
+//           res.sendFile(filePath);
+//         }
+//       });
+//     } else {
+//       res.status(403).send('Access denied');
+//     }
+//   } else {
+//     next();
+//   }
+// };
+
+// // MongoDB connection
+// mongoose.connect('mongodb://localhost:27017/groqy', {
+//     useNewUrlParser: true,
+//     useUnifiedTopology: true,
+// })
+// .then(() => console.log('Connected to MongoDB'))
+// .catch((err) => console.error('Error connecting to MongoDB', err));
+
+// // View engine setup
+// app.set('view engine', 'ejs');
+// app.use('/uploads', secureFileServe);
+
+// app.set('views', path.join(__dirname, 'views'));
+// app.use(express.static(path.join(__dirname, 'public')));
+
+// const createFileUrl = (filename) => {
+//     return `${process.env.SERVER_URL || 'http://localhost:4000'}/uploads/${filename}`;
+// };
+
+// // File upload setup
+// const UPLOAD_DIR = path.join(__dirname, 'uploads');
+// if (!existsSync(UPLOAD_DIR)) {
+//     mkdirSync(UPLOAD_DIR);
+// }
+
+// // const storage = multer.diskStorage({
+// //     destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+// //     filename: (req, file, cb) => {
+// //         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+// //         cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
+// //     }
+// // });
+// // const upload = multer({ storage: storage });
+// // Set up multer for file uploads
+
+
+// // =====================================================
+// // =====================================================
+// // =====================================================
+// // =====================================================
+// // const storage = multer.diskStorage({
+// //     destination: (req, file, cb) => cb(null, 'uploads/'),
+// //     filename: (req, file, cb) => {
+// //         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+// //         cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+// //     }
+// // });
+// // const upload = multer({ storage: storage });
+
+
+
+// // Configure multer for file uploads
+// const storage = multer.diskStorage({
+//     destination: (req, file, cb) => cb(null, 'uploads/'),
+//     filename: (req, file, cb) => {
+//         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+//         cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+//     }
+// });
+
+// const upload = multer({
+//     storage: storage,
+//     limits: { fileSize: 50 * 1024 * 1024 } // 50 MB limit
+// });
+
+
+// // Authentication middleware
+// function authenticateToken(req, res, next) {
+//     try {
+//         const authHeader = req.headers['authorization'];
+
+//         if (!authHeader) {
+//             return res.status(401).json({ error: 'No authorization header provided' });
+//         }
+
+//         const [bearer, token] = authHeader.split(' ');
+//         if (bearer !== 'Bearer' || !token) {
+//             return res.status(401).json({ error: 'Invalid authorization header format' });
+//         }
+//         // console.log(authHeader)
+//         // console.log(token)
+
+//         jwt.verify(token, SECRET_KEY, (err, decodedToken) => {
+//             // console.log("Decoded User: ", req.user);
+//             if (err) {
+//                 if (err.name === 'TokenExpiredError') {
+//                     return res.status(401).json({ error: 'Token expired' });
+//                 }
+//                 return res.status(403).json({ error: 'Invalid token' });
+//             }
+
+//             req.user = decodedToken;
+//             console.log("Decoded User: ", decodedToken);
+//             next();
+//         });
+//     } catch (error) {
+//         console.error('Authentication error:', error);
+//         res.status(500).json({ error: 'Internal server error during authentication' });
+//     }
+// }
+
+
+
+
+
+// // // JWT Authentication Middleware
+// // function authenticateToken(req, res, next) {
+// //     const authHeader = req.headers['authorization'];
+// //     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+// //     console.log(authHeader)
+// //     console.log(token)
+// //     if (token == null) return res.sendStatus(401); // if no token, unauthorized
+
+// //     jwt.verify(token, SECRET_KEY, (err, user) => {
+// //         console.log("Decoded User: ", req.user);
+// //         if (err) return res.sendStatus(403); // invalid token leads to forbidden
+// //         req.user = user;
+// //         console.log("Decoded User: ", user);
+// //         next();
+// //     });
+// // }
+
+
+// // Request logging middleware
+// app.use((req, res, next) => {
+//     console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+//     console.log('Request Body:', JSON.stringify(req.body, null, 2));
+//     next();
+// });
+
+// // Routes
+// app.post('/api/upload', authenticateToken, upload.single('file'), async (req, res) => {
+//     try {
+//         const file = req.file;
+//         if (!file) {
+//             return res.status(400).json({ message: 'No file uploaded' });
+//         }
+
+//         const fileUrl = `/uploads/${file.filename}`;
+//         const fileType = file.mimetype;
+
+//         const taskId = req.body.taskId;
+//         const task = await Task.findById(taskId);
+
+//         if (!task) {
+//             return res.status(404).json({ message: 'Associated task not found' });
+//         }
+
+//         task.downloadable_file_url = fileUrl;
+//         task.file_type = fileType;
+//         task.updated_at = new Date();
+
+//         if (task.prompt_type === 'code') {
+//             task.code = req.body.code;
+//         } else if (task.prompt_type === 'file') {
+//             task.file_description = req.body.description;
+//         }
+
+//         await task.save();
+
+//         const newSubmission = new Submission({
+//             user_id: req.user.id,
+//             task_id: taskId,
+//             uploaded_file_url: fileUrl,
+//             file_type: fileType,
+//             submission_type: task.prompt_type,
+//             status: 'pending'
+//         });
+//         await newSubmission.save();
+
+//         res.json({
+//             message: 'File uploaded successfully',
+//             file: {
+//                 url: fileUrl,
+//                 type: fileType
+//             },
+//             submission: newSubmission.toObject({ versionKey: false })
+//         });
+//     } catch (error) {
+//         console.error('Error uploading file:', error);
+//         res.status(500).json({ message: 'Error uploading file' });
+//     }
+// });
+
+// app.post('/api/users/register', async (req, res) => {
+//     try {
+//         const { username, email, password, role = 'user', bio = '', skills = [] } = req.body;
+
+//         const existingUser = await User.findOne({ email });
+//         if (existingUser) {
+//             return res.status(400).json({ message: 'User already exists' });
+//         }
+
+//         const newUser = new User({
+//             username,
+//             email,
+//             password_hash: await bcrypt.hash(password, 10),
+//             role,
+//             bio,
+//             skills,
+//         });
+
+//         await newUser.save();
+
+//         const welcomeTask = new Task({
+//             title: "Complete Your Profile",
+//             description: "Welcome to GROQY! Your first task is to complete your profile. Fill in your profile, add your skills, and tell us about yourself.",
+//             prompt: "Fill in your profile, add your skills, and tell us about yourself.",
+//             user_id: newUser._id,
+//             prompt_type: "text",
+//         });
+
+//         await welcomeTask.save();
+
+//         const token = jwt.sign({ id: newUser._id, email: newUser.email, role: newUser.role }, SECRET_KEY, { expiresIn: '1h' });
+
+//         res.status(201).json({
+//             token,
+//             user: newUser.toObject({ versionKey: false, transform: (doc, ret) => { delete ret.password_hash; return ret; } }),
+//             task: welcomeTask.toObject({ versionKey: false })
+//         });
+//     } catch (error) {
+//         console.error('Error creating user:', error);
+//         res.status(500).json({ message: 'Error creating user' });
+//     }
+// });
+
+// app.post('/api/users/login', async (req, res) => {
+//     try {
+//         const { email, password } = req.body;
+
+//         const user = await User.findOne({ email });
+
+//         if (!user) {
+//             return res.status(400).json({ message: 'User not found' });
+//         }
+
+//         const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+//         if (!isPasswordValid) {
+//             return res.status(400).json({ message: 'Invalid password' });
+//         }
+
+//         const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, SECRET_KEY, { expiresIn: '1h' });
+//         res.json({
+//             token,
+//             user: user.toObject({
+//                 versionKey: false,
+//                 transform: (doc, ret) => {
+//                     delete ret.password_hash;
+//                     return ret;
+//                 }
+//             })
+//         });
+//     } catch (error) {
+//         console.error('Error during login:', error);
+//         res.status(500).json({ message: 'Error during login' });
+//     }
+// });
+
+// // Promote User to Admin Route
+// app.post('/api/admin/promote', authenticateToken, async (req, res) => {
+//     try {
+//         if (req.user.role !== 'admin') {
+//             return res.status(403).json({ message: 'Access denied. Admin only.' });
+//         }
+
+//         const user = await User.findOne({ email: req.body.email.toLowerCase() });
+//         if (!user) {
+//             return res.status(404).json({ message: 'User not found' });
+//         }
+
+//         user.role = 'admin';
+//         await user.save();
+
+//         res.json({ message: 'User promoted to admin' });
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error promoting user to admin' });
+//     }
+// });
+
+// // Get Current User Profile
+// app.get('/api/users/me', authenticateToken, async (req, res) => {
+//     try {
+//         const user = await User.findById(req.user.id);
+//         if (!user) {
+//             return res.status(404).json({ message: 'User not found' });
+//         }
+//         res.json(user.toObject({ versionKey: false, transform: (doc, ret) => { delete ret.password_hash; return ret; } }));
+//     } catch (error) {
+//         console.error('Error fetching user profile:', error);
+//         res.status(500).json({ message: 'Error fetching user profile' });
+//     }
+// });
+
+// // Create New Task
+// app.post('/api/tasks', authenticateToken, async (req, res) => {
+//     try {
+//         const { prompt, project_id, difficulty, due_date, required_skills, file_upload_required } = req.body;
+
+//         const newTask = new Task({
+//             prompt,
+//             user_id: req.user.id,
+//             project_id: project_id || null,
+//             difficulty: difficulty || 'medium',
+//             due_date: due_date || null,
+//             required_skills: required_skills || [],
+//             title: req.body.title || '',
+//             description: req.body.description || '',
+//             file_upload_required: file_upload_required || false,
+//             prompt_type: req.body.prompt_type || 'text'
+//         });
+
+//         await newTask.save();
+
+//         res.status(201).json(newTask.toObject({ versionKey: false }));
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error creating task' });
+//     }
+// });
+
+// // Task Detail Page Route
+// app.get('/tasks/:id', async (req, res) => {
+//     try {
+//         const task = await Task.findById(req.params.id);
+
+//         if (!task) {
+//             return res.status(404).send('Task not found');
+//         }
+
+//         res.render('task-detail', {
+//             task: task.toObject({ versionKey: false }),
+//             user: req.user
+//         });
+//     } catch (error) {
+//         console.error('Error fetching task:', error);
+//         res.status(500).send('Server error');
+//     }
+// });
+
+// // Route to create and assign a new task
+// app.post('/tasks/assign', async (req, res) => {
+//     console.log("req.body:", req.body)
+//     try {
+//         const { title, description, prompt, prompt_type, due_date, difficulty, required_skills, user_id } = req.body;
+
+//         // Validate if the user exists
+//         const user = await User.findById(user_id);
+//         if (!user) {
+//             return res.status(404).json({ message: 'User not found' });
+//         }
+
+//         // Create the new task
+//         const newTask = new Task({
+//             title,
+//             description,
+//             prompt,
+//             prompt_type,
+//             due_date,
+//             difficulty,
+//             required_skills,
+//             user_id: user._id
+//         });
+
+//         await newTask.save();
+
+//         res.status(201).json(newTask);
+//     } catch (error) {
+//         console.error("Error creating task:", error);
+//         res.status(500).json({ message: "Server error" });
+//     }
+// });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // Update Task
+// app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
+//     try {
+//         const { completed, inProgress, code } = req.body;
+//         const task = await Task.findById(req.params.id);
+
+//         if (!task || (task.user_id.toString() !== req.user.id && req.user.role !== 'admin')) {
+//             return res.status(403).json({ message: 'Not allowed to update this task' });
+//         }
+
+//         task.completed = completed ?? task.completed;
+//         task.inProgress = inProgress ?? task.inProgress;
+//         task.updated_at = new Date();
+
+//         if (code) {
+//             task.code = code;
+//             const newSubmission = new Submission({
+//                 user_id: req.user.id,
+//                 task_id: task._id,
+//                 code: code,
+//                 submission_type: 'code',
+//                 status: 'pending'
+//             });
+//             await newSubmission.save();
+//         }
+
+//         await task.save();
+
+//         res.json({ task: task.toObject({ versionKey: false }), message: 'Task updated successfully' });
+//     } catch (error) {
+//         console.error('Error updating task:', error);
+//         res.status(500).json({ message: 'Error updating task' });
+//     }
+// });
+
+// // Get All Tasks for User
+// app.get('/api/tasks', authenticateToken, async (req, res) => {
+//     try {
+//         let tasks;
+//         if (req.user.role === 'admin') {
+//             tasks = await Task.find().populate('user_id', 'username');
+//         } else {
+//             tasks = await Task.find({ user_id: req.user.id });
+//         }
+//         res.json(tasks.map(task => task.toObject({ versionKey: false })));
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error fetching tasks' });
+//     }
+// });
+
+// // Delete Task
+// app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
+//     try {
+//         const task = await Task.findOneAndDelete({ _id: req.params.id, user_id: req.user.id });
+
+//         if (!task) {
+//             return res.status(404).json({ message: 'Task not found' });
+//         }
+
+//         res.json({ message: 'Task deleted successfully' });
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error deleting task' });
+//     }
+// });
+
+// // Submission Management Routes
+
+// // Get Submissions by User
+// app.get('/api/submissions', authenticateToken, async (req, res) => {
+//     try {
+//         const userSubmissions = await Submission.find({ user_id: req.user.id });
+//         res.json(userSubmissions.map(submission => submission.toObject({ versionKey: false })));
+//     } catch (error) {
+//         console.error('Error fetching submission history:', error);
+//         res.status(500).json({ message: 'Error fetching submission history' });
+//     }
+// });
+
+// // Project Management Routes
+
+// // Create New Project
+// app.post('/api/projects', authenticateToken, async (req, res) => {
+//     try {
+//         const { title, description, status = 'planning' } = req.body;
+
+//         const newProject = new Project({
+//             title,
+//             description,
+//             created_by: req.user.id,
+//             status,
+//         });
+
+//         await newProject.save();
+
+//         res.status(201).json(newProject.toObject({ versionKey: false }));
+//     } catch (error) {
+//         console.error('Error creating project:', error);
+//         res.status(500).json({ message: 'Error creating project' });
+//     }
+// });
+
+// // Get All Projects
+// app.get('/api/projects', authenticateToken, async (req, res) => {
+//     try {
+//         const projects = await Project.find();
+//         res.json(projects.map(project => project.toObject({ versionKey: false })));
+//     } catch (error) {
+//         console.error('Error fetching projects:', error);
+//         res.status(500).json({ message: 'Error fetching projects' });
+//     }
+// });
+
+// // Get a Specific Project by ID
+// app.get('/api/projects/:id', authenticateToken, async (req, res) => {
+//     try {
+//         const project = await Project.findById(req.params.id);
+
+//         if (!project) {
+//             return res.status(404).json({ message: 'Project not found' });
+//         }
+
+//         res.json(project.toObject({ versionKey: false }));
+//     } catch (error) {
+//         console.error('Error fetching project:', error);
+//         res.status(500).json({ message: 'Error fetching project' });
+//     }
+// });
+
+// // Update Project
+// app.put('/api/projects/:id', authenticateToken, async (req, res) => {
+//     try {
+//         const { title, description, status } = req.body;
+//         const project = await Project.findById(req.params.id); 
+
+//         if (!project || (project.created_by.toString() !== req.user.id && req.user.role !== 'admin')) {
+//             return res.status(403).json({ message: 'Not allowed to update this project' });
+//         }
+
+//         project.title = title || project.title;
+//         project.description = description || project.description;
+//         project.status = status || project.status;
+//         project.updated_at = new Date();
+
+//         await project.save();
+
+//         res.json({ project: project.toObject({ versionKey: false }), message: 'Project updated successfully' });
+//     } catch (error) {
+//         console.error('Error updating project:', error);
+//         res.status(500).json({ message: 'Error updating project' });
+//     }
+// });
+
+// // Delete Project
+// app.delete('/api/projects/:id', authenticateToken, async (req, res) => {
+//     try {
+//         const project = await Project.findOneAndDelete({ _id: req.params.id, created_by: req.user.id });
+
+//         if (!project) {
+//             return res.status(404).json({ message: 'Project not found' });
+//         }
+
+//         res.json({ message: 'Project deleted successfully' });
+//     } catch (error) {
+//         console.error('Error deleting project:', error);
+//         res.status(500).json({ message: 'Error deleting project' });
+//     }
+// });
+
+// // Comment Management Routes
+
+// // Add a Comment to a Task
+// app.post('/api/comments', authenticateToken, async (req, res) => {
+//     try {
+//         const { task_id, content } = req.body;
+
+//         const task = await Task.findById(task_id);
+
+//         if (!task) {
+//             return res.status(404).json({ message: 'Task not found' });
+//         }
+
+//         const newComment = new Comment({
+//             user_id: req.user.id,
+//             task_id: task_id,
+//             content,
+//         });
+
+//         await newComment.save();
+
+//         res.status(201).json(newComment.toObject({ versionKey: false }));
+//     } catch (error) {
+//         console.error('Error adding comment:', error);
+//         res.status(500).json({ message: 'Error adding comment' });
+//     }
+// });
+
+// // Get Comments for a Task
+// app.get('/api/comments/:task_id', authenticateToken, async (req, res) => {
+//     try {
+//         const comments = await Comment.find({ task_id: req.params.task_id });
+//         res.json(comments.map(comment => comment.toObject({ versionKey: false })));
+//     } catch (error) {
+//         console.error('Error fetching comments:', error);
+//         res.status(500).json({ message: 'Error fetching comments' });
+//     }
+// });
+
+
+// // Get All Users (Admin Only)
+// app.get('/api/admin/users', authenticateToken, async (req, res) => {
+//     try {
+//         if (req.user.role !== 'admin') {
+//             return res.status(403).json({ message: 'Access denied. Admin only.' });
+//         }
+
+//         const users = await User.find();
+//         const usersWithTaskSummary = await Promise.all(users.map(async (user) => {
+//             const userTasks = await Task.find({ user_id: user._id });
+//             return {
+//                 _id: user._id,
+//                 username: user.username,
+//                 email: user.email,
+//                 role: user.role,
+//                 totalTasks: userTasks.length,
+//                 completedTasks: userTasks.filter(task => task.completed).length,
+//                 inProgressTasks: userTasks.filter(task => task.inProgress).length
+//             };
+//         }));
+
+//         res.json(usersWithTaskSummary);
+//     } catch (error) {
+//         console.error('Error fetching users:', error);
+//         res.status(500).json({ message: 'Error fetching users' });
+//     }
+// });
+
+
+
+
+// // Admin Overview Route
+// app.get('/api/admin/overview', authenticateToken, async (req, res) => {
+//     try {
+//         if (req.user.role !== 'admin') {
+//             return res.status(403).json({ message: 'Access denied. Admin only.' });
+//         }
+
+//         const totalUsers = await User.countDocuments();
+//         const totalTasks = await Task.countDocuments();
+//         const completedTasks = await Task.countDocuments({ completed: true });
+//         const completionRate = totalTasks > 0 ? (completedTasks / totalTasks * 100).toFixed(2) : 0;
+
+//         res.json({
+//             totalUsers,
+//             totalTasks,
+//             completedTasks,
+//             completionRate
+//         });
+//     } catch (error) {
+//         console.error('Error fetching overview stats:', error);
+//         res.status(500).json({ message: 'Error fetching overview stats' });
+//     }
+// });
+
+
+
+
+// // Admin Task Status Route
+// app.get('/api/admin/task-status', authenticateToken, async (req, res) => {
+//     try {
+//         if (req.user.role !== 'admin') {
+//             return res.status(403).json({ message: 'Access denied. Admin only.' });
+//         }
+
+//         const completed = await Task.countDocuments({ completed: true });
+//         const inProgress = await Task.countDocuments({ inProgress: true });
+//         const notStarted = await Task.countDocuments({ completed: false, inProgress: false });
+
+//         res.json({
+//             completed,
+//             inProgress,
+//             notStarted
+//         });
+//     } catch (error) {
+//         console.error('Error fetching task status:', error);
+//         res.status(500).json({ message: 'Error fetching task status' });
+//     }
+// });
+
+
+
+
+// // Admin User Activity Route
+// app.get('/api/admin/user-activity', authenticateToken, async (req, res) => {
+//     try {
+//         if (req.user.role !== 'admin') {
+//             return res.status(403).json({ message: 'Access denied. Admin only.' });
+//         }
+
+//         const users = await User.find();
+//         const userActivity = await Promise.all(users.map(async (user) => {
+//             const userTasks = await Task.find({ user_id: user._id });
+//             return {
+//                 username: user.username,
+//                 totalTasks: userTasks.length,
+//                 completedTasks: userTasks.filter(task => task.completed).length,
+//                 inProgressTasks: userTasks.filter(task => task.inProgress).length
+//             };
+//         }));
+
+//         res.json(userActivity);
+//     } catch (error) {
+//         console.error('Error fetching user activity:', error);
+//         res.status(500).json({ message: 'Error fetching user activity' });
+//     }
+// });
+
+
+
+// // // Admin Task Assignment Route with Defaults
+// // app.post('/api/admin/tasks/assign', async (req, res) => {
+// //     console.log("testttttttt")
+// //     console.log('req.body: -------->',req.body)
+
+// //     // try {
+      
+// //     //     const { user_id, prompt, difficulty, prompt_type, due_date, project_id } = req.body;
+// //     //     const user = await User.findById(user_id);
+// //     //     if (!user) {
+// //     //         return res.status(404).json({ message: 'User not found' });
+// //     //     }
+// //     //     const newTask = new Task({
+// //     //         prompt: prompt || '',
+// //     //         user_id,
+// //     //         difficulty: difficulty || '',
+// //     //         due_date: due_date ? new Date(due_date) : null,
+// //     //         project_id: project_id || null,
+// //     //         required_skills: req.body.required_skills || [],
+// //     //         title: req.body.title || 'Default Task Title',
+// //     //         description: req.body.description || 'Default Task Description',
+// //     //         task_url: req.body.task_url || '',
+// //     //         file_upload_required: req.body.file_upload_required || false,
+// //     //         downloadable_file_url: req.body.downloadable_file_url || null,
+// //     //         prompt_type: prompt_type || 'text'
+// //     //     });
+// //     //     await newTask.save();
+// //     //     res.status(201).json(newTask.toObject({ versionKey: false }));
+// //     // } catch (error) {
+// //     //     console.error('Error assigning task:', error);
+// //     //     res.status(500).json({ message: 'Error assigning task' });
+// //     // }
+// // });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// //=============================================================
+// //=============================================================
+// //=============================================================
+// //=============================================================
+
+// // // Admin Task Assignment Route with Defaults
+// // app.post('/api/admin/tasks/assign', authenticateToken, async (req, res) => {
+
+// //     console.log('req.body: -------->', req.body)
+
+// //     try {
+
+// //         const { user_id, prompt, difficulty, prompt_type, due_date, project_id } = req.body;
+// //         const user = await User.findById(user_id);
+// //         if (!user) {
+// //             return res.status(404).json({ message: 'User not found' });
+// //         }
+// //         const newTask = new Task({
+// //             prompt: prompt || '',
+// //             user_id,
+// //             difficulty: difficulty || '',
+// //             due_date: due_date ? new Date(due_date) : null,
+// //             project_id: project_id || null,
+// //             required_skills: req.body.required_skills || [],
+// //             title: req.body.title || 'Default Task Title',
+// //             description: req.body.description || 'Default Task Description',
+// //             task_url: req.body.task_url || '',
+// //             file_upload_required: req.body.file_upload_required || false,
+// //             downloadable_file_url: req.body.downloadable_file_url || null,
+// //             prompt_type: prompt_type || 'text'
+// //         });
+// //         await newTask.save();
+// //         res.status(201).json(newTask.toObject({ versionKey: false }));
+// //     } catch (error) {
+// //         console.error('Error assigning task:', error);
+// //         res.status(500).json({ message: 'Error assigning task' });
+// //     }
+// // });
+
+
+
+// // Admin Task Assignment Route with File Upload
+// app.post('/api/admin/tasks/assign', authenticateToken, upload.single('file'), async (req, res) => {
+//     console.log('req.body: -------->', req.body);
+//     console.log('req.file: -------->', req.file);
+
+//     try {
+//         const { user_id, prompt, difficulty, prompt_type, due_date, project_id } = req.body;
+//         const user = await User.findById(user_id);
+//         if (!user) {
+//             return res.status(404).json({ message: 'User not found' });
+//         }
+
+//         let fileUrl = null;
+//         if (req.file) {
+//             fileUrl = `/uploads/${req.file.filename}`;
+//         }
+
+//         const newTask = new Task({
+//             prompt: prompt || '',
+//             user_id,
+//             difficulty: difficulty || '',
+//             due_date: due_date ? new Date(due_date) : null,
+//             project_id: project_id || null,
+//             required_skills: req.body.required_skills ? JSON.parse(req.body.required_skills) : [],
+//             title: req.body.title || 'Default Task Title',
+//             description: req.body.description || 'Default Task Description',
+//             task_url: req.body.task_url || '',
+//             file_upload_required: req.body.file_upload_required === 'true',
+//             downloadable_file_url: fileUrl,
+//             prompt_type: prompt_type || 'text'
+//         });
+
+//         await newTask.save();
+//         res.status(201).json(newTask.toObject({ versionKey: false }));
+//     } catch (error) {
+//         console.error('Error assigning task:', error);
+//         res.status(500).json({ message: 'Error assigning task' });
+//     }
+// });
+
+
+// // ==============================================================
+// // ==============================================================
+// // // Admin Task Assignment Route with Defaults
+// // app.post('/api/admin/tasks/assign', authenticateToken, async (req, res) => {
+// //     try {
+
+// //         const { user_id, prompt, difficulty, prompt_type, due_date, project_id } = req.body;
+// //         const user = await User.findById(user_id);
+// //         if (!user) {
+// //             return res.status(404).json({ message: 'User not found' });
+// //         }
+// //         const newTask = new Task({
+// //             prompt: prompt || '',
+// //             user_id,
+// //             difficulty: difficulty || '',
+// //             due_date: due_date ? new Date(due_date) : null,
+// //             project_id: project_id || null,
+// //             required_skills: req.body.required_skills || [],
+// //             title: req.body.title || 'Default Task Title',
+// //             description: req.body.description || 'Default Task Description',
+// //             task_url: req.body.task_url || '',
+// //             file_upload_required: req.body.file_upload_required || false,
+// //             downloadable_file_url: req.body.downloadable_file_url || null,
+// //             prompt_type: prompt_type || 'text'
+// //         });
+// //         await newTask.save();
+// //         res.status(201).json(newTask.toObject({ versionKey: false }));
+// //     } catch (error) {
+// //         console.error('Error assigning task:', error);
+// //         res.status(500).json({ message: 'Error assigning task' });
+// //     }
+// // });
+// // ==============================================================
+// // ==============================================================
+
+
+
+
+
+// // Fetch All Users (Admin Only)
+// app.get('/api/users', authenticateToken, async (req, res) => {
+
+
+
+//     try {
+//         if (req.user.role !== 'admin') {
+//             return res.status(403).json({ message: 'Only admin users can access this route' });
+//         }
+
+//         const users = await User.find();
+//         const usersWithTaskSummary = await Promise.all(users.map(async (user) => {
+//             const userTasks = await Task.find({ user_id: user._id });
+//             return {
+//                 _id: user._id,
+//                 username: user.username,
+//                 email: user.email,
+//                 role: user.role,
+//                 totalTasks: userTasks.length,
+//                 completedTasks: userTasks.filter(task => task.completed).length,
+//                 inProgressTasks: userTasks.filter(task => task.inProgress).length
+//             };
+//         }));
+
+//         res.json(usersWithTaskSummary);
+//     } catch (error) {
+//         console.error('Error fetching users:', error);
+//         res.status(500).json({ message: 'Error fetching users' });
+//     }
+// });
+
+// // Update a User (Admin Only)
+// app.put('/api/users/:id', authenticateToken, async (req, res) => {
+//     try {
+//         if (req.user.role !== 'admin') {
+//             return res.status(403).json({ message: 'Access denied. Admin only.' });
+//         }
+
+//         const { username, email, role, bio, skills } = req.body;
+//         const user = await User.findById(req.params.id);
+
+//         if (!user) {
+//             return res.status(404).json({ message: 'User not found' });
+//         }
+
+//         user.username = username || user.username;
+//         user.email = email || user.email;
+//         user.role = role || user.role;
+//         user.bio = bio || user.bio;
+//         user.skills = skills || user.skills;
+//         user.updated_at = new Date();
+
+//         await user.save();
+//         res.json(user.toObject({ versionKey: false, transform: (doc, ret) => { delete ret.password_hash; return ret; } }));
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error updating user' });
+//     }
+// });
+
+// // Delete a User (Admin Only)
+// app.delete('/api/users/:id', authenticateToken, async (req, res) => {
+//     try {
+//         if (req.user.role !== 'admin') {
+//             return res.status(403).json({ message: 'Access denied. Admin only.' });
+//         }
+
+//         const user = await User.findByIdAndDelete(req.params.id);
+//         if (!user) {
+//             return res.status(404).json({ message: 'User not found' });
+//         }
+
+//         await Task.deleteMany({ user_id: user._id });
+//         await Submission.deleteMany({ user_id: user._id });
+
+//         res.json({ message: 'User and associated tasks/submissions deleted successfully' });
+//     } catch (error) {
+//         console.error('Error deleting user:', error);
+//         res.status(500).json({ message: 'Error deleting user' });
+//     }
+// });
+
+
+// // Update Task (Admin Only)
+// app.put('/api/admin/tasks/:id', authenticateToken, async (req, res) => {
+//     try {
+//         if (req.user.role !== 'admin') {
+//             return res.status(403).json({ message: 'Access denied. Admin only.' });
+//         }
+
+//         const { prompt, user_id, completed, inProgress, difficulty, due_date, project_id } = req.body;
+//         const task = await Task.findById(req.params.id);
+
+//         if (!task) {
+//             return res.status(404).json({ message: 'Task not found' });
+//         }
+
+//         task.prompt = prompt || task.prompt;
+//         task.user_id = user_id || task.user_id;
+//         task.completed = completed !== undefined ? completed : task.completed;
+//         task.inProgress = inProgress !== undefined ? inProgress : task.inProgress;
+//         task.difficulty = difficulty || task.difficulty;
+//         task.due_date = due_date || task.due_date;
+//         task.project_id = project_id || task.project_id;
+//         task.updated_at = new Date();
+
+//         await task.save();
+//         res.json(task.toObject({ versionKey: false }));
+//     } catch (error) {
+//         console.error('Error updating task:', error);
+//         res.status(500).json({ message: 'Error updating task' });
+//     }
+// });
+// // Analytics
+// app.get('/api/admin/analytics/user-activity', authenticateToken, async (req, res) => {
+//     try {
+//         if (req.user.role !== 'admin') {
+//             return res.status(403).json({ message: 'Access denied. Admin only.' });
+//         }
+
+//         const users = await User.find();
+//         const userActivity = await Promise.all(users.map(async (user) => {
+//             const userTasks = await Task.find({ user_id: user._id });
+//             return {
+//                 userId: user._id,
+//                 username: user.username,
+//                 totalTasks: userTasks.length,
+//                 completedTasks: userTasks.filter(task => task.completed).length,
+//                 inProgressTasks: userTasks.filter(task => task.inProgress).length,
+//                 lastActive: userTasks.length > 0 ? Math.max(...userTasks.map(t => new Date(t.updated_at))) : null
+//             };
+//         }));
+
+//         res.json(userActivity);
+//     } catch (error) {
+//         console.error('Error fetching user activity:', error);
+//         res.status(500).json({ message: 'Error fetching user activity' });
+//     }
+// });
+
+// // Task Completion Analytics (Admin Only)
+// app.get('/api/admin/analytics/task-completion', authenticateToken, async (req, res) => {
+//     try {
+//         if (req.user.role !== 'admin') {
+//             return res.status(403).json({ message: 'Access denied. Admin only.' });
+//         }
+
+//         const now = new Date();
+//         const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+//         const taskCompletionTrend = await Promise.all(Array(7).fill(0).map(async (_, index) => {
+//             const date = new Date(now.getTime() - index * 24 * 60 * 60 * 1000);
+//             const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+//             const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+
+//             const completedTasksCount = await Task.countDocuments({
+//                 completed: true,
+//                 updated_at: { $gte: startOfDay, $lte: endOfDay }
+//             });
+
+//             return {
+//                 date: startOfDay.toISOString().split('T')[0],
+//                 completedTasks: completedTasksCount
+//             };
+//         }));
+
+//         res.json(taskCompletionTrend.reverse());
+//     } catch (error) {
+//         console.error('Error fetching task completion trends:', error);
+//         res.status(500).json({ message: 'Error fetching task completion trends' });
+//     }
+// });
+
+
+
+
+
+// // app.get('/', (req, res) => {
+// //     res.render('indexrework');
+// // });
+
+
+// app.get('/', (req, res) => {
+//     res.render('home');
+// });
+
+
+// app.get('/staff', (req, res) => {
+//     res.render('indexrework');
+// });
+
+
+// app.get('/test4', (req, res) => {
+//     res.render('test4');
+// });
+
+// app.get('/indexrework', (req, res) => {
+//     res.render('indexrework');
+// });
+
+
+// app.get('/admin', async (req, res) => {
+//     res.render('admin');
+// });
+
+
+
+
+// // New processor endpoint
+// app.post('/processor', async (req, res) => {
+//     try {
+//         const { prompt, response, timestamp } = req.body;
+
+//         // Sanitize input
+//         const sanitizedData = {
+//             prompt: sanitizeHtml(prompt),
+//             response: sanitizeHtml(response),
+//             timestamp: sanitizeHtml(timestamp)
+//         };
+
+//         // Read existing data
+//         let existingData = [];
+//         try {
+//             const data = await fs.readFile('data.json', 'utf8');
+//             existingData = JSON.parse(data);
+//         } catch (error) {
+//             // If file doesn't exist or is empty, start with an empty array
+//             console.log('No existing data found, starting fresh');
+//         }
+
+//         // Append new data
+//         existingData.push(sanitizedData);
+
+//         // Write updated data back to file
+//         await fs.writeFile('data.json', JSON.stringify(existingData, null, 2));
+
+//         res.status(200).json({ message: 'Data processed and saved successfully' });
+//     } catch (error) {
+//         console.error('Error processing data:', error);
+//         res.status(500).json({ error: 'An error occurred while processing the data' });
+//     }
+// });
+
+
+// if (process.env.NODE_ENV !== 'test') {
+//     app.listen(PORT, () => {
+//         console.log(`Server is running at http://localhost:${PORT}`);
+//         console.log('You can click on the URL above to open it in your web browser.');
+//     });
+// }
+
+// export default app;
+
+
+
+// In this updated code:
+
+// 1. The `readData` and `writeData` functions have been removed since we're now using MongoDB.
+
+// 2. The `authenticateToken` middleware has been simplified to only extract the user from the token and attach it to the request object.
+
+// 3. The file upload route has been updated to save the file URL and type to the associated task and create a new submission entry in the database.
+
+// 4. The user registration route now creates a new user and a welcome task in the database.
+
+// 5. The user login route has been updated to fetch the user from the database and compare the password hash.
+
+// 6. The promote user to admin route now updates the user's role in the database.
+
+// 7. The get current user profile route retrieves the user from the database.
+
+// 8. The create new task route creates a new task in the database.
+
+// 9. The task detail page route fetches the task from the database.
+
+// 10. The update task route updates the task in the database and creates a new submission entry if code is provided.
+
+// 11. The get all tasks route fetches tasks from the database based on the user's role.
+
+// 12. The delete task route removes the task from the database.
+
+// 13. The get submissions by user route fetches submissions from the database for the authenticated user.
+
+// 14. The project management routes (create, get all, get specific, update, delete) now interact with the database.
+
+// 15. The comment management routes (add comment, get comments for a task) now save and fetch comments from the database.
+
+// The code now utilizes the MongoDB database for data storage and retrieval. The routes have been updated to interact with the database using the defined Mongoose models. File uploads are handled by saving the file to the server's file system and storing the URL and file type in the database. The frontend can access the uploaded files using the generated URLs.
+
+// Please note that this code assumes you have the necessary Mongoose models defined in the `models.js` file and have established a connection to your MongoDB database.

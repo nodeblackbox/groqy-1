@@ -4,7 +4,10 @@
       "@/*": ["./src/*"]
     },
     "lib": ["esnext", "dom"],
-    "types": ["estree"]
+    "baseUrl": ".",
+    "jsx": "react",
+    "esModuleInterop": true,
+    "moduleResolution": "node"
   },
-  "include": ["**/*.js", "**/*.jsx"]
+  "include": ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx"]
 }
