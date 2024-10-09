@@ -1,38 +1,41 @@
-/**
- * @file /api/projects - GET handler
- * @description Handles GET requests for /api/projects
- */
-
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import Project from '@/models/Project';
+import { authenticateToken } from '@/utils/auth';
 
-// You can import necessary utilities or services here
-// import { someUtilityFunction } from '@/utils/someUtility';
-// import SomeService from '@/services/SomeService';
-
-/**
- * Handles GET requests for /api/projects
- * @param {NextRequest} request - The incoming request object
- * @returns {Promise<NextResponse>} The response object
- */
-export async function get(request) {
+export async function GET(request) {
   try {
-    // Your get logic here
-    // const someData = await SomeService.getData();
-    
-    return NextResponse.json(
-      { message: 'GET request to /api/projects successful' },
-      { status: 200 }
-    );
+    const user = await authenticateToken(request);
+    await connectToDatabase();
+
+    const projects = await Project.find().populate('created_by', 'username email');
+
+    return NextResponse.json(projects);
   } catch (error) {
-    console.error('Error in /api/projects GET handler:', error);
-    return NextResponse.json(
-      { error: 'An internal server error occurred' },
-      { status: 500 }
-    );
+    console.error('Error fetching projects:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
   }
 }
 
-// Export other HTTP methods as needed
-// export async function post(request) { ... }
-// export async function put(request) { ... }
-// export async function delete(request) { ... }
+export async function POST(request) {
+  try {
+    const user = await authenticateToken(request);
+    await connectToDatabase();
+
+    const { title, description, status = 'planning' } = await request.json();
+
+    const newProject = new Project({
+      title,
+      description,
+      created_by: user._id,
+      status,
+    });
+
+    await newProject.save();
+
+    return NextResponse.json(newProject, { status: 201 });
+  } catch (error) {
+    console.error('Error creating project:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
+  }
+}

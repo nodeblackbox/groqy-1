@@ -1,38 +1,63 @@
-/**
- * @file /api/tasks - GET handler
- * @description Handles GET requests for /api/tasks
- */
-
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import Task from '@/models/Task';
+import User from '@/models/User';
+import { authenticateToken } from '@/utils/auth';
 
-// You can import necessary utilities or services here
-// import { someUtilityFunction } from '@/utils/someUtility';
-// import SomeService from '@/services/SomeService';
-
-/**
- * Handles GET requests for /api/tasks
- * @param {NextRequest} request - The incoming request object
- * @returns {Promise<NextResponse>} The response object
- */
-export async function get(request) {
+export async function GET(request) {
   try {
-    // Your get logic here
-    // const someData = await SomeService.getData();
-    
-    return NextResponse.json(
-      { message: 'GET request to /api/tasks successful' },
-      { status: 200 }
-    );
+    const user = await authenticateToken(request);
+    await connectToDatabase();
+
+    let tasks;
+    if (user.role === 'admin') {
+      tasks = await Task.find().populate('user_id', 'username email');
+    } else {
+      tasks = await Task.find({ user_id: user._id }).populate('project_id', 'title');
+    }
+
+    return NextResponse.json(tasks);
   } catch (error) {
-    console.error('Error in /api/tasks GET handler:', error);
-    return NextResponse.json(
-      { error: 'An internal server error occurred' },
-      { status: 500 }
-    );
+    console.error('Error fetching tasks:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
   }
 }
 
-// Export other HTTP methods as needed
-// export async function post(request) { ... }
-// export async function put(request) { ... }
-// export async function delete(request) { ... }
+export async function POST(request) {
+  try {
+    const user = await authenticateToken(request);
+    await connectToDatabase();
+
+    const {
+      prompt,
+      project_id,
+      difficulty,
+      due_date,
+      required_skills,
+      file_upload_required,
+      title,
+      description,
+      prompt_type
+    } = await request.json();
+
+    const newTask = new Task({
+      prompt,
+      user_id: user._id,
+      project_id: project_id || null,
+      difficulty: difficulty || 'medium',
+      due_date: due_date || null,
+      required_skills: required_skills || [],
+      title: title || '',
+      description: description || '',
+      file_upload_required: file_upload_required || false,
+      prompt_type: prompt_type || 'text'
+    });
+
+    await newTask.save();
+
+    return NextResponse.json(newTask, { status: 201 });
+  } catch (error) {
+    console.error('Error creating task:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
+  }
+}

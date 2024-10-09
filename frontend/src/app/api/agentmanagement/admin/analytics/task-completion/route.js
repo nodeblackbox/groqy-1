@@ -1,38 +1,39 @@
-/**
- * @file /api/admin/analytics/task-completion - GET handler
- * @description Handles GET requests for /api/admin/analytics/task-completion
- */
-
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import Task from '@/models/Task';
+import { authenticateToken } from '@/utils/auth';
 
-// You can import necessary utilities or services here
-// import { someUtilityFunction } from '@/utils/someUtility';
-// import SomeService from '@/services/SomeService';
-
-/**
- * Handles GET requests for /api/admin/analytics/task-completion
- * @param {NextRequest} request - The incoming request object
- * @returns {Promise<NextResponse>} The response object
- */
-export async function get(request) {
+export async function GET(request) {
   try {
-    // Your get logic here
-    // const someData = await SomeService.getData();
-    
-    return NextResponse.json(
-      { message: 'GET request to /api/admin/analytics/task-completion successful' },
-      { status: 200 }
-    );
+    const user = await authenticateToken(request);
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Access denied. Admin only.' }, { status: 403 });
+    }
+
+    await connectToDatabase();
+
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const taskCompletionTrend = await Promise.all(Array(7).fill(0).map(async (_, index) => {
+      const date = new Date(now.getTime() - index * 24 * 60 * 60 * 1000);
+      const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+
+      const completedTasksCount = await Task.countDocuments({
+        completed: true,
+        updated_at: { $gte: startOfDay, $lte: endOfDay }
+      });
+
+      return {
+        date: startOfDay.toISOString().split('T')[0],
+        completedTasks: completedTasksCount
+      };
+    }));
+
+    return NextResponse.json(taskCompletionTrend.reverse());
   } catch (error) {
-    console.error('Error in /api/admin/analytics/task-completion GET handler:', error);
-    return NextResponse.json(
-      { error: 'An internal server error occurred' },
-      { status: 500 }
-    );
+    console.error('Error fetching task completion trends:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
   }
 }
-
-// Export other HTTP methods as needed
-// export async function post(request) { ... }
-// export async function put(request) { ... }
-// export async function delete(request) { ... }

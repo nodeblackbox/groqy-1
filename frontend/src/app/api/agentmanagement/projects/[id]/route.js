@@ -1,38 +1,79 @@
-/**
- * @file /api/projects/[id] - DELETE handler
- * @description Handles DELETE requests for /api/projects/[id]
-*/`
-
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import Project from '@/models/Project';
+import { authenticateToken } from '@/utils/auth';
 
-// You can import necessary utilities or services here
-// import { someUtilityFunction } from '@/utils/someUtility';
-// import SomeService from '@/services/SomeService';
-
-/**
- * Handles DELETE requests for /api/projects/[id]
- * @param {NextRequest} request - The incoming request object
- * @returns {Promise<NextResponse>} The response object
- */
-export async function delete(request) {
+export async function GET(request, { params }) {
   try {
-    // Your delete logic here
-    // const someData = await SomeService.getData();
-    
-    return NextResponse.json(
-      { message: 'DELETE request to /api/projects/[id] successful' },
-      { status: 200 }
-    );
+    const user = await authenticateToken(request);
+    await connectToDatabase();
+
+    const { id } = params;
+    const project = await Project.findById(id).populate('created_by', 'username email');
+
+    if (!project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(project);
   } catch (error) {
-    console.error('Error in /api/projects/[id] DELETE handler:', error);
-    return NextResponse.json(
-      { error: 'An internal server error occurred' },
-      { status: 500 }
-    );
+    console.error('Error fetching project:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
   }
 }
 
-// Export other HTTP methods as needed
-// export async function post(request) { ... }
-// export async function put(request) { ... }
-// export async function delete(request) { ... }
+export async function PUT(request, { params }) {
+  try {
+    const user = await authenticateToken(request);
+    await connectToDatabase();
+
+    const { id } = params;
+    const { title, description, status } = await request.json();
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    if (project.created_by.toString() !== user._id.toString() && user.role !== 'admin') {
+      return NextResponse.json({ error: 'Not authorized to update this project' }, { status: 403 });
+    }
+
+    project.title = title || project.title;
+    project.description = description || project.description;
+    project.status = status || project.status;
+    project.updated_at = new Date();
+
+    await project.save();
+
+    return NextResponse.json(project);
+  } catch (error) {
+    console.error('Error updating project:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const user = await authenticateToken(request);
+    await connectToDatabase();
+
+    const { id } = params;
+    const project = await Project.findById(id);
+
+    if (!project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    if (project.created_by.toString() !== user._id.toString() && user.role !== 'admin') {
+      return NextResponse.json({ error: 'Not authorized to delete this project' }, { status: 403 });
+    }
+
+    await Project.findByIdAndDelete(id);
+
+    return NextResponse.json({ message: 'Project deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting project:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
+  }
+}

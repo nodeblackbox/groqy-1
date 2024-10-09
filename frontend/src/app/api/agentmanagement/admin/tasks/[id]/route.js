@@ -1,38 +1,62 @@
-/**
- * @file /api/admin/tasks/[id] - PUT handler
- * @description Handles PUT requests for /api/admin/tasks/[id]
- */
-
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import Task from '@/models/Task';
+import { authenticateToken } from '@/utils/auth';
 
-// You can import necessary utilities or services here
-// import { someUtilityFunction } from '@/utils/someUtility';
-// import SomeService from '@/services/SomeService';
-
-/**
- * Handles PUT requests for /api/admin/tasks/[id]
- * @param {NextRequest} request - The incoming request object
- * @returns {Promise<NextResponse>} The response object
- */
-export async function put(request) {
+export async function PUT(request, { params }) {
   try {
-    // Your put logic here
-    // const someData = await SomeService.getData();
-    
-    return NextResponse.json(
-      { message: 'PUT request to /api/admin/tasks/[id] successful' },
-      { status: 200 }
-    );
+    const user = await authenticateToken(request);
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Access denied. Admin only.' }, { status: 403 });
+    }
+
+    await connectToDatabase();
+
+    const { id } = params;
+    const { prompt, user_id, completed, inProgress, difficulty, due_date, project_id } = await request.json();
+
+    const task = await Task.findById(id);
+    if (!task) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    task.prompt = prompt || task.prompt;
+    task.user_id = user_id || task.user_id;
+    task.completed = completed !== undefined ? completed : task.completed;
+    task.inProgress = inProgress !== undefined ? inProgress : task.inProgress;
+    task.difficulty = difficulty || task.difficulty;
+    task.due_date = due_date || task.due_date;
+    task.project_id = project_id || task.project_id;
+    task.updated_at = new Date();
+
+    await task.save();
+
+    return NextResponse.json(task);
   } catch (error) {
-    console.error('Error in /api/admin/tasks/[id] PUT handler:', error);
-    return NextResponse.json(
-      { error: 'An internal server error occurred' },
-      { status: 500 }
-    );
+    console.error('Error updating task:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
   }
 }
 
-// Export other HTTP methods as needed
-// export async function post(request) { ... }
-// export async function put(request) { ... }
-// export async function delete(request) { ... }
+export async function DELETE(request, { params }) {
+  try {
+    const user = await authenticateToken(request);
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Access denied. Admin only.' }, { status: 403 });
+    }
+
+    await connectToDatabase();
+
+    const { id } = params;
+    const task = await Task.findByIdAndDelete(id);
+
+    if (!task) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
+  }
+}

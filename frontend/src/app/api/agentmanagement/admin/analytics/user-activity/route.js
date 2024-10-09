@@ -1,38 +1,34 @@
-/**
- * @file /api/admin/analytics/user-activity - GET handler
- * @description Handles GET requests for /api/admin/analytics/user-activity
- */
-
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import User from '@/models/User';
+import Task from '@/models/Task';
+import { authenticateToken } from '@/utils/auth';
 
-// You can import necessary utilities or services here
-// import { someUtilityFunction } from '@/utils/someUtility';
-// import SomeService from '@/services/SomeService';
-
-/**
- * Handles GET requests for /api/admin/analytics/user-activity
- * @param {NextRequest} request - The incoming request object
- * @returns {Promise<NextResponse>} The response object
- */
-export async function get(request) {
+export async function GET(request) {
   try {
-    // Your get logic here
-    // const someData = await SomeService.getData();
-    
-    return NextResponse.json(
-      { message: 'GET request to /api/admin/analytics/user-activity successful' },
-      { status: 200 }
-    );
+    const user = await authenticateToken(request);
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Access denied. Admin only.' }, { status: 403 });
+    }
+
+    await connectToDatabase();
+
+    const users = await User.find();
+    const userActivity = await Promise.all(users.map(async (user) => {
+      const userTasks = await Task.find({ user_id: user._id });
+      return {
+        userId: user._id,
+        username: user.username,
+        totalTasks: userTasks.length,
+        completedTasks: userTasks.filter(task => task.completed).length,
+        inProgressTasks: userTasks.filter(task => task.inProgress).length,
+        lastActive: userTasks.length > 0 ? new Date(Math.max(...userTasks.map(t => t.updated_at))).toISOString() : null
+      };
+    }));
+
+    return NextResponse.json(userActivity);
   } catch (error) {
-    console.error('Error in /api/admin/analytics/user-activity GET handler:', error);
-    return NextResponse.json(
-      { error: 'An internal server error occurred' },
-      { status: 500 }
-    );
+    console.error('Error fetching user activity:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
   }
 }
-
-// Export other HTTP methods as needed
-// export async function post(request) { ... }
-// export async function put(request) { ... }
-// export async function delete(request) { ... }

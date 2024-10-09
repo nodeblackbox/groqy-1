@@ -1,38 +1,28 @@
-/**
- * @file /api/admin/task-status - GET handler
- * @description Handles GET requests for /api/admin/task-status
- */
-
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import Task from '@/models/Task';
+import { authenticateToken } from '@/utils/auth';
 
-// You can import necessary utilities or services here
-// import { someUtilityFunction } from '@/utils/someUtility';
-// import SomeService from '@/services/SomeService';
-
-/**
- * Handles GET requests for /api/admin/task-status
- * @param {NextRequest} request - The incoming request object
- * @returns {Promise<NextResponse>} The response object
- */
-export async function get(request) {
+export async function GET(request) {
   try {
-    // Your get logic here
-    // const someData = await SomeService.getData();
-    
-    return NextResponse.json(
-      { message: 'GET request to /api/admin/task-status successful' },
-      { status: 200 }
-    );
+    const user = await authenticateToken(request);
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Access denied. Admin only.' }, { status: 403 });
+    }
+
+    await connectToDatabase();
+
+    const completed = await Task.countDocuments({ completed: true });
+    const inProgress = await Task.countDocuments({ inProgress: true });
+    const notStarted = await Task.countDocuments({ completed: false, inProgress: false });
+
+    return NextResponse.json({
+      completed,
+      inProgress,
+      notStarted
+    });
   } catch (error) {
-    console.error('Error in /api/admin/task-status GET handler:', error);
-    return NextResponse.json(
-      { error: 'An internal server error occurred' },
-      { status: 500 }
-    );
+    console.error('Error fetching task status:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
   }
 }
-
-// Export other HTTP methods as needed
-// export async function post(request) { ... }
-// export async function put(request) { ... }
-// export async function delete(request) { ... }

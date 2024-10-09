@@ -1,38 +1,54 @@
-/**
- * @file /api/users/me - GET handler
- * @description Handles GET requests for /api/users/me
- */
-
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import User from '@/models/User';
+import { authenticateToken } from '@/utils/auth';
 
-// You can import necessary utilities or services here
-// import { someUtilityFunction } from '@/utils/someUtility';
-// import SomeService from '@/services/SomeService';
-
-/**
- * Handles GET requests for /api/users/me
- * @param {NextRequest} request - The incoming request object
- * @returns {Promise<NextResponse>} The response object
- */
-export async function get(request) {
+export async function GET(request) {
   try {
-    // Your get logic here
-    // const someData = await SomeService.getData();
-    
-    return NextResponse.json(
-      { message: 'GET request to /api/users/me successful' },
-      { status: 200 }
-    );
+    const user = await authenticateToken(request);
+    await connectToDatabase();
+
+    const userProfile = await User.findById(user._id).select('-password_hash');
+
+    if (!userProfile) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(userProfile);
   } catch (error) {
-    console.error('Error in /api/users/me GET handler:', error);
-    return NextResponse.json(
-      { error: 'An internal server error occurred' },
-      { status: 500 }
-    );
+    console.error('Error fetching user profile:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
   }
 }
 
-// Export other HTTP methods as needed
-// export async function post(request) { ... }
-// export async function put(request) { ... }
-// export async function delete(request) { ... }
+export async function PUT(request) {
+  try {
+    const user = await authenticateToken(request);
+    await connectToDatabase();
+
+    const { username, email, bio, skills } = await request.json();
+
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      {
+        $set: {
+          username,
+          email,
+          bio,
+          skills,
+          updated_at: new Date()
+        }
+      },
+      { new: true, runValidators: true }
+    ).select('-password_hash');
+
+    if (!updatedUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(updatedUser);
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
+  }
+}

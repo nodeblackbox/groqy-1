@@ -1,38 +1,43 @@
-/**
- * @file /api/submissions - GET handler
- * @description Handles GET requests for /api/submissions
- */
-
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import Submission from '@/models/Submission';
+import { authenticateToken } from '@/utils/auth';
 
-// You can import necessary utilities or services here
-// import { someUtilityFunction } from '@/utils/someUtility';
-// import SomeService from '@/services/SomeService';
-
-/**
- * Handles GET requests for /api/submissions
- * @param {NextRequest} request - The incoming request object
- * @returns {Promise<NextResponse>} The response object
- */
-export async function get(request) {
+export async function GET(request) {
   try {
-    // Your get logic here
-    // const someData = await SomeService.getData();
-    
-    return NextResponse.json(
-      { message: 'GET request to /api/submissions successful' },
-      { status: 200 }
-    );
+    const user = await authenticateToken(request);
+    await connectToDatabase();
+
+    const userSubmissions = await Submission.find({ user_id: user._id }).populate('task_id', 'title');
+
+    return NextResponse.json(userSubmissions);
   } catch (error) {
-    console.error('Error in /api/submissions GET handler:', error);
-    return NextResponse.json(
-      { error: 'An internal server error occurred' },
-      { status: 500 }
-    );
+    console.error('Error fetching submission history:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
   }
 }
 
-// Export other HTTP methods as needed
-// export async function post(request) { ... }
-// export async function put(request) { ... }
-// export async function delete(request) { ... }
+export async function POST(request) {
+  try {
+    const user = await authenticateToken(request);
+    await connectToDatabase();
+
+    const { task_id, code, uploaded_file_url, submission_type } = await request.json();
+
+    const newSubmission = new Submission({
+      user_id: user._id,
+      task_id,
+      code,
+      uploaded_file_url,
+      submission_type,
+      status: 'pending'
+    });
+
+    await newSubmission.save();
+
+    return NextResponse.json(newSubmission, { status: 201 });
+  } catch (error) {
+    console.error('Error creating submission:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
+  }
+}

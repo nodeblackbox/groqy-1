@@ -1,71 +1,44 @@
-// src/components/FileUploader.jsx
+import { useState } from 'react';
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Upload } from 'lucide-react';
-import { useNotification } from '@/components/ui/NotificationProvider';
-
-const FileUploader = () => {
-    const [files, setFiles] = useState([]);
-    const [uploadStatus, setUploadStatus] = useState('');
-    const addNotification = useNotification();
+export default function FileUploader({ onUpload }) {
+    const [file, setFile] = useState(null);
 
     const handleFileChange = (e) => {
-        setFiles(e.target.files);
+        setFile(e.target.files[0]);
     };
 
-    const handleFileUpload = async () => {
-        if (files.length === 0) {
-            addNotification('Please select at least one file to upload.', 'warning');
-            return;
-        }
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!file) return;
 
         const formData = new FormData();
-        for (const file of files) {
-            formData.append('files', file);
-        }
+        formData.append('file', file);
+        formData.append('taskId', 'TASK_ID_HERE'); // Replace with actual task ID
+        // Append other form data as needed
 
-        try {
-            const response = await fetch('/api/upload', { // Ensure this endpoint is correctly implemented
-                method: 'POST',
-                body: formData,
-            });
-
-            if (response.ok) {
-                setUploadStatus('Files uploaded successfully!');
-                setFiles([]);
-                addNotification('Files uploaded successfully!', 'success');
-            } else {
-                setUploadStatus('Failed to upload files.');
-                addNotification('Failed to upload files.', 'error');
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                // Authorization header with JWT token
+                'Authorization': `Bearer YOUR_JWT_TOKEN_HERE`
             }
-        } catch (error) {
-            console.error('Error uploading files:', error);
-            setUploadStatus('An error occurred during file upload.');
-            addNotification('An error occurred during file upload.', 'error');
+        });
+
+        const data = await response.json();
+        if (response.ok)
+        {
+            onUpload(data);
+        } else
+        {
+            console.error(data.error);
         }
     };
 
     return (
-        <div className="p-4">
-            <h2 className="text-2xl font-semibold mb-4">File Uploader</h2>
-            <div className="mb-4">
-                <Label htmlFor="file-upload">Select Files</Label>
-                <Input
-                    id="file-upload"
-                    type="file"
-                    multiple
-                    onChange={handleFileChange}
-                />
-            </div>
-            <Button onClick={handleFileUpload} disabled={files.length === 0}>
-                <Upload className="h-4 w-4 mr-1" /> Upload Files
-            </Button>
-            {uploadStatus && <p className="mt-2">{uploadStatus}</p>}
-        </div>
+        <form onSubmit={handleSubmit}>
+            <input type="file" onChange={handleFileChange} required />
+            <button type="submit">Upload</button>
+        </form>
     );
-};
-
-export default FileUploader;
+}

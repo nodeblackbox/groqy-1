@@ -1,38 +1,38 @@
-/**
- * @file /api/processor - POST handler
- * @description Handles POST requests for /api/processor
- */
-
 import { NextResponse } from 'next/server';
+import { writeFile, readFile } from 'fs/promises';
+import path from 'path';
+import sanitizeHtml from 'sanitize-html';
+import { authenticateToken } from '@/utils/auth';
 
-// You can import necessary utilities or services here
-// import { someUtilityFunction } from '@/utils/someUtility';
-// import SomeService from '@/services/SomeService';
-
-/**
- * Handles POST requests for /api/processor
- * @param {NextRequest} request - The incoming request object
- * @returns {Promise<NextResponse>} The response object
- */
-export async function post(request) {
+export async function POST(request) {
   try {
-    // Your post logic here
-    // const someData = await SomeService.getData();
-    
-    return NextResponse.json(
-      { message: 'POST request to /api/processor successful' },
-      { status: 200 }
-    );
+    const user = await authenticateToken(request);
+
+    const { prompt, response, timestamp } = await request.json();
+
+    const sanitizedData = {
+      prompt: sanitizeHtml(prompt),
+      response: sanitizeHtml(response),
+      timestamp: sanitizeHtml(timestamp)
+    };
+
+    const dataFilePath = path.join(process.cwd(), 'data.json');
+    let existingData = [];
+
+    try {
+      const fileContent = await readFile(dataFilePath, 'utf8');
+      existingData = JSON.parse(fileContent);
+    } catch (error) {
+      console.log('No existing data found, starting fresh');
+    }
+
+    existingData.push(sanitizedData);
+
+    await writeFile(dataFilePath, JSON.stringify(existingData, null, 2));
+
+    return NextResponse.json({ message: 'Data processed and saved successfully' });
   } catch (error) {
-    console.error('Error in /api/processor POST handler:', error);
-    return NextResponse.json(
-      { error: 'An internal server error occurred' },
-      { status: 500 }
-    );
+    console.error('Error processing data:', error);
+    return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
   }
 }
-
-// Export other HTTP methods as needed
-// export async function post(request) { ... }
-// export async function put(request) { ... }
-// export async function delete(request) { ... }
