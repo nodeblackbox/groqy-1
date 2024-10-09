@@ -203,18 +203,20 @@ async function createMemoryInGravityRag(content, metadata) {
  * @returns {Object} - Metadata object.
  */
 function generateMetadataForCreate(messages, assistantResponse) {
-    return {
+    const metadata = {
         user: {
-            role: 'user',
-            question: messages.map(msg => msg.content).join(' '),
+            role: "user",
+            question: messages.map(msg => msg.content).join(" "),
         },
         assistant: {
-            role: 'assistant',
+            role: "assistant",
             response: assistantResponse,
         },
     };
-}
 
+    // Return the JSON string representation of the metadata
+    return JSON.stringify(metadata);
+}
 /**
  * Processes the relevant data retrieved from GravityRAG.
  * @param {Object} data - Retrieved data.
