@@ -4,9 +4,9 @@ import { NextResponse } from 'next/server';
 import axios from 'axios';
 
 // Retrieve configurations from environment variables
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'http://127.0.0.1:8000'; // Use IPv4 to avoid connection issues
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'http://localhost:11434/';
+const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'http://127.0.0.1:11434/'; // Ensure IPv4
 const AIMLAPI_API_KEY = process.env.AIMLAPI_API_KEY;
 
 // Configuration for different providers
@@ -155,16 +155,16 @@ async function createMemoryInGravityRag(content, metadata) {
         try {
             metadata = JSON.parse(metadata);  // Parse if it's a JSON string
         } catch (error) {
-            console.error("Error: Invalid JSON in metadata", error);
-            return; // Exit the function on error
+            logError("Invalid JSON in metadata", { error: error.message });
+            throw new Error("Invalid JSON in metadata");
         }
     }
 
     // Logging the content and metadata to be sent
-    console.log("sending: ", content, "metadata being sent: ", metadata);
-    
+    logInfo("Sending to GravityRAG", { content, metadata });
+
     try {
-        const response = await fetch(`http://localhost:8000/gravrag/create_memory`, {
+        const response = await fetch(`${BASE_URL}/gravrag/create_memory`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -175,7 +175,7 @@ async function createMemoryInGravityRag(content, metadata) {
             }),
         });
 
-        console.log("Response status:", response.status);
+        logInfo("Response status from GravityRAG:", { status: response.status });
 
         if (!response.ok) {
             // Log the full response text for more details in case of error
@@ -184,17 +184,15 @@ async function createMemoryInGravityRag(content, metadata) {
         }
 
         const result = await response.json();
-        console.log("Memory created successfully:", result);
+        logInfo("Memory created successfully in GravityRAG", { result });
         return result;
 
     } catch (error) {
         // Log full error object for better debugging
-        console.error('Error creating memory in GravityRAG', { error: error });
+        logError('Error creating memory in GravityRAG', { error: error });
         throw error;
     }
 }
-
-
 
 /**
  * Generates metadata for memory creation.
@@ -203,20 +201,18 @@ async function createMemoryInGravityRag(content, metadata) {
  * @returns {Object} - Metadata object.
  */
 function generateMetadataForCreate(messages, assistantResponse) {
-    const metadata = {
+    return {
         user: {
-            role: "user",
-            question: messages.map(msg => msg.content).join(" "),
+            role: 'user',
+            question: messages.map(msg => msg.content).join(' '),
         },
         assistant: {
-            role: "assistant",
+            role: 'assistant',
             response: assistantResponse,
         },
     };
-
-    // Return the JSON string representation of the metadata
-    return JSON.stringify(metadata);
 }
+
 /**
  * Processes the relevant data retrieved from GravityRAG.
  * @param {Object} data - Retrieved data.
@@ -665,8 +661,8 @@ async function enhanceWithGravityRag(messages, response) {
         await gravityRag.process(messages, response.choices[0].message.content);
         return response;
     } catch (error) {
-        logError('GravityRAG enhancement failed', { error: error.message });
         // Proceed without enhancing if GravityRAG fails
+        logError('GravityRAG enhancement failed', { error: error.message });
         return response;
     }
 }

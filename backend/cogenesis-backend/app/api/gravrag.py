@@ -4,32 +4,33 @@ from typing import Dict, Any, Optional
 import logging
 from models.gravrag import MemoryManager
 
+# from fastapi import APIRouter, HTTPException
+# from pydantic import BaseModel
+# from typing import Dict, Any, Optional
+# import logging
+# from models.gravrag import MemoryManager
+
 router = APIRouter()
 logger = logging.getLogger(__name__)
 memory_manager = MemoryManager()
 
 class MemoryRequest(BaseModel):
-    print("Base model for Memory Request ",BaseModel)
     content: str
-    metadata: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None  # Assuming metadata is a dictionary
 
 class RecallRequest(BaseModel):
-    print("Base model for Recall Request ",BaseModel)
     query: str
     top_k: Optional[int] = 5
 
 class PruneRequest(BaseModel):
-    print("Base model for Prune Request ",BaseModel)
     gravity_threshold: Optional[float] = 1e-5
 
 class RecallWithMetadataRequest(BaseModel):
-    print("Base model Metadata  for Recall Request ",BaseModel)
     query: str
     metadata: str
     top_k: Optional[int] = 10
 
 class DeleteByMetadataRequest(BaseModel):
-    print("Base model for Delete By Metadata ",BaseModel)
     metadata: str
 
 @router.post("/create_memory")
@@ -66,7 +67,7 @@ async def recall_memory(recall_request: RecallRequest):
 @router.post("/prune_memories")
 async def prune_memories(prune_request: PruneRequest):
     try:
-        await memory_manager.prune_memories()
+        await memory_manager.prune_memories(gravity_threshold=prune_request.gravity_threshold)
         return {"message": "Memory pruning completed successfully"}
     except Exception as e:
         logger.error(f"Error during memory pruning: {str(e)}", exc_info=True)
