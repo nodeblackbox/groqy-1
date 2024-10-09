@@ -1,4 +1,5 @@
 
+import json
 from app.core.config import settings
 from app.models.gravrag import MemoryPacket
 import time
@@ -20,10 +21,10 @@ logger = logging.getLogger(__name__)
 GRAVITATIONAL_THRESHOLD = 1e-5  # This can be adjusted based on system requirements
 
 class MemoryPacket:
-    def __init__(self, vector: List[float], content: str, metadata: Dict[str, Any]):
+    def __init__(self, vector: List[float], content: str, metadata: str):
         self.vector = vector  # Semantic vector (numeric representation)
         self.content = content  # Original content (human-readable text)
-        self.metadata = metadata or {}
+        self.metadata = json.loads(metadata) if metadata else {}
 
         # Metadata defaults
         self.metadata.setdefault("timestamp", time.time())
@@ -114,7 +115,7 @@ class MemoryPacket:
         return {
             "vector": self.vector,  # Correctly storing the vector here
             "content": self.content,  # Storing the original content here
-            "metadata": self.metadata
+            "metadata": json.dumps(self.metadata)  # Convert metadata to JSON string
         }
 
     @staticmethod
@@ -122,7 +123,7 @@ class MemoryPacket:
         """ Recreate a MemoryPacket from a payload, ensuring 'content' is handled correctly. """
         vector = payload.get("vector")
         content = payload.get("content", "")  # Ensure content is present, or provide a default value
-        metadata = payload.get("metadata", {})
+        metadata = payload.get("metadata", "{}")  # Get metadata as JSON string
         
         # Raise an error if vector is missing, as it is essential for MemoryPacket
         if not vector:
@@ -157,6 +158,7 @@ class MemoryManager:
         Create a memory from content, vectorize it, and store in Qdrant asynchronously.
         """
         vector = self.model.encode(content).tolist()
+        metadata_json = json.dumps(metadata)
         memory_packet = MemoryPacket(vector=vector, content=content, metadata=metadata)
         point_id = str(uuid.uuid4())
         
@@ -197,7 +199,7 @@ class MemoryManager:
         # Return original content and metadata for top K results
         return [{
             "content": memory.content,  # Return the original content
-            "metadata": memory.metadata
+            "metadata": json.loads(memory.metadata)  # Convert JSON string to dict for output
         } for memory in ranked_memories[:top_k]]
 
     async def prune_memories(self):
@@ -247,7 +249,7 @@ class MemoryManager:
             # Step 3: Filter the top K results based on metadata
             matching_memories = []
             for memory in memories:
-                memory_metadata = memory.metadata
+                memory_metadata = json.loads(memory.metadata)  # Parse JSON string to dict
 
                 # Check if all search metadata keys/values match the memory metadata
                 if all(memory_metadata.get(key) == value for key, value in search_metadata.items()):
@@ -285,7 +287,7 @@ class MemoryManager:
             
             for point in points:
                 if isinstance(point, dict) and 'payload' in point:
-                    point_metadata = point['payload']['metadata']
+                    point_metadata = json.loads(point['payload']['metadata'])  # Parse JSON string to dict
                     
                     # Check if the point's metadata matches the provided metadata
                     if all(point_metadata.get(key) == value for key, value in metadata.items()):

@@ -11,7 +11,7 @@ memory_manager = MemoryManager()
 class MemoryRequest(BaseModel):
     print("Base model for Memory Request ",BaseModel)
     content: str
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[str] = None
 
 class RecallRequest(BaseModel):
     print("Base model for Recall Request ",BaseModel)
@@ -25,12 +25,12 @@ class PruneRequest(BaseModel):
 class RecallWithMetadataRequest(BaseModel):
     print("Base model Metadata  for Recall Request ",BaseModel)
     query: str
-    metadata: Dict[str, Any]
+    metadata: str
     top_k: Optional[int] = 10
 
 class DeleteByMetadataRequest(BaseModel):
     print("Base model for Delete By Metadata ",BaseModel)
-    metadata: Dict[str, Any]
+    metadata: str
 
 @router.post("/create_memory")
 async def create_memory(memory_request: MemoryRequest):

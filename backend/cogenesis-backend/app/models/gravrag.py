@@ -16,11 +16,11 @@ from datetime import datetime
 
 class MemoryPacket(BaseModel):
     vector: List[float]
-    metadata: Dict[str, Any]
+    metadata: str
 
 class MemoryRequest(BaseModel):
     content: str
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[str] = None
 
 class RecallRequest(BaseModel):
     query: str
