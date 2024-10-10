@@ -1,10 +1,10 @@
-"use client";
+'use client'
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Mic, Loader2, Send, Volume2 } from 'lucide-react';
-import { toast, Toaster } from 'react-hot-toast';
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Mic, Loader2, Send, Volume2, RefreshCcw, StopCircle } from 'lucide-react'
+import { toast, Toaster } from 'react-hot-toast'
 import {
     Table,
     TableBody,
@@ -13,94 +13,96 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-const VoiceEnabledLLMInteractions = () => {
-    const [input, setInput] = useState("");
-    const [isListening, setIsListening] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [interactions, setInteractions] = useState([]);
-    const [voices, setVoices] = useState([]);
-    const [selectedVoice, setSelectedVoice] = useState('');
+export default function VoiceEnabledLLMInteractions() {
+    const [input, setInput] = useState("")
+    const [isListening, setIsListening] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+    const [isPlayingAudio, setIsPlayingAudio] = useState(false)
+    const [interactions, setInteractions] = useState([])
+    const [voices, setVoices] = useState([])
+    const [selectedVoice, setSelectedVoice] = useState('')
+    const [conversationContext, setConversationContext] = useState([])
 
-    const recognitionRef = useRef(null);
-    const audioRef = useRef(new Audio());
+    const recognitionRef = useRef(null)
+    const audioRef = useRef(new Audio())
+    const abortControllerRef = useRef(null)
 
     useEffect(() => {
-        fetchVoices();
-        setupSpeechRecognition();
+        setupSpeechRecognition()
+        fetchVoices()
 
         return () => {
             if (recognitionRef.current)
             {
-                recognitionRef.current.stop();
+                recognitionRef.current.stop()
             }
             if (audioRef.current)
             {
-                audioRef.current.pause();
+                audioRef.current.pause()
+                audioRef.current.src = ""
             }
-        };
-    }, []);
+            if (abortControllerRef.current)
+            {
+                abortControllerRef.current.abort()
+            }
+        }
+    }, [])
 
     const fetchVoices = async () => {
         try
         {
-            const response = await fetch('/api/openai/v1/voices');
+            const response = await fetch('/api/openai/v1/voices')
             if (response.ok)
             {
-                const data = await response.json();
-                setVoices(data.voices);
+                const data = await response.json()
+                setVoices(data.voices)
                 if (data.voices.length > 0)
                 {
-                    setSelectedVoice(data.voices[0].voice_id);
+                    setSelectedVoice(data.voices[0].voice_id)
                 }
             } else
             {
-                toast.error('Failed to fetch voices.');
+                throw new Error('Failed to fetch voices')
             }
         } catch (err)
         {
-            console.error('Error fetching voices:', err);
-            toast.error('An error occurred while fetching voices.');
+            console.error('Error fetching voices:', err)
+            toast.error('An error occurred while fetching voices.')
         }
-    };
+    }
 
     const setupSpeechRecognition = () => {
         if ('webkitSpeechRecognition' in window)
         {
-            recognitionRef.current = new window.webkitSpeechRecognition();
-            recognitionRef.current.continuous = true;
-            recognitionRef.current.interimResults = true;
-            recognitionRef.current.onresult = handleSpeechResult;
-            recognitionRef.current.onerror = (event) => {
-                console.error('Speech recognition error', event.error);
-                toast.error(`Speech recognition error: ${event.error}`);
-                setIsListening(false);
-            };
+            recognitionRef.current = new window.webkitSpeechRecognition()
+            recognitionRef.current.continuous = false
+            recognitionRef.current.interimResults = false
+            recognitionRef.current.onresult = handleSpeechResult
+            recognitionRef.current.onerror = handleSpeechError
+            recognitionRef.current.onend = () => setIsListening(false)
         } else
         {
-            toast.error('Speech recognition not supported in this browser.');
+            toast.error('Speech recognition not supported in this browser.')
         }
-    };
+    }
 
     const handleSpeechResult = (event) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
+        const finalTranscript = Array.from(event.results)
+            .map(result => result[0].transcript)
+            .join('')
 
-        for (let i = event.resultIndex; i < event.results.length; ++i)
-        {
-            if (event.results[i].isFinal)
-            {
-                finalTranscript += event.results[i][0].transcript;
-                handleUserInput(finalTranscript, 'speech');
-            } else
-            {
-                interimTranscript += event.results[i][0].transcript;
-            }
-        }
+        setInput(finalTranscript)
+        handleUserInput(finalTranscript, 'speech')
+    }
 
-        setInput(finalTranscript || interimTranscript);
-    };
+    const handleSpeechError = (event) => {
+        console.error('Speech recognition error', event.error)
+        toast.error(`Speech recognition error: ${event.error}`)
+        setIsListening(false)
+    }
 
     const addInteraction = (type, content, role = 'user') => {
         const newInteraction = {
@@ -109,113 +111,158 @@ const VoiceEnabledLLMInteractions = () => {
             type,
             content,
             role
-        };
-        setInteractions(prev => [...prev, newInteraction]);
-    };
+        }
+        setInteractions(prev => [...prev, newInteraction])
+        setConversationContext(prev => [...prev, { role, content }])
+    }
 
     const startListening = () => {
         if (recognitionRef.current && !isListening)
         {
-            recognitionRef.current.start();
-            setIsListening(true);
-            toast.success('Listening...');
+            recognitionRef.current.start()
+            setIsListening(true)
+            toast.success('Listening...')
         }
-    };
+    }
 
     const stopListening = () => {
         if (recognitionRef.current && isListening)
         {
-            recognitionRef.current.stop();
-            setIsListening(false);
-            toast.success('Stopped listening.');
+            recognitionRef.current.stop()
+            setIsListening(false)
+            toast.success('Stopped listening.')
         }
-    };
+    }
 
     const handleInputChange = (e) => {
-        setInput(e.target.value);
-    };
+        setInput(e.target.value)
+    }
 
     const handleKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey)
         {
-            e.preventDefault();
-            handleUserInput(input, 'text');
+            e.preventDefault()
+            handleUserInput(input, 'text')
         }
-    };
+    }
 
-    const handleUserInput = async (content, type) => {
-        if (!content.trim()) return;
+    const handleUserInput = useCallback(async (content, type) => {
+        if (!content.trim()) return
 
-        addInteraction(type, content);
-        setInput("");
-        setIsLoading(true);
+        addInteraction(type, content)
+        setInput("")
+        setIsLoading(true)
+
+        if (abortControllerRef.current)
+        {
+            abortControllerRef.current.abort()
+        }
+        abortControllerRef.current = new AbortController()
 
         try
         {
-            const response = await fetch('http://localhost:3000/api/openai/v1/chat/completions', {
+            const response = await fetch('/api/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'X-Custom-Header': 'Custom Header Value'
                 },
                 body: JSON.stringify({
                     messages: [
-                        {
-                            role: "user",
-                            content: content
-                        }
-                    ],
-                    model: "llama-3.1-8b-instant"
-                })
-            });
+                      ...conversationContext,
+                      { role: "user", content }
+                  ],
+                  model: "llama-3.1-8b-instant"
+              }),
+                signal: abortControllerRef.current.signal
+            })
 
             if (!response.ok)
             {
-                throw new Error('Failed to get response from API');
+                throw new Error(`Failed to get response from API. Status: ${response.status}`)
             }
 
-            const data = await response.json();
-            const assistantResponse = data.choices[0].message.content;
-            addInteraction('llm', assistantResponse, 'assistant');
-            playVoiceResponse(assistantResponse);
+            const data = await response.json()
+
+            if (!data.choices || data.choices.length === 0 || !data.choices[0].message)
+            {
+                throw new Error('Invalid response format from LLM API')
+            }
+
+            const assistantResponse = data.choices[0].message.content
+            addInteraction('llm', assistantResponse, 'assistant')
+
+            await playVoiceResponse(assistantResponse)
         } catch (error)
         {
-            console.error('Error processing message:', error);
-            toast.error('Failed to process message. Please try again.');
+            if (error.name === 'AbortError')
+            {
+                console.log('Request was aborted')
+            } else
+            {
+                console.error('Error in handleUserInput:', error)
+                toast.error(`Failed to process message: ${error.message}`)
+            }
         } finally
         {
-            setIsLoading(false);
+            setIsLoading(false)
         }
-    };
+    }, [conversationContext, selectedVoice])
 
-    const playVoiceResponse = async (text) => {
+    const playVoiceResponse = useCallback(async (text) => {
+        if (!text || !selectedVoice)
+        {
+            console.error('Text or voice model not provided for text-to-speech')
+            toast.error('Unable to play voice response. Missing text or voice model.')
+            return
+        }
+
+        setIsPlayingAudio(true)
         try
         {
-            const response = await fetch('/api/text-to-speech', {
+            const response = await fetch('/api/openai/v1/text-to-speech', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ text, model: selectedVoice }),
-            });
+            })
 
-            if (response.ok)
+            if (!response.ok)
             {
-                const blob = await response.blob();
-                const audioUrl = URL.createObjectURL(blob);
-                audioRef.current.src = audioUrl;
-                audioRef.current.play();
-            } else
-            {
-                throw new Error('Failed to synthesize speech');
+                const errorText = await response.text()
+                throw new Error(`Failed to synthesize speech. Status: ${response.status}, Error: ${errorText}`)
             }
+
+            const blob = await response.blob()
+
+            if (blob.size === 0)
+            {
+                throw new Error('Received empty audio blob')
+            }
+
+            const audioUrl = URL.createObjectURL(blob)
+            audioRef.current.src = audioUrl
+            await audioRef.current.play()
         } catch (error)
         {
-            console.error('Error playing voice response:', error);
-            toast.error('Failed to play voice response.');
+            console.error('Error in playVoiceResponse:', error)
+            toast.error(`Failed to play voice response: ${error.message}`)
+        } finally
+        {
+            setIsPlayingAudio(false)
         }
-    };
+    }, [selectedVoice])
+
+    const stopPlayback = () => {
+        if (audioRef.current)
+        {
+            audioRef.current.pause()
+            audioRef.current.currentTime = 0
+            setIsPlayingAudio(false)
+            toast('Playback stopped.')
+        }
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-r from-pink-100 to-purple-200 flex items-center justify-center p-4">
@@ -232,17 +279,18 @@ const VoiceEnabledLLMInteractions = () => {
                             style={{ minHeight: '40px', maxHeight: '120px' }}
                         />
                         <div className="mt-2 flex justify-between items-center">
-                            <select
-                                value={selectedVoice}
-                                onChange={(e) => setSelectedVoice(e.target.value)}
-                                className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-                            >
-                                {voices.map((voice) => (
-                                    <option key={voice.voice_id} value={voice.voice_id}>
-                                        {voice.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                                <SelectTrigger className="w-[200px]">
+                                    <SelectValue placeholder="Select a voice" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {voices.map((voice) => (
+                                        <SelectItem key={voice.voice_id} value={voice.voice_id}>
+                                            {voice.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                             <div className="flex space-x-2">
                                 <Button
                                     onClick={() => handleUserInput(input, 'text')}
@@ -258,6 +306,14 @@ const VoiceEnabledLLMInteractions = () => {
                                 >
                                     <Mic className={`h-4 w-4 ${isListening ? 'text-red-500' : ''}`} />
                                     {isListening ? 'Stop' : 'Start'} Listening
+                                </Button>
+                                <Button
+                                    onClick={stopPlayback}
+                                    disabled={!isPlayingAudio}
+                                    className="bg-red-500 hover:bg-red-600"
+                                >
+                                    <StopCircle className="h-4 w-4" />
+                                    Stop Playback
                                 </Button>
                             </div>
                         </div>
@@ -282,7 +338,10 @@ const VoiceEnabledLLMInteractions = () => {
                                     <TableCell>{interaction.content}</TableCell>
                                     <TableCell>
                                         {interaction.role === 'assistant' && (
-                                            <Button onClick={() => playVoiceResponse(interaction.content)} className="bg-blue-500 hover:bg-blue-600">
+                                            <Button
+                                                onClick={() => playVoiceResponse(interaction.content)}
+                                                className="bg-blue-500 hover:bg-blue-600"
+                                            >
                                                 <Volume2 className="h-4 w-4" />
                                             </Button>
                                         )}
@@ -294,7 +353,5 @@ const VoiceEnabledLLMInteractions = () => {
                 </CardContent>
             </Card>
         </div>
-    );
-};
-
-export default VoiceEnabledLLMInteractions;
+    )
+}

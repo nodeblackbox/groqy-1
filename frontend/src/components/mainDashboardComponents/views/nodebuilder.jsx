@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState } from "@/components/mainDashboardComponents/Button";
+import React, { useState } from "../Button";
 import { Plus, Trash, Edit } from "lucide-react";
 
 const NodeBuilder = () => {

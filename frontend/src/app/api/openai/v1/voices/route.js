@@ -1,6 +1,4 @@
-// pages/api/openai/v1/voices.js
 import { NextResponse } from 'next/server';
-
 import axios from 'axios';
 
 export async function GET() {
@@ -8,19 +6,20 @@ export async function GET() {
     {
         const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
             headers: {
-                'xi-api-key': process.env.ELEVEN_LABS_API_KEY,
                 'Accept': 'application/json',
+                'xi-api-key': process.env.ELEVEN_LABS_API_KEY,
             },
         });
 
         if (response.status !== 200)
         {
+            console.error(`ElevenLabs API error: ${response.status} ${response.statusText}`);
             return NextResponse.json({ error: 'Failed to fetch voices.' }, { status: response.status });
         }
 
         const voices = response.data.voices.map((voice) => ({
-            name: voice.name,
             voice_id: voice.voice_id,
+            name: voice.name,
             preview_url: voice.preview_url,
         }));
 

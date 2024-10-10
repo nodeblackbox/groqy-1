@@ -1,7 +1,6 @@
 // C:\Users\nasan\Downloads\GROQYHackathon\groqy-1\frontend\src\app\prototypevoice\SpeechToTextV5
 "use client";
 
-
 import Head from 'next/head';
 import VoiceForm from '@/components/VoiceForm';
 

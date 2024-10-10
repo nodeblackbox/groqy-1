@@ -46,7 +46,7 @@ export default function VoiceForm() {
 
         try
         {
-            const response = await fetch('/api/openai/v1/voice', {
+            const response = await fetch('/api/openai/v1/text-to-speech', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

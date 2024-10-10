@@ -41,6 +41,7 @@
     "@tensorflow/tfjs": "^4.21.0",
     "@uiw/react-codemirror": "^4.23.3",
     "axios": "^1.7.7",
+    "child_process": "^1.0.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -93,6 +94,7 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.169.0",
     "traverse": "^0.6.10",
+    "util": "^0.12.5",
     "uuid": "^9.0.1",
     "vaul": "^0.9.4",
     "vis-network": "^9.1.9"
