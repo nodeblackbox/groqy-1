@@ -115,7 +115,7 @@ def main():
     try:
         with open(readme_path, 'w', encoding='utf-8') as readme_file:
             readme_file.write(readme_content)
-        logging.info(f"PROJECT_DOCUMENTATION.md has been generated at {readme_path}")
+        logging.info(f"PROJECT_DOCUMENTATIONCeeCee.md has been generated at {readme_path}")
     except Exception as e:
         logging.error(f"Error writing documentation file: {str(e)}")
 
