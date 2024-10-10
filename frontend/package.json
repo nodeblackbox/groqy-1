@@ -45,6 +45,7 @@
     "dexie": "^4.0.8",
     "draft-js": "^0.11.7",
     "draftjs-to-html": "^0.9.1",
+    "elevenlabs": "^0.16.1",
     "file-saver": "^2.0.5",
     "formidable": "^3.5.1",
     "framer-motion": "^11.6.0",
