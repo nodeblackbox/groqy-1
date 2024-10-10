@@ -4,7 +4,7 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 
-const DynamicKanbanBoard = dynamic(() => import('../../components/kanpanComponents/KanbanBoard'), {
+const DynamicKanbanBoard = dynamic(() => import('@/components/KanbanBoard'), {
     ssr: false,
 });
 

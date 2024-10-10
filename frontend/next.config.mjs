@@ -13,7 +13,7 @@ const nextConfig = {
         appDir: true,
     },
     api: {
-        bodyParser: false,
+        bodyParser: true,
     },
 }
 

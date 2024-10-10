@@ -15,7 +15,7 @@ const GlassNavbar = () => (
             <div className="flex items-center justify-between h-16">
                 <div className="flex items-center">
                     <a href="#" className="text-white font-bold text-xl">
-                        <Image src="/logo.svg" alt="Groqy" width={120} height={40} />
+                        <Image src="/logoGroq.svg" alt="Groqy" width={120} height={40} />
                     </a>
                 </div>
                 <div className="hidden md:block">

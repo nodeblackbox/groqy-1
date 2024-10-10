@@ -2,7 +2,10 @@
 
 "use client";
 
-import React, { useState } from "@/components/mainDashboardComponents/Button";
+import React, { useState } from "react";
+import Button from "../Button";
+
+
 import { Plus, Trash } from "lucide-react";
 
 const ApiMaker = () => {

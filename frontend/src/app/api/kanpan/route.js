@@ -1,10 +1,10 @@
+// file path is /frontend/src/app/api/kanpan/pa
 import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 
 const dataDir = path.join(process.cwd(), 'data');
-const dataFilePath = path.join(dataDir, 'kanban.json');
-
+const dataFilePath = path.join(dataDir, 'kanpan.json');
 
 
 async function ensureFileExists() {
