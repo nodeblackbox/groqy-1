@@ -53,6 +53,12 @@ import { Transition } from "@headlessui/react";
 
 import KanbanBoardView from "../../components/KanbanBoard";
 
+import IdeaGeneratorUI from "../../components/chatbotliveV9";
+
+import CosmicNexusOrchestrator from "../../components/agiBuilder";
+
+import BugTracker from "../../components/bugTracker";
+
 // import PayloadMakerUI2 from '@/components/mainDashboardComponents/views/PayloadMakerUI2';
 // import apiMaker from '@/components/mainDashboardComponents/views/apiMaker';
 // import nodebuilder from '@/components/mainDashboardComponents/views/nodebuilder';
@@ -397,69 +403,69 @@ const AIWorkflowsView = () => (
   </div>
 );
 
-const BugTrackerView = () => (
-  <div className="space-y-8">
-    <h2 className="text-3xl font-bold mb-6">Bug Tracker</h2>
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-gray-800 bg-opacity-50 rounded-xl shadow-lg">
-        <thead>
-          <tr>
-            <th className="p-3 text-left">ID</th>
-            <th className="p-3 text-left">Description</th>
-            <th className="p-3 text-left">Status</th>
-            <th className="p-3 text-left">Severity</th>
-            <th className="p-3 text-left">Assigned To</th>
-          </tr>
-        </thead>
-        <tbody>
-          {[
-            {
-              id: "BUG-001",
-              description: "Login page not responsive on mobile",
-              status: "Open",
-              severity: "High",
-              assignedTo: "John Doe",
-            },
-            {
-              id: "BUG-002",
-              description: "Database connection timeout",
-              status: "In Progress",
-              severity: "Critical",
-              assignedTo: "Jane Smith",
-            },
-            {
-              id: "BUG-003",
-              description: "Incorrect calculation in billing module",
-              status: "Resolved",
-              severity: "Medium",
-              assignedTo: "Bob Johnson",
-            },
-          ].map((bug) => (
-            <tr key={bug.id} className="border-t border-gray-700">
-              <td className="p-3">{bug.id}</td>
-              <td className="p-3">{bug.description}</td>
-              <td className="p-3">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs ${
-                    bug.status === "Open"
-                      ? "bg-red-500"
-                      : bug.status === "In Progress"
-                      ? "bg-yellow-500"
-                      : "bg-green-500"
-                  }`}
-                >
-                  {bug.status}
-                </span>
-              </td>
-              <td className="p-3">{bug.severity}</td>
-              <td className="p-3">{bug.assignedTo}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-);
+// const BugTrackerView = () => (
+//   <div className="space-y-8">
+//     <h2 className="text-3xl font-bold mb-6">Bug Tracker</h2>
+//     <div className="overflow-x-auto">
+//       <table className="min-w-full bg-gray-800 bg-opacity-50 rounded-xl shadow-lg">
+//         <thead>
+//           <tr>
+//             <th className="p-3 text-left">ID</th>
+//             <th className="p-3 text-left">Description</th>
+//             <th className="p-3 text-left">Status</th>
+//             <th className="p-3 text-left">Severity</th>
+//             <th className="p-3 text-left">Assigned To</th>
+//           </tr>
+//         </thead>
+//         <tbody>
+//           {[
+//             {
+//               id: "BUG-001",
+//               description: "Login page not responsive on mobile",
+//               status: "Open",
+//               severity: "High",
+//               assignedTo: "John Doe",
+//             },
+//             {
+//               id: "BUG-002",
+//               description: "Database connection timeout",
+//               status: "In Progress",
+//               severity: "Critical",
+//               assignedTo: "Jane Smith",
+//             },
+//             {
+//               id: "BUG-003",
+//               description: "Incorrect calculation in billing module",
+//               status: "Resolved",
+//               severity: "Medium",
+//               assignedTo: "Bob Johnson",
+//             },
+//           ].map((bug) => (
+//             <tr key={bug.id} className="border-t border-gray-700">
+//               <td className="p-3">{bug.id}</td>
+//               <td className="p-3">{bug.description}</td>
+//               <td className="p-3">
+//                 <span
+//                   className={`px-2 py-1 rounded-full text-xs ${
+//                     bug.status === "Open"
+//                       ? "bg-red-500"
+//                       : bug.status === "In Progress"
+//                       ? "bg-yellow-500"
+//                       : "bg-green-500"
+//                   }`}
+//                 >
+//                   {bug.status}
+//                 </span>
+//               </td>
+//               <td className="p-3">{bug.severity}</td>
+//               <td className="p-3">{bug.assignedTo}</td>
+//             </tr>
+//           ))}
+//         </tbody>
+//       </table>
+//     </div>
+//   </div>
+// );
 
 const GitHubIntegrationView = () => (
   <div className="space-y-8">
@@ -716,83 +722,83 @@ const PayloadMakerUI2View = () => (
   </div>
 );
 
-const ChatbotView = () => (
-  <div className="space-y-8">
-    <h2 className="text-3xl font-bold mb-6">AI Chatbot</h2>
-    <div className="bg-gray-800 bg-opacity-50 p-6 rounded-xl shadow-lg h-[calc(100vh-200px)] flex flex-col">
-      <div className="flex-grow overflow-y-auto mb-4 space-y-4 scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-gray-700">
-        {[
-          { sender: "bot", message: "Hello! How can I assist you today?" },
-          {
-            sender: "user",
-            message: "I need help with creating a new workflow.",
-          },
-          {
-            sender: "bot",
-            message:
-              "I can guide you through the process of creating a new workflow. What type of workflow are you looking to create?",
-          },
-          {
-            sender: "user",
-            message: "I want to create an automated code review workflow.",
-          },
-          {
-            sender: "bot",
-            message:
-              "Great choice! An automated code review workflow can significantly improve your development process. Here are the steps to create one:",
-          },
-          {
-            sender: "bot",
-            message:
-              '1. Go to the AI Workflows section\n2. Click on "Create New Workflow"\n3. Select "Code Review" as the workflow type\n4. Configure the parameters such as programming language, review criteria, and notification settings\n5. Set up the trigger events (e.g., new pull request)\n6. Save and activate the workflow',
-          },
-          {
-            sender: "user",
-            message: "Thanks! Can you explain more about the review criteria?",
-          },
-          {
-            sender: "bot",
-            message:
-              "The review criteria are the rules and standards that the AI will use to evaluate the code. This can include:",
-          },
-          {
-            sender: "bot",
-            message:
-              "- Code style and formatting\n- Potential bugs or errors\n- Code complexity and maintainability\n- Security vulnerabilities\n- Performance optimizations\n\nYou can customize these criteria based on your team's specific needs and coding standards.",
-          },
-        ].map((chat, index) => (
-          <div
-            key={index}
-            className={`flex ${
-              chat.sender === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
-            <div
-              className={`max-w-3/4 p-3 rounded-lg ${
-                chat.sender === "user" ? "bg-purple-600" : "bg-gray-700"
-              }`}
-            >
-              {chat.message.split("\n").map((line, idx) => (
-                <span key={idx}>
-                  {line}
-                  <br />
-                </span>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="flex space-x-2">
-        <input
-          type="text"
-          placeholder="Type your message..."
-          className="flex-grow p-2 rounded-lg bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-        />
-        <Button variant="primary">Send</Button>
-      </div>
-    </div>
-  </div>
-);
+// const ChatbotView = () => (
+//   <div className="space-y-8">
+//     <h2 className="text-3xl font-bold mb-6">AI Chatbot</h2>
+//     <div className="bg-gray-800 bg-opacity-50 p-6 rounded-xl shadow-lg h-[calc(100vh-200px)] flex flex-col">
+//       <div className="flex-grow overflow-y-auto mb-4 space-y-4 scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-gray-700">
+//         {[
+//           { sender: "bot", message: "Hello! How can I assist you today?" },
+//           {
+//             sender: "user",
+//             message: "I need help with creating a new workflow.",
+//           },
+//           {
+//             sender: "bot",
+//             message:
+//               "I can guide you through the process of creating a new workflow. What type of workflow are you looking to create?",
+//           },
+//           {
+//             sender: "user",
+//             message: "I want to create an automated code review workflow.",
+//           },
+//           {
+//             sender: "bot",
+//             message:
+//               "Great choice! An automated code review workflow can significantly improve your development process. Here are the steps to create one:",
+//           },
+//           {
+//             sender: "bot",
+//             message:
+//               '1. Go to the AI Workflows section\n2. Click on "Create New Workflow"\n3. Select "Code Review" as the workflow type\n4. Configure the parameters such as programming language, review criteria, and notification settings\n5. Set up the trigger events (e.g., new pull request)\n6. Save and activate the workflow',
+//           },
+//           {
+//             sender: "user",
+//             message: "Thanks! Can you explain more about the review criteria?",
+//           },
+//           {
+//             sender: "bot",
+//             message:
+//               "The review criteria are the rules and standards that the AI will use to evaluate the code. This can include:",
+//           },
+//           {
+//             sender: "bot",
+//             message:
+//               "- Code style and formatting\n- Potential bugs or errors\n- Code complexity and maintainability\n- Security vulnerabilities\n- Performance optimizations\n\nYou can customize these criteria based on your team's specific needs and coding standards.",
+//           },
+//         ].map((chat, index) => (
+//           <div
+//             key={index}
+//             className={`flex ${
+//               chat.sender === "user" ? "justify-end" : "justify-start"
+//             }`}
+//           >
+//             <div
+//               className={`max-w-3/4 p-3 rounded-lg ${
+//                 chat.sender === "user" ? "bg-purple-600" : "bg-gray-700"
+//               }`}
+//             >
+//               {chat.message.split("\n").map((line, idx) => (
+//                 <span key={idx}>
+//                   {line}
+//                   <br />
+//                 </span>
+//               ))}
+//             </div>
+//           </div>
+//         ))}
+//       </div>
+//       <div className="flex space-x-2">
+//         <input
+//           type="text"
+//           placeholder="Type your message..."
+//           className="flex-grow p-2 rounded-lg bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+//         />
+//         <Button variant="primary">Send</Button>
+//       </div>
+//     </div>
+//   </div>
+// );
 
 const FileUploadsView = () => (
   <div className="space-y-8">
@@ -1068,7 +1074,7 @@ export default function Dashboard() {
       case "aiWorkflows":
         return <AIWorkflowsView />;
       case "bugTracker":
-        return <BugTrackerView />;
+        return <BugTracker />;
       case "githubIntegration":
         return <GitHubIntegrationView />;
       case "teamCollaboration":
@@ -1080,7 +1086,7 @@ export default function Dashboard() {
       case "home":
         return <HomeView />;
       case "chatbot":
-        return <ChatbotView />;
+        return <IdeaGeneratorUI />;
       case "fileUploads":
         return <FileUploadsView />;
       case "workflowBuilder":
@@ -1107,6 +1113,7 @@ export default function Dashboard() {
     <div>
       <h2>AI Workflows</h2>
       {/* Add AI workflows components here */}
+      <CosmicNexusOrchestrator />
     </div>
   );
 
@@ -1143,6 +1150,7 @@ export default function Dashboard() {
     <div>
       <h2>Chatbot</h2>
       {/* Add chatbot components here */}
+      <IdeaGeneratorUI />
     </div>
   );
 

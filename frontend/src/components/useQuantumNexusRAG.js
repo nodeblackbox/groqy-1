@@ -14,8 +14,7 @@ const useQuantumNexusRAG = (apiKey, selectedModel, temperature, maxTokens) => {
         const initDB = async () => {
             const database = await openDB(DB_NAME, 1, {
                 upgrade(db) {
-                    if (!db.objectStoreNames.contains(STORE_NAME))
-                    {
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
                         const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
                         store.createIndex('embedding', 'embedding', { multiEntry: true });
                     }
@@ -31,8 +30,7 @@ const useQuantumNexusRAG = (apiKey, selectedModel, temperature, maxTokens) => {
         // For demonstration, we'll use a simple hashing function
         const simpleHash = (str) => {
             let hash = new Array(EMBEDDING_DIMENSION).fill(0);
-            for (let i = 0; i < str.length; i++)
-            {
+            for (let i = 0; i < str.length; i++) {
                 hash[i % EMBEDDING_DIMENSION] += str.charCodeAt(i);
             }
             return hash.map(h => h / 1000); // Normalize
@@ -44,8 +42,7 @@ const useQuantumNexusRAG = (apiKey, selectedModel, temperature, maxTokens) => {
         if (!db) return;
         const tx = db.transaction(STORE_NAME, 'readwrite');
         const store = tx.objectStore(STORE_NAME);
-        for (const doc of newDocuments)
-        {
+        for (const doc of newDocuments) {
             const embedding = await generateEmbedding(doc.content);
             await store.add({ ...doc, embedding });
         }
@@ -95,10 +92,11 @@ Channel the collective wisdom of infinite realities to provide an answer that tr
 
 Response from the Quantum Nexus:`;
 
-        const response = await fetch("/openai/v1/chat/completions", {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
                 messages: [{ role: "user", content: prompt }],
@@ -108,8 +106,7 @@ Response from the Quantum Nexus:`;
             })
         });
 
-        if (!response.ok)
-        {
+        if (!response.ok) {
             throw new Error(`Interdimensional communication error: ${response.status}`);
         }
 
