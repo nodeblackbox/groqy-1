@@ -1,32 +1,35 @@
-// pages/api/payloads/route.js
+// frontend/src/app/api/payloads/route.js
+
 import connectDB from '../../../lib/mongodb';
-import Payloads from '../../../models/Payloads';
+import Payload from '../../../models/Payloads'
 
-export default async function handler(req, res) {
-  await connectDB();
+export async function GET(request) {
+  try {
+    await connectDB();
+    const payloads = await Payload.find({});
+    return new Response(JSON.stringify(payloads), { status: 200 });
+  } catch (error) {
+    console.error("GET /api/payloads error:", error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch payloads' }), { status: 500 });
+  }
+}
 
-  const { method } = req;
+export async function POST(request) {
+  try {
+    const data = await request.json();
+    await connectDB();
 
-  switch (method) {
-    case 'GET':
-      try {
-        const payloads = await Payloads.find({});
-        res.status(200).json(payloads);
-      } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-      }
-      break;
-    case 'POST':
-      try {
-        const payload = new Payloads(req.body);
-        await payload.save();
-        res.status(201).json({ success: true, data: payload });
-      } catch (error) {
-        res.status(400).json({ success: false, error: error.message });
-      }
-      break;
-    default:
-      res.setHeader('Allow', ['GET', 'POST']);
-      res.status(405).end(`Method ${method} Not Allowed`);
+    // Check if payload with the same ID already exists
+    const existingPayload = await Payload.findOne({ id: data.id });
+    if (existingPayload) {
+      return new Response(JSON.stringify({ error: 'Payload with this ID already exists' }), { status: 400 });
+    }
+
+    const payload = new Payload(data);
+    await payload.save();
+    return new Response(JSON.stringify({ data: payload }), { status: 201 });
+  } catch (error) {
+    console.error("POST /api/payloads error:", error);
+    return new Response(JSON.stringify({ error: 'Failed to create payload' }), { status: 500 });
   }
 }

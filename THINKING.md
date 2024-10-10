@@ -1,166 +1,44 @@
-Absolutely, let's dive deeper into implementing the schemas and ensuring your project is **agent-friendly**. We'll cover:
+Certainly! Below is a **fully comprehensive implementation** of your project, ensuring all functionalities are integrated seamlessly. Each code block includes the **file path** for easy reference and copy-pasting. This implementation covers:
 
-1. **Defining Mongoose Schemas** for `Payloads`, `Routines`, `Configs`, `Orchestras`, and other relevant collections.
-2. **Organizing the Project Structure** to integrate these schemas seamlessly.
-3. **Creating API Routes** for CRUD operations.
-4. **Ensuring Agent-Friendly Interactions** by designing APIs that agents can easily interact with.
-5. **Updating the Mermaid Diagram** to reflect the comprehensive system architecture.
+1. **MongoDB Connection Setup**
+2. **Mongoose Payload Model**
+3. **API Routes for Payloads (CRUD Operations)**
+4. **Frontend Component (`PayloadMakerUI2.jsx`)** with:
+   - Fetching payloads from MongoDB
+   - Displaying payloads in a table
+   - Creating new payloads
+   - Editing existing payloads with a "Save to Database" button
+   - Deleting payloads
 
-### 1. Defining Mongoose Schemas
+---
 
-Based on your provided JSON structure, we'll define the following schemas:
+## **1. MongoDB Connection Setup**
 
-- **Payloads**
-- **Routines**
-- **Configs**
-- **Orchestras**
-- **Global Variables** (if needed as a separate collection)
+Ensure you have a `.env.local` file at the root of your project with the following content:
 
-#### a. Payload Schema (`models/Payloads.js`)
+```
+MONGODB_URI=mongodb://groqyADMIN:groqyADMINlbdrDJDH4tnrRyuu@107.173.250.200:27017/admin
+```
+
+This file should **not** be committed to version control for security reasons.
+
+### **a. MongoDB Connection File**
 
 ```javascript
-// models/Payloads.js
-import mongoose from 'mongoose';
+// frontend/src/lib/mongodb.js
 
-const payloadSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  description: { type: String },
-  url: { type: String, required: true },
-  method: { type: String, enum: ['GET', 'POST', 'PUT', 'DELETE'], required: true },
-  headers: { type: mongoose.Schema.Types.Mixed, default: {} },
-  body: { type: mongoose.Schema.Types.Mixed, default: {} },
-  subtasks: [{ type: String }], // Assuming subtasks are IDs of other Payloads or specific task identifiers
-  createdAt: { type: Date, default: Date.now }
-});
-
-export default mongoose.models.Payloads || mongoose.model('Payloads', payloadSchema);
-```
-
-#### b. Routine Schema (`models/Routines.js`)
-
-```javascript
-// models/Routines.js
-import mongoose from 'mongoose';
-
-const routineSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  payloads: [{ type: String, ref: 'Payloads' }], // References Payloads by their IDs
-  async: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
-});
-
-export default mongoose.models.Routines || mongoose.model('Routines', routineSchema);
-```
-
-#### c. Config Schema (`models/Configuration.js`)
-
-```javascript
-// models/Configuration.js
-import mongoose from 'mongoose';
-
-const configSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  routines: [{ type: String, ref: 'Routines' }], // References Routines by their IDs
-  createdAt: { type: Date, default: Date.now }
-});
-
-export default mongoose.models.Configuration || mongoose.model('Configuration', configSchema);
-```
-
-#### d. Orchestra Schema (`models/Orchestra.js`)
-
-```javascript
-// models/Orchestra.js
-import mongoose from 'mongoose';
-
-const orchestraSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  routines: [{ type: String, ref: 'Routines' }], // References Routines by their IDs
-  description: { type: String },
-  createdAt: { type: Date, default: Date.now }
-});
-
-export default mongoose.models.Orchestra || mongoose.model('Orchestra', orchestraSchema);
-```
-
-#### e. Global Variables Schema (`models/GlobalVariables.js`)
-
-If you need to manage global variables as a separate collection:
-
-```javascript
-// models/GlobalVariables.js
-import mongoose from 'mongoose';
-
-const globalVariableSchema = new mongoose.Schema({
-  key: { type: String, required: true, unique: true },
-  value: { type: mongoose.Schema.Types.Mixed, required: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
-
-export default mongoose.models.GlobalVariables || mongoose.model('GlobalVariables', globalVariableSchema);
-```
-
-### 2. Organizing the Project Structure
-
-Your project already has a `models` directory. Ensure that each schema is placed in its respective file within this directory. This promotes modularity and ease of maintenance.
-
-**Directory Structure:**
-
-```
-frontend/
-├── src/
-│   ├── app/
-│   ├── components/
-│   ├── hooks/
-│   ├── lib/
-│   ├── models/
-│   │   ├── Payloads.js
-│   │   ├── Routines.js
-│   │   ├── Configuration.js
-│   │   ├── Orchestra.js
-│   │   └── GlobalVariables.js
-│   └── utils/
-├── pages/
-│   └── api/
-│       ├── payloads/
-│       │   └── route.js
-│       ├── routines/
-│       │   └── route.js
-│       ├── configurations/
-│       │   └── route.js
-│       ├── orchestras/
-│       │   └── route.js
-│       └── globalVariables/
-│           └── route.js
-```
-
-### 3. Creating API Routes for CRUD Operations
-
-We'll create API routes for each model to handle Create, Read, Update, and Delete operations. Here's how you can structure them:
-
-#### a. MongoDB Connection Utility (`lib/mongodb.js`)
-
-Ensure you have a utility to connect to MongoDB:
-
-```javascript
-// lib/mongodb.js
 import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
   throw new Error(
-    'Please define the MONGODB_URI environment variable inside .env.local'
+    "Please define the MONGODB_URI environment variable inside .env.local"
   );
 }
 
 /**
- * Global is used to maintain a cached connection across hot reloads in development.
+ * Global is used here to maintain a cached connection across hot reloads in development.
  * This prevents connections growing exponentially during API Route usage.
  */
 let cached = global.mongoose;
@@ -176,14 +54,15 @@ async function connectDB() {
 
   if (!cached.promise) {
     const opts = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      bufferCommands: false,
+      // Add any additional options if needed
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
       return mongoose;
     });
   }
+
   cached.conn = await cached.promise;
   return cached.conn;
 }
@@ -191,1009 +70,2021 @@ async function connectDB() {
 export default connectDB;
 ```
 
-#### b. API Route Template
+---
 
-We'll create a generic handler that can be customized for each model. Here's an example for `Payloads`.
-
-##### `pages/api/payloads/route.js`
+## **2. Mongoose Payload Model**
 
 ```javascript
-// pages/api/payloads/route.js
+// frontend/src/models/Payload.js
+
+import mongoose from 'mongoose';
+
+const SubtaskSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  name: { type: String, required: true },
+  description: { type: String },
+  url: { type: String, required: true },
+  method: { type: String, required: true, enum: ['GET', 'POST', 'PUT', 'DELETE'] },
+  headers: { type: Object, default: {} },
+  body: { type: Object, default: {} },
+});
+
+const PayloadSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  description: { type: String },
+  url: { type: String, required: true },
+  method: { type: String, required: true, enum: ['GET', 'POST', 'PUT', 'DELETE'] },
+  headers: { type: Object, default: {} },
+  body: { type: Object, default: {} },
+  subtasks: { type: [SubtaskSchema], default: [] },
+  createdAt: { type: Date, default: Date.now },
+});
+
+export default mongoose.models.Payload || mongoose.model('Payload', PayloadSchema);
+```
+
+---
+
+## **3. API Routes for Payloads (CRUD Operations)**
+
+### **a. GET All Payloads & POST Create New Payload**
+
+```javascript
+// frontend/src/app/api/payloads/route.js
+
 import connectDB from '../../../lib/mongodb';
-import Payloads from '../../../models/Payloads';
+import Payload from '../../../models/Payload';
 
-export default async function handler(req, res) {
-  await connectDB();
-
-  const { method } = req;
-
-  switch (method) {
-    case 'GET':
-      try {
-        const payloads = await Payloads.find({});
-        res.status(200).json(payloads);
-      } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-      }
-      break;
-    case 'POST':
-      try {
-        const payload = new Payloads(req.body);
-        await payload.save();
-        res.status(201).json({ success: true, data: payload });
-      } catch (error) {
-        res.status(400).json({ success: false, error: error.message });
-      }
-      break;
-    default:
-      res.setHeader('Allow', ['GET', 'POST']);
-      res.status(405).end(`Method ${method} Not Allowed`);
-  }
-}
-```
-
-##### `pages/api/payloads/[id]/route.js`
-
-To handle specific Payload operations:
-
-```javascript
-// pages/api/payloads/[id]/route.js
-import connectDB from '../../../lib/mongodb';
-import Payloads from '../../../models/Payloads';
-
-export default async function handler(req, res) {
-  await connectDB();
-
-  const {
-    query: { id },
-    method,
-  } = req;
-
-  switch (method) {
-    case 'GET':
-      try {
-        const payload = await Payloads.findOne({ id });
-        if (!payload) {
-          return res.status(404).json({ success: false, message: 'Payload not found' });
-        }
-        res.status(200).json(payload);
-      } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-      }
-      break;
-    case 'PUT':
-      try {
-        const payload = await Payloads.findOneAndUpdate({ id }, req.body, {
-          new: true,
-          runValidators: true,
-        });
-        if (!payload) {
-          return res.status(404).json({ success: false, message: 'Payload not found' });
-        }
-        res.status(200).json({ success: true, data: payload });
-      } catch (error) {
-        res.status(400).json({ success: false, error: error.message });
-      }
-      break;
-    case 'DELETE':
-      try {
-        const deletedPayload = await Payloads.deleteOne({ id });
-        if (!deletedPayload.deletedCount) {
-          return res.status(404).json({ success: false, message: 'Payload not found' });
-        }
-        res.status(200).json({ success: true, message: 'Payload deleted' });
-      } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-      }
-      break;
-    default:
-      res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
-      res.status(405).end(`Method ${method} Not Allowed`);
-  }
-}
-```
-
-**Repeat Similar Steps for Other Models:**
-
-- **Routines**
-  - `pages/api/routines/route.js`
-  - `pages/api/routines/[id]/route.js`
-  
-- **Configurations**
-  - `pages/api/configurations/route.js`
-  - `pages/api/configurations/[id]/route.js`
-  
-- **Orchestras**
-  - `pages/api/orchestras/route.js`
-  - `pages/api/orchestras/[id]/route.js`
-  
-- **Global Variables**
-  - `pages/api/globalVariables/route.js`
-  - `pages/api/globalVariables/[key]/route.js`
-
-**Example: Routines API Route**
-
-```javascript
-// pages/api/routines/route.js
-import connectDB from '../../../lib/mongodb';
-import Routines from '../../../models/Routines';
-
-export default async function handler(req, res) {
-  await connectDB();
-
-  const { method } = req;
-
-  switch (method) {
-    case 'GET':
-      try {
-        const routines = await Routines.find({}).populate('payloads');
-        res.status(200).json(routines);
-      } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-      }
-      break;
-    case 'POST':
-      try {
-        const routine = new Routines(req.body);
-        await routine.save();
-        res.status(201).json({ success: true, data: routine });
-      } catch (error) {
-        res.status(400).json({ success: false, error: error.message });
-      }
-      break;
-    default:
-      res.setHeader('Allow', ['GET', 'POST']);
-      res.status(405).end(`Method ${method} Not Allowed`);
-  }
-}
-```
-
-**Example: Routines Specific API Route**
-
-```javascript
-// pages/api/routines/[id]/route.js
-import connectDB from '../../../lib/mongodb';
-import Routines from '../../../models/Routines';
-
-export default async function handler(req, res) {
-  await connectDB();
-
-  const {
-    query: { id },
-    method,
-  } = req;
-
-  switch (method) {
-    case 'GET':
-      try {
-        const routine = await Routines.findOne({ id }).populate('payloads');
-        if (!routine) {
-          return res.status(404).json({ success: false, message: 'Routine not found' });
-        }
-        res.status(200).json(routine);
-      } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-      }
-      break;
-    case 'PUT':
-      try {
-        const routine = await Routines.findOneAndUpdate({ id }, req.body, {
-          new: true,
-          runValidators: true,
-        }).populate('payloads');
-        if (!routine) {
-          return res.status(404).json({ success: false, message: 'Routine not found' });
-        }
-        res.status(200).json({ success: true, data: routine });
-      } catch (error) {
-        res.status(400).json({ success: false, error: error.message });
-      }
-      break;
-    case 'DELETE':
-      try {
-        const deletedRoutine = await Routines.deleteOne({ id });
-        if (!deletedRoutine.deletedCount) {
-          return res.status(404).json({ success: false, message: 'Routine not found' });
-        }
-        res.status(200).json({ success: true, message: 'Routine deleted' });
-      } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-      }
-      break;
-    default:
-      res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
-      res.status(405).end(`Method ${method} Not Allowed`);
-  }
-}
-```
-
-**Note:** Ensure each model's API routes are similar, handling `GET`, `POST`, `PUT`, and `DELETE` appropriately.
-
-### 4. Ensuring Agent-Friendly Interactions
-
-To make your APIs agent-friendly, consider the following best practices:
-
-#### a. **Consistent Naming Conventions**
-
-Ensure your API endpoints and data models follow consistent naming conventions. This makes it easier for agents to understand and interact with your APIs.
-
-- **Endpoints:**
-  - Use RESTful conventions: `/api/payloads`, `/api/routines`, etc.
-  - Use clear and descriptive names.
-
-#### b. **Comprehensive Documentation**
-
-Provide clear API documentation detailing each endpoint, the expected request formats, and the response structures. Tools like **Swagger** or **Postman** can help generate interactive documentation.
-
-#### c. **Error Handling and Messaging**
-
-Ensure your APIs return meaningful error messages. This helps agents diagnose issues effectively.
-
-- **Example:**
-
-```json
-{
-  "success": false,
-  "error": "Description of the error"
-}
-```
-
-#### d. **Authentication and Authorization**
-
-Secure your APIs to ensure that only authorized agents can interact with them. Implement JWT-based authentication or other secure methods.
-
-**Example: Adding Authentication Middleware**
-
-```javascript
-// middleware/auth.js
-import jwt from 'jsonwebtoken';
-
-export default function authenticate(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
-  
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'No token provided' });
-  }
-
+export async function GET(request) {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Attach user info to request
-    next();
+    await connectDB();
+    const payloads = await Payload.find({});
+    return new Response(JSON.stringify(payloads), { status: 200 });
   } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid token' });
+    console.error("GET /api/payloads error:", error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch payloads' }), { status: 500 });
   }
 }
-```
 
-**Applying Middleware to API Routes:**
-
-```javascript
-// pages/api/payloads/route.js
-import connectDB from '../../../lib/mongodb';
-import Payloads from '../../../models/Payloads';
-import authenticate from '../../../middleware/auth';
-
-export default async function handler(req, res) {
-  await connectDB();
-  
-  // Apply authentication
-  authenticate(req, res, () => {});
-
-  const { method } = req;
-
-  // Rest of the handler...
-}
-```
-
-**Note:** Adjust middleware implementation as per your authentication strategy.
-
-#### e. **Flexible Query Parameters**
-
-Allow agents to filter, sort, and paginate data using query parameters.
-
-**Example: Enhancing GET Requests with Filters**
-
-```javascript
-// pages/api/payloads/route.js (Modified GET handler)
-case 'GET':
+export async function POST(request) {
   try {
-    const { name, method, page = 1, limit = 10 } = req.query;
-    const query = {};
-    
-    if (name) query.name = { $regex: name, $options: 'i' };
-    if (method) query.method = method.toUpperCase();
-    
-    const payloads = await Payloads.find(query)
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .exec();
-      
-    const total = await Payloads.countDocuments(query);
-    
-    res.status(200).json({ total, page: parseInt(page), limit: parseInt(limit), data: payloads });
+    const data = await request.json();
+    await connectDB();
+
+    // Check if payload with the same ID already exists
+    const existingPayload = await Payload.findOne({ id: data.id });
+    if (existingPayload) {
+      return new Response(JSON.stringify({ error: 'Payload with this ID already exists' }), { status: 400 });
+    }
+
+    const payload = new Payload(data);
+    await payload.save();
+    return new Response(JSON.stringify({ data: payload }), { status: 201 });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error("POST /api/payloads error:", error);
+    return new Response(JSON.stringify({ error: 'Failed to create payload' }), { status: 500 });
   }
-  break;
+}
 ```
 
-### 5. Updating the Mermaid Diagram
-
-Let's update the Mermaid diagram to include **Orchestras**, **Configs**, and their relationships.
-
-```mermaid
-graph TD
-    subgraph Client
-        A[User Interface (React)]
-    end
-
-    subgraph "Next.js Server"
-        B[API Routes]
-        C[Payloads Controller]
-        D[Routines Controller]
-        E[Configurations Controller]
-        F[Orchestras Controller]
-        G[GlobalVariables Controller]
-        H[LLM Integration]
-        I[Agent Controller]
-    end
-
-    subgraph "MongoDB"
-        P[(Payloads Collection)]
-        R[(Routines Collection)]
-        Cfg[(Configurations Collection)]
-        O[(Orchestras Collection)]
-        GV[(GlobalVariables Collection)]
-        U[(Users Collection)]
-        T[(Tasks Collection)]
-        # Add other collections as needed
-    end
-
-    subgraph "External Services"
-        LLM[LLM API]
-        GravityRAG[GravityRAG]
-    end
-
-    A --> B
-    B --> C
-    B --> D
-    B --> E
-    B --> F
-    B --> G
-    B --> H
-    B --> I
-
-    C --> P
-    D --> R
-    E --> Cfg
-    F --> O
-    G --> GV
-    I --> U
-    I --> T
-
-    C -->|CRUD| P
-    D -->|CRUD| R
-    E -->|CRUD| Cfg
-    F -->|CRUD| O
-    G -->|CRUD| GV
-
-    H --> LLM
-    H --> GravityRAG
-    I --> LLM
-
-    classDef client fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef server fill:#bbf,stroke:#333,stroke-width:2px;
-    classDef external fill:#bfb,stroke:#333,stroke-width:2px;
-    classDef database fill:#fbb,stroke:#333,stroke-width:2px;
-    class A client;
-    class B,C,D,E,F,G,H,I server;
-    class LLM,GravityRAG external;
-    class P,R,Cfg,O,GV,U,T database;
-```
-
-**Explanation:**
-
-- **Client** interacts with the **API Routes** on the **Next.js Server**.
-- **API Routes** are managed by their respective controllers (`Payloads`, `Routines`, `Configurations`, `Orchestras`, `GlobalVariables`, and `Agents`).
-- **Controllers** interact with their respective **MongoDB** collections.
-- **LLM Integration** interacts with external services like **LLM API** and **GravityRAG**.
-- **Agents** interact with **Users** and **Tasks** within the database.
-
-### 6. Sample Frontend Integration
-
-To ensure your frontend interacts seamlessly with these APIs, here's a sample implementation using React and Axios.
-
-#### a. Fetching Payloads
+### **b. GET, PUT, DELETE Payload by ID**
 
 ```javascript
-// components/PayloadList.jsx
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+// frontend/src/app/api/payloads/[id]/route.js
 
-const PayloadList = () => {
-  const [payloads, setPayloads] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+import connectDB from '../../../../lib/mongodb';
+import Payload from '../../../../models/Payload';
 
+export async function GET(request, { params }) {
+  try {
+    const { id } = params;
+    await connectDB();
+    const payload = await Payload.findOne({ id });
+    if (!payload) {
+      return new Response(JSON.stringify({ error: 'Payload not found' }), { status: 404 });
+    }
+    return new Response(JSON.stringify(payload), { status: 200 });
+  } catch (error) {
+    console.error(`GET /api/payloads/${params.id} error:`, error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch payload' }), { status: 500 });
+  }
+}
+
+export async function PUT(request, { params }) {
+  try {
+    const { id } = params;
+    const updates = await request.json();
+    await connectDB();
+    const payload = await Payload.findOneAndUpdate({ id }, updates, { new: true });
+    if (!payload) {
+      return new Response(JSON.stringify({ error: 'Payload not found' }), { status: 404 });
+    }
+    return new Response(JSON.stringify({ data: payload }), { status: 200 });
+  } catch (error) {
+    console.error(`PUT /api/payloads/${params.id} error:`, error);
+    return new Response(JSON.stringify({ error: 'Failed to update payload' }), { status: 500 });
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const { id } = params;
+    await connectDB();
+    const payload = await Payload.findOneAndDelete({ id });
+    if (!payload) {
+      return new Response(JSON.stringify({ error: 'Payload not found' }), { status: 404 });
+    }
+    return new Response(JSON.stringify({ message: 'Payload deleted' }), { status: 200 });
+  } catch (error) {
+    console.error(`DELETE /api/payloads/${params.id} error:`, error);
+    return new Response(JSON.stringify({ error: 'Failed to delete payload' }), { status: 500 });
+  }
+}
+```
+
+---
+
+## **4. Frontend Component: `PayloadMakerUI2.jsx`**
+
+Below is the **fully implemented** `PayloadMakerUI2.jsx` component. It includes:
+
+- **Fetching** payloads from MongoDB on component mount.
+- **Displaying** payloads in a table with search and sort functionalities.
+- **Creating** new payloads with a modal form.
+- **Editing** existing payloads with a "Save to Database" button.
+- **Deleting** payloads with confirmation.
+
+```javascript
+// frontend/src/app/PayloadMakerUI2.jsx
+
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { toast, Toaster } from "react-hot-toast";
+import {
+  ChevronRight,
+  ChevronDown,
+  Play,
+  Edit,
+  Save,
+  Download,
+  Upload,
+  Search,
+  Plus,
+  Trash2,
+  ArrowRight,
+  Copy,
+  Bell,
+  Menu,
+  User,
+  Settings,
+} from "lucide-react";
+
+// Custom UI Components
+const Button = ({
+  onClick,
+  children,
+  variant = "primary",
+  size = "md",
+  className = "",
+  ...props
+}) => {
+  const baseClasses =
+    "flex items-center justify-center space-x-1 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105";
+  const variants = {
+    primary: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+    secondary: "bg-gradient-to-r from-green-500 to-teal-500 text-white",
+    destructive: "bg-gradient-to-r from-red-500 to-orange-500 text-white",
+    success: "bg-gradient-to-r from-blue-500 to-green-500 text-white",
+    ghost: "bg-transparent text-gray-200 hover:bg-gray-700",
+    outline: "border border-gray-500 text-gray-200 hover:bg-gray-700",
+  };
+  const sizes = {
+    sm: "px-2 py-1 text-sm",
+    md: "px-4 py-2 text-base",
+    lg: "px-6 py-3 text-lg",
+    xs: "px-1 py-0.5 text-xs",
+  };
+  return (
+    <button
+      onClick={onClick}
+      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Input = ({
+  value,
+  onChange,
+  placeholder,
+  className = "",
+  icon,
+  ...props
+}) => (
+  <div className={`relative ${className}`}>
+    {icon && (
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        {icon}
+      </div>
+    )}
+    <input
+      type="text"
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className={`w-full px-3 py-2 pl-${
+        icon ? "10" : "3"
+      } bg-gray-700 bg-opacity-50 text-white rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500`}
+      {...props}
+    />
+  </div>
+);
+
+const TextArea = ({
+  value,
+  onChange,
+  placeholder,
+  className = "",
+  ...props
+}) => (
+  <textarea
+    value={value}
+    onChange={onChange}
+    placeholder={placeholder}
+    className={`w-full px-3 py-2 bg-gray-700 bg-opacity-50 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y ${className}`}
+    {...props}
+  />
+);
+
+// JSON Viewer Component for Beautified Output
+const JSONViewer = ({ json }) => {
+  return (
+    <pre className="bg-gray-800 p-4 rounded-lg overflow-auto text-xs">
+      {JSON.stringify(json, null, 2)}
+    </pre>
+  );
+};
+
+// Main Page Component
+export default function PayloadMakerUI2() {
+  // State Variables
+  const [payloads, setPayloads] = useState([]); // Payloads fetched from DB
+  const [activePayload, setActivePayload] = useState(null);
+  const [results, setResults] = useState([]); // Execution results
+  const [useAuth, setUseAuth] = useState(false);
+  const [bearerToken, setBearerToken] = useState("");
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importedConfig, setImportedConfig] = useState("");
+  const [globalVariables, setGlobalVariables] = useState({});
+  const [newVarName, setNewVarName] = useState("");
+  const [newVarValue, setNewVarValue] = useState("");
+  const [routines, setRoutines] = useState([]);
+  const [activeRoutine, setActiveRoutine] = useState(null);
+  const [isAsyncExecution, setIsAsyncExecution] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOption, setSortOption] = useState("name");
+  const [configs, setConfigs] = useState([]);
+  const [activeConfig, setActiveConfig] = useState(null);
+
+  // Refs for Drag-and-Drop
+  const dragItem = useRef();
+  const dragOverItem = useRef();
+
+  // Fetch Payloads from MongoDB on Mount
   useEffect(() => {
-    const fetchPayloads = async () => {
-      try {
-        const response = await axios.get('/api/payloads');
-        setPayloads(response.data.data);
-        setLoading(false);
-      } catch (err) {
-        setError(err.response?.data?.error || 'Error fetching payloads');
-        setLoading(false);
-      }
-    };
-
-    fetchPayloads();
+    fetchPayloadsFromDB();
+    fetchConfigsFromDB();
+    fetchRoutinesFromDB();
+    fetchGlobalVariablesFromDB();
   }, []);
 
-  if (loading) return <p>Loading Payloads...</p>;
-  if (error) return <p>{error}</p>;
-
-  return (
-    <div>
-      <h2>Payloads</h2>
-      <ul>
-        {payloads.map((payload) => (
-          <li key={payload.id}>
-            <h3>{payload.name}</h3>
-            <p>{payload.description}</p>
-            <p>Method: {payload.method}</p>
-            <p>URL: {payload.url}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-};
-
-export default PayloadList;
-```
-
-#### b. Creating a New Payload
-
-```javascript
-// components/CreatePayload.jsx
-import React, { useState } from 'react';
-import axios from 'axios';
-
-const CreatePayload = () => {
-  const [form, setForm] = useState({
-    id: '',
-    name: '',
-    description: '',
-    url: '',
-    method: 'POST',
-    headers: {},
-    body: {},
-    subtasks: []
-  });
-  const [message, setMessage] = useState('');
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Function to Fetch Payloads
+  const fetchPayloadsFromDB = async () => {
     try {
-      await axios.post('/api/payloads', form);
-      setMessage('Payload created successfully!');
-      setForm({
-        id: '',
-        name: '',
-        description: '',
-        url: '',
-        method: 'POST',
-        headers: {},
-        body: {},
-        subtasks: []
+      const response = await fetch("/api/payloads", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
+      if (response.ok) {
+        const data = await response.json();
+        setPayloads(data);
+        console.log("Fetched payloads from MongoDB:", data);
+      } else {
+        const errorData = await response.json();
+        toast.error(`Failed to fetch payloads: ${errorData.error || response.statusText}`);
+      }
     } catch (error) {
-      setMessage(error.response?.data?.error || 'Error creating payload');
+      console.error("Error fetching payloads from MongoDB:", error);
+      toast.error("Error fetching payloads from MongoDB.");
     }
   };
 
-  return (
-    <div>
-      <h2>Create New Payload</h2>
-      {message && <p>{message}</p>}
-      <form onSubmit={handleSubmit}>
-        {/* Input fields for each form property */}
-        <input
-          type="text"
-          name="id"
-          placeholder="ID"
-          value={form.id}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="text"
-          name="name"
-          placeholder="Name"
-          value={form.name}
-          onChange={handleChange}
-          required
-        />
-        <textarea
-          name="description"
-          placeholder="Description"
-          value={form.description}
-          onChange={handleChange}
-        />
-        <input
-          type="url"
-          name="url"
-          placeholder="URL"
-          value={form.url}
-          onChange={handleChange}
-          required
-        />
-        <select name="method" value={form.method} onChange={handleChange}>
-          <option value="GET">GET</option>
-          <option value="POST">POST</option>
-          <option value="PUT">PUT</option>
-          <option value="DELETE">DELETE</option>
-        </select>
-        {/* For headers and body, you might use JSON editors or similar components */}
-        <button type="submit">Create Payload</button>
-      </form>
-    </div>
-  );
-};
+  // Function to Fetch Configurations
+  const fetchConfigsFromDB = async () => {
+    try {
+      const response = await fetch("/api/configurations", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setConfigs(data);
+        console.log("Fetched configs from MongoDB:", data);
+      } else {
+        const errorData = await response.json();
+        toast.error(`Failed to fetch configs: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error fetching configs from MongoDB:", error);
+      toast.error("Error fetching configs from MongoDB.");
+    }
+  };
 
-export default CreatePayload;
-```
+  // Function to Fetch Routines
+  const fetchRoutinesFromDB = async () => {
+    try {
+      const response = await fetch("/api/routines", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRoutines(data);
+        console.log("Fetched routines from MongoDB:", data);
+      } else {
+        const errorData = await response.json();
+        toast.error(`Failed to fetch routines: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error fetching routines from MongoDB:", error);
+      toast.error("Error fetching routines from MongoDB.");
+    }
+  };
 
-**Note:** For complex fields like `headers` and `body`, consider integrating a JSON editor component to allow agents to input structured JSON data.
+  // Function to Fetch Global Variables
+  const fetchGlobalVariablesFromDB = async () => {
+    try {
+      const response = await fetch("/api/globalVariables", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const variables = {};
+        data.forEach((varObj) => {
+          variables[varObj.key] = varObj.value;
+        });
+        setGlobalVariables(variables);
+        console.log("Fetched global variables from MongoDB:", variables);
+      } else {
+        const errorData = await response.json();
+        toast.error(`Failed to fetch global variables: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error fetching global variables from MongoDB:", error);
+      toast.error("Error fetching global variables from MongoDB.");
+    }
+  };
 
-### 7. Testing and Validation
+  // Payload Management Functions
+  const createPayload = async () => {
+    const newPayload = {
+      id: uuidv4(),
+      name: `Payload ${payloads.length + 1}`,
+      description: "",
+      url: "",
+      method: "GET",
+      headers: {},
+      body: {},
+      subtasks: [],
+      createdAt: new Date().toISOString(),
+    };
 
-Ensure that all your APIs are thoroughly tested. You can use tools like **Postman**, **Insomnia**, or **cURL** for manual testing, and **Jest** with **Supertest** for automated testing.
+    // Save to MongoDB
+    try {
+      const response = await fetch("/api/payloads", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newPayload),
+      });
+      if (response.ok) {
+        const savedPayload = await response.json();
+        setPayloads([...payloads, savedPayload.data]);
+        setActivePayload(savedPayload.data);
+        toast.success("New payload created and saved to MongoDB.");
+      } else {
+        const errorData = await response.json();
+        toast.error(`Failed to save payload: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error saving payload to MongoDB:", error);
+      toast.error("Error saving payload to MongoDB.");
+    }
+  };
 
-**Example: Testing Payloads API with Jest and Supertest**
+  const updatePayload = async (id, updates) => {
+    const payloadToUpdate = payloads.find((p) => p.id === id);
+    if (!payloadToUpdate) return;
 
-```javascript
-// tests/payloads.test.js
-import request from 'supertest';
-import handler from '../pages/api/payloads/route';
-import connectDB from '../lib/mongodb';
-import mongoose from 'mongoose';
-import Payloads from '../models/Payloads';
+    const updatedPayload = { ...payloadToUpdate, ...updates };
 
-beforeAll(async () => {
-  await connectDB();
-});
+    // Update in MongoDB
+    try {
+      const response = await fetch(`/api/payloads/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedPayload),
+      });
+      if (response.ok) {
+        const savedPayload = await response.json();
+        const updatedPayloads = payloads.map((p) =>
+          p.id === id ? savedPayload.data : p
+        );
+        setPayloads(updatedPayloads);
+        if (activePayload && activePayload.id === id) {
+          setActivePayload(savedPayload.data);
+        }
+        toast.success("Payload updated and saved to MongoDB.");
+      } else {
+        const errorData = await response.json();
+        toast.error(`Failed to update payload: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error updating payload in MongoDB:", error);
+      toast.error("Error updating payload in MongoDB.");
+    }
+  };
 
-afterAll(async () => {
-  await mongoose.connection.close();
-});
+  const deletePayload = async (id) => {
+    if (confirm("Are you sure you want to delete this payload?")) {
+      // Delete from MongoDB
+      try {
+        const response = await fetch(`/api/payloads/${id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (response.ok) {
+          setPayloads(payloads.filter((p) => p.id !== id));
+          if (activePayload && activePayload.id === id) {
+            setActivePayload(null);
+          }
+          toast.success("Payload deleted from MongoDB.");
+        } else {
+          const errorData = await response.json();
+          toast.error(`Failed to delete payload: ${errorData.error || response.statusText}`);
+        }
+      } catch (error) {
+        console.error("Error deleting payload from MongoDB:", error);
+        toast.error("Error deleting payload from MongoDB.");
+      }
+    }
+  };
 
-describe('Payloads API', () => {
-  it('should create a new payload', async () => {
-    const res = await request(handler)
-      .post('/')
-      .send({
-        id: 'payload_test_1',
-        name: 'Test Payload',
-        description: 'This is a test payload',
-        url: 'http://localhost/api/test',
-        method: 'POST',
+  // Subtask Management Functions
+  const addSubtask = (payloadId) => {
+    const payload = payloads.find((p) => p.id === payloadId);
+    if (payload) {
+      const newSubtask = {
+        id: uuidv4(),
+        name: `Subtask ${payload.subtasks.length + 1}`,
+        description: "",
+        url: "",
+        method: "GET",
         headers: {},
         body: {},
-        subtasks: []
-      });
-    expect(res.statusCode).toEqual(201);
-    expect(res.body.data).toHaveProperty('id', 'payload_test_1');
+      };
+      updatePayload(payloadId, { subtasks: [...payload.subtasks, newSubtask] });
+      toast.success("Subtask added.");
+    }
+  };
+
+  const updateSubtask = async (payloadId, subtaskId, updates) => {
+    const payload = payloads.find((p) => p.id === payloadId);
+    if (payload) {
+      const updatedSubtasks = payload.subtasks.map((st) =>
+        st.id === subtaskId ? { ...st, ...updates } : st
+      );
+      await updatePayload(payloadId, { subtasks: updatedSubtasks });
+    }
+  };
+
+  const deleteSubtask = async (payloadId, subtaskId) => {
+    if (confirm("Are you sure you want to delete this subtask?")) {
+      const payload = payloads.find((p) => p.id === payloadId);
+      if (payload) {
+        const updatedSubtasks = payload.subtasks.filter(
+          (st) => st.id !== subtaskId
+        );
+        await updatePayload(payloadId, { subtasks: updatedSubtasks });
+        toast.success("Subtask deleted.");
+      }
+    }
+  };
+
+  // JSON Structure Management (Assuming it's a separate feature)
+  const [jsonStructure, setJsonStructure] = useState({
+    id: "root",
+    name: "root",
+    children: [],
+    isOpen: true,
   });
 
-  it('should fetch all payloads', async () => {
-    const res = await request(handler).get('/');
-    expect(res.statusCode).toEqual(200);
-    expect(Array.isArray(res.body.data)).toBe(true);
-  });
+  // Routine Management Functions (Assuming routines are handled via API)
+  const createRoutine = async () => {
+    const newRoutine = {
+      id: uuidv4(),
+      name: `Routine ${routines.length + 1}`,
+      payloads: [],
+      createdAt: new Date().toISOString(),
+    };
 
-  // Add more tests for GET by ID, PUT, DELETE, etc.
-});
-```
-
-### 8. Deployment Considerations
-
-When deploying your Next.js application, consider the following:
-
-- **Environment Variables:** Ensure `MONGODB_URI` and other sensitive data are securely managed using environment variables.
-- **Database Security:** Use strong credentials and consider IP whitelisting for your MongoDB instance.
-- **Scaling:** Deploy on platforms like **Vercel** or **Heroku** which support Next.js and handle scaling efficiently.
-- **Monitoring:** Implement monitoring and logging to track API performance and errors.
-
-### 9. Comprehensive Mermaid Diagram
-
-Here's an enhanced Mermaid diagram reflecting the comprehensive system architecture, including **Orchestras**, **Configs**, **Global Variables**, and **Agents**.
-
-```mermaid
-graph TD
-    subgraph Client
-        A[User Interface (React)]
-    end
-
-    subgraph "Next.js Server"
-        B[API Routes]
-        C[Payloads Controller]
-        D[Routines Controller]
-        E[Configurations Controller]
-        F[Orchestras Controller]
-        G[GlobalVariables Controller]
-        H[LLM Integration]
-        I[Agent Controller]
-    end
-
-    subgraph "MongoDB"
-        P[(Payloads Collection)]
-        R[(Routines Collection)]
-        Cfg[(Configurations Collection)]
-        O[(Orchestras Collection)]
-        GV[(GlobalVariables Collection)]
-        U[(Users Collection)]
-        T[(Tasks Collection)]
-        Cm[(Comments Collection)]
-        # Add other collections as needed
-    end
-
-    subgraph "External Services"
-        LLM[LLM API]
-        GravityRAG[GravityRAG]
-    end
-
-    A --> B
-    B --> C
-    B --> D
-    B --> E
-    B --> F
-    B --> G
-    B --> H
-    B --> I
-
-    C --> P
-    D --> R
-    E --> Cfg
-    F --> O
-    G --> GV
-    I --> U
-    I --> T
-    I --> Cm
-
-    C -->|CRUD| P
-    D -->|CRUD| R
-    E -->|CRUD| Cfg
-    F -->|CRUD| O
-    G -->|CRUD| GV
-    I -->|Manage| U
-    I -->|Manage| T
-    I -->|Manage| Cm
-
-    H --> LLM
-    H --> GravityRAG
-    I --> LLM
-
-    classDef client fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef server fill:#bbf,stroke:#333,stroke-width:2px;
-    classDef external fill:#bfb,stroke:#333,stroke-width:2px;
-    classDef database fill:#fbb,stroke:#333,stroke-width:2px;
-    class A client;
-    class B,C,D,E,F,G,H,I server;
-    class LLM,GravityRAG external;
-    class P,R,Cfg,O,GV,U,T,Cm database;
-```
-
-**Explanation:**
-
-- **Client:** Your React frontend interacts with the API routes.
-- **Next.js Server:** Handles API routes, controllers for each model, LLM integration, and agent interactions.
-- **MongoDB:** Stores all the collections with clear relationships.
-- **External Services:** Integration with LLM APIs and GravityRAG for advanced functionalities.
-- **Agents:** Managed via the Agent Controller, interacting with Users, Tasks, and Comments.
-
-### 10. Making It Agent-Friendly
-
-To further enhance agent interactions:
-
-#### a. **Agent-Specific Endpoints**
-
-Design endpoints specifically for agent operations, such as executing routines, fetching orchestras, etc.
-
-**Example: Execute a Routine**
-
-```javascript
-// pages/api/agents/executeRoutine.js
-import connectDB from '../../../lib/mongodb';
-import Routines from '../../../models/Routines';
-import Payloads from '../../../models/Payloads';
-
-export default async function handler(req, res) {
-  await connectDB();
-
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
-
-  const { routineId } = req.body;
-
-  try {
-    const routine = await Routines.findOne({ id: routineId }).populate('payloads');
-    if (!routine) {
-      return res.status(404).json({ success: false, message: 'Routine not found' });
-    }
-
-    // Execute each payload in the routine
-    for (const payload of routine.payloads) {
-      // Here you can integrate your function call logic
-      // For example, making an HTTP request based on payload.url, payload.method, etc.
-      // You might use axios or fetch for this
-
-      // Example using fetch:
-      const response = await fetch(payload.url, {
-        method: payload.method,
-        headers: payload.headers,
-        body: JSON.stringify(payload.body)
+    try {
+      const response = await fetch("/api/routines", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newRoutine),
       });
-
-      const data = await response.json();
-      // Handle the response data as needed
+      if (response.ok) {
+        const savedRoutine = await response.json();
+        setRoutines([...routines, savedRoutine.data]);
+        setActiveRoutine(savedRoutine.data);
+        toast.success("New routine created and saved to MongoDB.");
+      } else {
+        const errorData = await response.json();
+        toast.error(`Failed to save routine: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error saving routine to MongoDB:", error);
+      toast.error("Error saving routine to MongoDB.");
     }
+  };
 
-    res.status(200).json({ success: true, message: 'Routine executed successfully' });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-}
-```
+  const updateRoutine = async (id, updates) => {
+    const routineToUpdate = routines.find((r) => r.id === id);
+    if (!routineToUpdate) return;
 
-**Note:** Ensure you handle asynchronous operations and potential errors during payload execution.
+    const updatedRoutine = { ...routineToUpdate, ...updates };
 
-#### b. **Agent Authentication and Authorization**
-
-Ensure that only authenticated and authorized agents can access agent-specific endpoints. Use middleware to verify agent tokens or credentials.
-
-**Example:**
-
-```javascript
-// middleware/agentAuth.js
-import jwt from 'jsonwebtoken';
-
-export default function agentAuth(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
-  
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'No token provided' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.AGENT_JWT_SECRET);
-    req.agent = decoded; // Attach agent info to request
-    next();
-  } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid token' });
-  }
-}
-```
-
-**Applying to Agent-Specific Routes:**
-
-```javascript
-// pages/api/agents/executeRoutine.js (Modified)
-import connectDB from '../../../lib/mongodb';
-import Routines from '../../../models/Routines';
-import Payloads from '../../../models/Payloads';
-import agentAuth from '../../../middleware/agentAuth';
-
-export default async function handler(req, res) {
-  await connectDB();
-
-  // Apply agent authentication
-  agentAuth(req, res, async () => {});
-
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
-
-  // Rest of the handler...
-}
-```
-
-#### c. **Logging and Monitoring**
-
-Implement logging to track agent activities, which aids in debugging and monitoring.
-
-**Example: Using Winston for Logging**
-
-```javascript
-// lib/logger.js
-import { createLogger, format, transports } from 'winston';
-
-const logger = createLogger({
-  level: 'info',
-  format: format.combine(
-    format.timestamp(),
-    format.json()
-  ),
-  transports: [
-    new transports.Console(),
-    // Add file transports or other transports as needed
-  ],
-});
-
-export default logger;
-```
-
-**Using the Logger in Controllers:**
-
-```javascript
-// Example in executeRoutine.js
-import logger from '../../../lib/logger';
-
-// Inside the try-catch
-try {
-  // Routine execution logic
-  logger.info(`Agent ${req.agent.id} executed routine ${routineId}`);
-  res.status(200).json({ success: true, message: 'Routine executed successfully' });
-} catch (error) {
-  logger.error(`Error executing routine: ${error.message}`);
-  res.status(500).json({ success: false, error: error.message });
-}
-```
-
-### 11. Handling Global Variables
-
-If your project uses global variables, manage them securely and efficiently.
-
-#### a. **Fetching Global Variables**
-
-```javascript
-// pages/api/globalVariables/route.js
-import connectDB from '../../../lib/mongodb';
-import GlobalVariables from '../../../models/GlobalVariables';
-
-export default async function handler(req, res) {
-  await connectDB();
-
-  const { method } = req;
-
-  switch (method) {
-    case 'GET':
-      try {
-        const variables = await GlobalVariables.find({});
-        res.status(200).json({ success: true, data: variables });
-      } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-      }
-      break;
-    case 'POST':
-      try {
-        const variable = new GlobalVariables(req.body);
-        await variable.save();
-        res.status(201).json({ success: true, data: variable });
-      } catch (error) {
-        res.status(400).json({ success: false, error: error.message });
-      }
-      break;
-    default:
-      res.setHeader('Allow', ['GET', 'POST']);
-      res.status(405).end(`Method ${method} Not Allowed`);
-  }
-}
-```
-
-#### b. **Updating Global Variables**
-
-```javascript
-// pages/api/globalVariables/[key]/route.js
-import connectDB from '../../../lib/mongodb';
-import GlobalVariables from '../../../models/GlobalVariables';
-
-export default async function handler(req, res) {
-  await connectDB();
-
-  const {
-    query: { key },
-    method,
-  } = req;
-
-  switch (method) {
-    case 'GET':
-      try {
-        const variable = await GlobalVariables.findOne({ key });
-        if (!variable) {
-          return res.status(404).json({ success: false, message: 'Variable not found' });
+    // Update in MongoDB
+    try {
+      const response = await fetch(`/api/routines/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedRoutine),
+      });
+      if (response.ok) {
+        const savedRoutine = await response.json();
+        const updatedRoutines = routines.map((r) =>
+          r.id === id ? savedRoutine.data : r
+        );
+        setRoutines(updatedRoutines);
+        if (activeRoutine && activeRoutine.id === id) {
+          setActiveRoutine(savedRoutine.data);
         }
-        res.status(200).json({ success: true, data: variable });
-      } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        toast.success("Routine updated and saved to MongoDB.");
+      } else {
+        const errorData = await response.json();
+        toast.error(`Failed to update routine: ${errorData.error || response.statusText}`);
       }
-      break;
-    case 'PUT':
+    } catch (error) {
+      console.error("Error updating routine in MongoDB:", error);
+      toast.error("Error updating routine in MongoDB.");
+    }
+  };
+
+  const deleteRoutine = async (id) => {
+    if (confirm("Are you sure you want to delete this routine?")) {
+      // Delete from MongoDB
       try {
-        const variable = await GlobalVariables.findOneAndUpdate({ key }, req.body, {
-          new: true,
-          runValidators: true,
+        const response = await fetch(`/api/routines/${id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
         });
-        if (!variable) {
-          return res.status(404).json({ success: false, message: 'Variable not found' });
+        if (response.ok) {
+          setRoutines(routines.filter((r) => r.id !== id));
+          if (activeRoutine && activeRoutine.id === id) {
+            setActiveRoutine(null);
+          }
+          toast.success("Routine deleted from MongoDB.");
+        } else {
+          const errorData = await response.json();
+          toast.error(`Failed to delete routine: ${errorData.error || response.statusText}`);
         }
-        res.status(200).json({ success: true, data: variable });
       } catch (error) {
-        res.status(400).json({ success: false, error: error.message });
+        console.error("Error deleting routine from MongoDB:", error);
+        toast.error("Error deleting routine from MongoDB.");
       }
-      break;
-    case 'DELETE':
+    }
+  };
+
+  const addPayloadToRoutine = async (routineId, payloadId) => {
+    const routine = routines.find((r) => r.id === routineId);
+    if (routine && !routine.payloads.includes(payloadId)) {
+      const updatedPayloads = [...routine.payloads, payloadId];
+      await updateRoutine(routineId, { payloads: updatedPayloads });
+      toast.success("Payload added to routine.");
+    }
+  };
+
+  const removePayloadFromRoutine = async (routineId, payloadId) => {
+    const routine = routines.find((r) => r.id === routineId);
+    if (routine) {
+      const updatedPayloads = routine.payloads.filter((id) => id !== payloadId);
+      await updateRoutine(routineId, { payloads: updatedPayloads });
+      toast.success("Payload removed from routine.");
+    }
+  };
+
+  const executeRoutine = async (routine) => {
+    toast.loading("Executing routine...", { id: "routineExecution" });
+    for (const payloadId of routine.payloads) {
+      const payload = payloads.find((p) => p.id === payloadId);
+      if (payload) {
+        await executePayloadWithSubtasks(payload);
+      }
+    }
+    toast.success("Routine executed successfully!", { id: "routineExecution" });
+  };
+
+  // Config Management Functions (Assuming configs are handled via API)
+  const createConfig = async () => {
+    const newConfig = {
+      id: uuidv4(),
+      name: `Config ${configs.length + 1}`,
+      routines: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const response = await fetch("/api/configurations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newConfig),
+      });
+      if (response.ok) {
+        const savedConfig = await response.json();
+        setConfigs([...configs, savedConfig.data]);
+        setActiveConfig(savedConfig.data);
+        toast.success("New config created and saved to MongoDB.");
+      } else {
+        const errorData = await response.json();
+        toast.error(`Failed to save config: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error saving config to MongoDB:", error);
+      toast.error("Error saving config to MongoDB.");
+    }
+  };
+
+  const updateConfig = async (id, updates) => {
+    const configToUpdate = configs.find((c) => c.id === id);
+    if (!configToUpdate) return;
+
+    const updatedConfig = { ...configToUpdate, ...updates };
+
+    // Update in MongoDB
+    try {
+      const response = await fetch(`/api/configurations/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedConfig),
+      });
+      if (response.ok) {
+        const savedConfig = await response.json();
+        const updatedConfigs = configs.map((c) =>
+          c.id === id ? savedConfig.data : c
+        );
+        setConfigs(updatedConfigs);
+        if (activeConfig && activeConfig.id === id) {
+          setActiveConfig(savedConfig.data);
+        }
+        toast.success("Config updated and saved to MongoDB.");
+      } else {
+        const errorData = await response.json();
+        toast.error(`Failed to update config: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error updating config in MongoDB:", error);
+      toast.error("Error updating config in MongoDB.");
+    }
+  };
+
+  const deleteConfig = async (id) => {
+    if (confirm("Are you sure you want to delete this config?")) {
+      // Delete from MongoDB
       try {
-        const deletedVariable = await GlobalVariables.deleteOne({ key });
-        if (!deletedVariable.deletedCount) {
-          return res.status(404).json({ success: false, message: 'Variable not found' });
+        const response = await fetch(`/api/configurations/${id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (response.ok) {
+          setConfigs(configs.filter((c) => c.id !== id));
+          if (activeConfig && activeConfig.id === id) {
+            setActiveConfig(null);
+          }
+          toast.success("Config deleted from MongoDB.");
+        } else {
+          const errorData = await response.json();
+          toast.error(`Failed to delete config: ${errorData.error || response.statusText}`);
         }
-        res.status(200).json({ success: true, message: 'Variable deleted' });
       } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error("Error deleting config from MongoDB:", error);
+        toast.error("Error deleting config from MongoDB.");
       }
-      break;
-    default:
-      res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
-      res.status(405).end(`Method ${method} Not Allowed`);
+    }
+  };
+
+  // Adding Routine to Config
+  const addRoutineToConfig = async (configId, routineId) => {
+    const config = configs.find((c) => c.id === configId);
+    if (config && !config.routines.includes(routineId)) {
+      const updatedRoutines = [...config.routines, routineId];
+      await updateConfig(configId, { routines: updatedRoutines });
+      toast.success("Routine added to config.");
+    }
+  };
+
+  const removeRoutineFromConfig = async (configId, routineId) => {
+    const config = configs.find((c) => c.id === configId);
+    if (config) {
+      const updatedRoutines = config.routines.filter((id) => id !== routineId);
+      await updateConfig(configId, { routines: updatedRoutines });
+      toast.success("Routine removed from config.");
+    }
+  };
+
+  const executeConfig = async (config) => {
+    toast.loading("Executing config...", { id: "executeConfig" });
+    for (const routineId of config.routines) {
+      const routine = routines.find((r) => r.id === routineId);
+      if (routine) {
+        await executeRoutine(routine);
+      }
+    }
+    toast.success("Config executed successfully!", { id: "executeConfig" });
+  };
+
+  // Payload Execution
+  const handleSendPayload = async (payload) => {
+    try {
+      const headers = { ...payload.headers };
+      if (useAuth && bearerToken) {
+        headers["Authorization"] = `Bearer ${bearerToken}`;
+      }
+
+      // Replace variables in URL, headers, and body
+      const interpolatedUrl = interpolateString(payload.url, globalVariables);
+      const interpolatedHeaders = interpolateObject(headers, globalVariables);
+      const interpolatedBody = payload.body
+        ? interpolateString(JSON.stringify(payload.body), globalVariables)
+        : undefined;
+
+      const response = await fetch(interpolatedUrl || "/api/qdrant/create-point", {
+        method: payload.method,
+        headers: interpolatedHeaders,
+        body: payload.method !== "GET" ? interpolatedBody : undefined,
+      });
+
+      const contentType = response.headers.get("content-type");
+      let data;
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+
+      setResults((prev) => ({
+        ...prev,
+        [payload.id]: { url: interpolatedUrl, payload, response: data },
+      }));
+
+      toast.success(`Payload "${payload.name}" sent successfully!`);
+      return data;
+    } catch (error) {
+      console.error("Error sending payload:", error);
+      setResults((prev) => ({
+        ...prev,
+        [payload.id]: {
+          url: payload.url,
+          payload,
+          response: { error: error.message },
+        },
+      }));
+      toast.error(`Failed to send payload "${payload.name}".`);
+      return { error: error.message };
+    }
+  };
+
+  const executePayloadWithSubtasks = async (payload) => {
+    const mainResult = await handleSendPayload(payload);
+    if (payload.subtasks.length > 0) {
+      if (isAsyncExecution) {
+        await Promise.all(
+          payload.subtasks.map(async (subtask) => {
+            await handleSendPayload({ ...subtask, headers: payload.headers });
+          })
+        );
+      } else {
+        for (const subtask of payload.subtasks) {
+          await handleSendPayload({ ...subtask, headers: payload.headers });
+        }
+      }
+    }
+  };
+
+  // Variable Interpolation Functions
+  const interpolateString = (str, variables) => {
+    return str.replace(/\${([^}]+)}/g, (_, key) => {
+      return variables[key] || `\${${key}}`;
+    });
+  };
+
+  const interpolateObject = (obj, variables) => {
+    const result = {};
+    for (const key in obj) {
+      const value = obj[key];
+      if (typeof value === "string") {
+        result[key] = interpolateString(value, variables);
+      } else {
+        result[key] = value;
+      }
+    }
+    return result;
+  };
+
+  // Drag-and-Drop Handlers (For Reordering Payloads)
+  const handleDragStart = (e, position) => {
+    dragItem.current = position;
+  };
+
+  const handleDragEnter = (e, position) => {
+    dragOverItem.current = position;
+  };
+
+  const handleDragEnd = async () => {
+    const copyListItems = [...payloads];
+    const dragItemContent = copyListItems[dragItem.current];
+    copyListItems.splice(dragItem.current, 1);
+    copyListItems.splice(dragOverItem.current, 0, dragItemContent);
+    dragItem.current = null;
+    dragOverItem.current = null;
+    setPayloads(copyListItems);
+    toast.success("Payloads reordered.");
+    // Optionally, update order in DB if you have an order field
+  };
+
+  // Sorting and Filtering
+  const sortedPayloads = [...payloads].sort((a, b) => {
+    if (sortOption === "name") {
+      return a.name.localeCompare(b.name);
+    } else if (sortOption === "date") {
+      return new Date(a.createdAt) - new Date(b.createdAt);
+    }
+    return 0;
+  });
+
+  const filteredPayloads = sortedPayloads.filter((p) =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Execute All Payloads
+  const executeAllPayloads = async () => {
+    if (payloads.length === 0) {
+      toast.error("No payloads to execute.");
+      return;
+    }
+    toast.loading("Executing all payloads...", { id: "executeAll" });
+    for (const payload of payloads) {
+      await executePayloadWithSubtasks(payload);
+    }
+    toast.success("All payloads executed successfully!", { id: "executeAll" });
+  };
+
+  // Execute All Routines
+  const executeAllRoutines = async () => {
+    if (routines.length === 0) {
+      toast.error("No routines to execute.");
+      return;
+    }
+    toast.loading("Executing all routines...", { id: "executeAllRoutines" });
+    for (const routine of routines) {
+      await executeRoutine(routine);
+    }
+    toast.success("All routines executed successfully!", {
+      id: "executeAllRoutines",
+    });
+  };
+
+  // Import and Export Configuration
+  const handleImportConfig = async () => {
+    try {
+      const config = JSON.parse(importedConfig);
+      // Here, implement importing logic, e.g., saving to DB
+      // This is a placeholder
+      toast.success("Configuration imported successfully!");
+      setIsImportModalOpen(false);
+      setImportedConfig("");
+    } catch (error) {
+      console.error("Import Config Error:", error);
+      toast.error("Invalid configuration format.");
+    }
+  };
+
+  const handleExportConfig = () => {
+    const config = {
+      payloads,
+      globalVariables,
+      routines,
+      configs,
+    };
+    const dataStr = JSON.stringify(config, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const urlBlob = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = urlBlob;
+    link.download = "payload_tester_config.json";
+    link.click();
+    toast.success("Configuration exported successfully!");
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-gray-900 to-black text-white p-4 min-h-screen font-sans">
+      <Toaster position="top-right" />
+
+      {/* Control Buttons */}
+      <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Button onClick={createPayload} className="w-full">
+            <Plus className="mr-2 h-4 w-4" /> New Payload
+          </Button>
+          <Button
+            onClick={createRoutine}
+            variant="secondary"
+            className="w-full"
+          >
+            <Plus className="mr-2 h-4 w-4" /> New Routine
+          </Button>
+          <Button onClick={createConfig} variant="success" className="w-full">
+            <Plus className="mr-2 h-4 w-4" /> New Config
+          </Button>
+          <Button
+            onClick={() => setIsImportModalOpen(true)}
+            variant="success"
+            className="w-full"
+          >
+            <Upload className="mr-2 h-4 w-4" /> Import Setup
+          </Button>
+          <Button
+            onClick={handleExportConfig}
+            variant="destructive"
+            className="w-full"
+          >
+            <Download className="mr-2 h-4 w-4" /> Export Config
+          </Button>
+        </div>
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <Button
+            onClick={executeAllPayloads}
+            variant="primary"
+            className="w-full"
+          >
+            <Play className="mr-2 h-4 w-4" /> Execute All Payloads
+          </Button>
+          <Button
+            onClick={executeAllRoutines}
+            variant="secondary"
+            className="w-full"
+          >
+            <Play className="mr-2 h-4 w-4" /> Execute All Routines
+          </Button>
+        </div>
+      </div>
+
+      <div className="md:flex md:gap-8">
+        {/* Sidebar */}
+        <div className="w-full md:w-1/4">
+          {/* Payloads Section */}
+          <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg mb-6">
+            <h2 className="text-2xl font-semibold mb-4">Payloads</h2>
+            <div className="mb-4 flex items-center space-x-2">
+              <Input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search Payloads"
+                className="flex-1"
+                icon={<Search size={16} />}
+              />
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+                className="px-3 py-2 bg-gray-700 bg-opacity-50 text-white rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="name">Sort by Name</option>
+                <option value="date">Sort by Date</option>
+              </select>
+            </div>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b">
+                  <th className="p-2">Name</th>
+                  <th className="p-2">URL</th>
+                  <th className="p-2">Method</th>
+                  <th className="p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPayloads.map((payload, index) => (
+                  <tr
+                    key={payload.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragEnter={(e) => handleDragEnter(e, index)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => e.preventDefault()}
+                    className={`hover:bg-gray-700 ${
+                      activePayload && activePayload.id === payload.id
+                        ? "bg-blue-600"
+                        : ""
+                    }`}
+                  >
+                    <td className="p-2">{payload.name}</td>
+                    <td className="p-2">{payload.url}</td>
+                    <td className="p-2">{payload.method}</td>
+                    <td className="p-2 flex space-x-2">
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => setActivePayload(payload)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Edit size={12} />
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => deletePayload(payload.id)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Trash2 size={12} />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Routines Section */}
+          <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg mb-6">
+            <h2 className="text-2xl font-semibold mb-4">Routines</h2>
+            <ul className="space-y-2">
+              {routines.map((routine) => (
+                <li
+                  key={routine.id}
+                  className={`p-2 rounded cursor-pointer ${
+                    activeRoutine && activeRoutine.id === routine.id
+                      ? "bg-green-600"
+                      : "bg-gray-700 hover:bg-gray-600"
+                  }`}
+                  onClick={() => {
+                    setActiveRoutine(routine);
+                    setActivePayload(null);
+                    setActiveConfig(null);
+                  }}
+                >
+                  {routine.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Configs Section */}
+          <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg">
+            <h2 className="text-2xl font-semibold mb-4">Configs</h2>
+            <ul className="space-y-2">
+              {configs.map((config) => (
+                <li
+                  key={config.id}
+                  className={`flex items-center justify-between p-2 rounded cursor-pointer ${
+                    activeConfig && activeConfig.id === config.id
+                      ? "bg-purple-600"
+                      : "bg-gray-700 hover:bg-gray-600"
+                  }`}
+                  onClick={() => {
+                    setActiveConfig(config);
+                    setActivePayload(null);
+                    setActiveRoutine(null);
+                  }}
+                >
+                  <span>{config.name}</span>
+                  <div className="flex space-x-1">
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => setActiveConfig(config)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Edit size={12} />
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => deleteConfig(config.id)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Trash2 size={12} />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="w-full md:w-2/4 space-y-6">
+          {/* API Configuration */}
+          <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg">
+            <h2 className="text-2xl font-semibold mb-4">API Configuration</h2>
+            <div className="space-y-4">
+              <Input
+                value={activeConfig ? activeConfig.apiUrl : ""}
+                onChange={(e) => {
+                  if (activeConfig) {
+                    updateConfig(activeConfig.id, { apiUrl: e.target.value });
+                  }
+                }}
+                placeholder="Enter API URL"
+              />
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={useAuth}
+                  onChange={() => setUseAuth(!useAuth)}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label>Use Authentication</label>
+              </div>
+              {useAuth && (
+                <Input
+                  value={bearerToken}
+                  onChange={(e) => setBearerToken(e.target.value)}
+                  placeholder="Enter Bearer Token"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Edit Payload */}
+          {activePayload && (
+            <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg">
+              <h2 className="text-2xl font-semibold mb-4">Edit Payload</h2>
+              <div className="space-y-4">
+                <Input
+                  value={activePayload.name}
+                  onChange={(e) =>
+                    updatePayload(activePayload.id, { name: e.target.value })
+                  }
+                  placeholder="Payload Name"
+                />
+                <Input
+                  value={activePayload.description}
+                  onChange={(e) =>
+                    updatePayload(activePayload.id, {
+                      description: e.target.value,
+                    })
+                  }
+                  placeholder="Payload Description"
+                />
+                <Input
+                  value={activePayload.url}
+                  onChange={(e) =>
+                    updatePayload(activePayload.id, { url: e.target.value })
+                  }
+                  placeholder="API URL"
+                />
+                <select
+                  value={activePayload.method}
+                  onChange={(e) =>
+                    updatePayload(activePayload.id, { method: e.target.value })
+                  }
+                  className="px-3 py-2 bg-gray-700 bg-opacity-50 text-white rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 w-full"
+                >
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="DELETE">DELETE</option>
+                </select>
+                <TextArea
+                  value={JSON.stringify(activePayload.headers, null, 2)}
+                  onChange={(e) =>
+                    updatePayload(activePayload.id, {
+                      headers: JSON.parse(e.target.value || "{}"),
+                    })
+                  }
+                  placeholder="Headers (JSON)"
+                  rows={4}
+                />
+                <TextArea
+                  value={JSON.stringify(activePayload.body, null, 2)}
+                  onChange={(e) =>
+                    updatePayload(activePayload.id, {
+                      body: JSON.parse(e.target.value || "{}"),
+                    })
+                  }
+                  placeholder="Body (JSON)"
+                  rows={8}
+                />
+
+                {/* Subtasks */}
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Subtasks</h3>
+                  {activePayload.subtasks.map((subtask) => (
+                    <div
+                      key={subtask.id}
+                      className="bg-gray-700 bg-opacity-50 p-4 rounded mb-4"
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <Input
+                          value={subtask.name}
+                          onChange={(e) =>
+                            updateSubtask(activePayload.id, subtask.id, {
+                              name: e.target.value,
+                            })
+                          }
+                          placeholder="Subtask Name"
+                          className="w-2/3"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() =>
+                            deleteSubtask(activePayload.id, subtask.id)
+                          }
+                        >
+                          <Trash2 size={12} />
+                        </Button>
+                      </div>
+                      <Input
+                        value={subtask.url}
+                        onChange={(e) =>
+                          updateSubtask(activePayload.id, subtask.id, {
+                            url: e.target.value,
+                          })
+                        }
+                        placeholder="Subtask API URL"
+                        className="mb-2"
+                      />
+                      <select
+                        value={subtask.method}
+                        onChange={(e) =>
+                          updateSubtask(activePayload.id, subtask.id, {
+                            method: e.target.value,
+                          })
+                        }
+                        className="px-3 py-2 bg-gray-600 bg-opacity-50 text-white rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 mb-2 w-full"
+                      >
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                      </select>
+                      <TextArea
+                        value={JSON.stringify(subtask.headers, null, 2)}
+                        onChange={(e) =>
+                          updateSubtask(activePayload.id, subtask.id, {
+                            headers: JSON.parse(e.target.value || "{}"),
+                          })
+                        }
+                        placeholder="Subtask Headers (JSON)"
+                        rows={2}
+                        className="mb-2"
+                      />
+                      <TextArea
+                        value={JSON.stringify(subtask.body, null, 2)}
+                        onChange={(e) =>
+                          updateSubtask(activePayload.id, subtask.id, {
+                            body: JSON.parse(e.target.value || "{}"),
+                          })
+                        }
+                        placeholder="Subtask Body (JSON)"
+                        rows={4}
+                      />
+                    </div>
+                  ))}
+                  <Button onClick={() => addSubtask(activePayload.id)}>
+                    <Plus size={16} className="mr-1" /> Add Subtask
+                  </Button>
+                </div>
+
+                {/* Execution Buttons */}
+                <div className="flex space-x-2">
+                  <Button onClick={() => executePayloadWithSubtasks(activePayload)}>
+                    <Play size={16} className="mr-1" /> Execute Payload
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => updatePayload(activePayload.id, {})}
+                  >
+                    <Save size={16} className="mr-1" /> Save to Database
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => deletePayload(activePayload.id)}
+                  >
+                    <Trash2 size={16} className="mr-1" /> Delete Payload
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* JSON Structure */}
+          {!activePayload && !activeRoutine && !activeConfig && (
+            <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold">Dynamic JSON Builder</h2>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const jsonStr = JSON.stringify(jsonStructure, null, 2);
+                      navigator.clipboard.writeText(jsonStr);
+                      toast.success("JSON copied to clipboard.");
+                    }}
+                  >
+                    <Copy size={16} className="mr-1" /> Copy
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExportConfig()}
+                  >
+                    <Download size={16} className="mr-1" /> Export
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsImportModalOpen(true)}
+                  >
+                    <Upload size={16} className="mr-1" /> Import
+                  </Button>
+                </div>
+              </div>
+              <Input
+                className="mb-4"
+                placeholder="Search JSON Structure..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                icon={<Search size={16} />}
+              />
+              {/* Placeholder for JSON Structure Builder */}
+              <div className="border border-gray-700 rounded-lg p-4 max-h-96 overflow-auto bg-gray-700 bg-opacity-50">
+                {/* Implement your JSON Structure Builder here */}
+                <JSONViewer json={jsonStructure} />
+              </div>
+            </div>
+          )}
+
+          {/* Routine Editor */}
+          {activeRoutine && (
+            <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg">
+              <h2 className="text-2xl font-semibold mb-4">Routine Editor</h2>
+              <div className="space-y-4">
+                <Input
+                  value={activeRoutine.name}
+                  onChange={(e) =>
+                    updateRoutine(activeRoutine.id, { name: e.target.value })
+                  }
+                  placeholder="Routine Name"
+                />
+                <h3 className="text-xl font-semibold mb-2">
+                  Payloads in Routine
+                </h3>
+                {activeRoutine.payloads.length === 0 ? (
+                  <p className="text-gray-400">
+                    No payloads added to this routine.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {activeRoutine.payloads.map((payloadId) => {
+                      const payload = payloads.find((p) => p.id === payloadId);
+                      return payload ? (
+                        <li
+                          key={payloadId}
+                          className="flex justify-between items-center bg-gray-700 bg-opacity-50 p-2 rounded"
+                        >
+                          <span>{payload.name}</span>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() =>
+                              removePayloadFromRoutine(
+                                activeRoutine.id,
+                                payloadId
+                              )
+                            }
+                          >
+                            <Trash2 size={12} />
+                          </Button>
+                        </li>
+                      ) : null;
+                    })}
+                  </ul>
+                )}
+                <div className="mt-4">
+                  <select
+                    onChange={(e) => {
+                      const selectedPayloadId = e.target.value;
+                      if (selectedPayloadId !== "") {
+                        addPayloadToRoutine(
+                          activeRoutine.id,
+                          selectedPayloadId
+                        );
+                        e.target.value = "";
+                      }
+                    }}
+                    className="px-3 py-2 bg-gray-700 bg-opacity-50 text-white rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 w-full"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      Add payload to routine
+                    </option>
+                    {payloads.map((payload) => (
+                      <option key={payload.id} value={payload.id}>
+                        {payload.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={isAsyncExecution}
+                    onChange={() => setIsAsyncExecution(!isAsyncExecution)}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label>Asynchronous Execution</label>
+                </div>
+                <div className="flex space-x-2">
+                  <Button onClick={() => executeRoutine(activeRoutine)}>
+                    <Play size={16} className="mr-1" /> Execute Routine
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => deleteRoutine(activeRoutine.id)}
+                  >
+                    <Trash2 size={16} className="mr-1" /> Delete Routine
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Config Editor */}
+          {activeConfig && (
+            <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg">
+              <h2 className="text-2xl font-semibold mb-4">Config Editor</h2>
+              <div className="space-y-4">
+                <Input
+                  value={activeConfig.name}
+                  onChange={(e) =>
+                    updateConfig(activeConfig.id, { name: e.target.value })
+                  }
+                  placeholder="Config Name"
+                />
+                <h3 className="text-xl font-semibold mb-2">
+                  Routines in Config
+                </h3>
+                {activeConfig.routines.length === 0 ? (
+                  <p className="text-gray-400">
+                    No routines added to this config.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {activeConfig.routines.map((routineId) => {
+                      const routine = routines.find((r) => r.id === routineId);
+                      return routine ? (
+                        <li
+                          key={routineId}
+                          className="flex justify-between items-center bg-gray-700 bg-opacity-50 p-2 rounded"
+                        >
+                          <span>{routine.name}</span>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              const updatedRoutines =
+                                activeConfig.routines.filter(
+                                  (id) => id !== routineId
+                                );
+                              updateConfig(activeConfig.id, {
+                                routines: updatedRoutines,
+                              });
+                            }}
+                          >
+                            <Trash2 size={12} />
+                          </Button>
+                        </li>
+                      ) : null;
+                    })}
+                  </ul>
+                )}
+                <div className="mt-4">
+                  <select
+                    onChange={(e) => {
+                      const selectedRoutineId = e.target.value;
+                      if (selectedRoutineId !== "") {
+                        addRoutineToConfig(
+                          activeConfig.id,
+                          selectedRoutineId
+                        );
+                        e.target.value = "";
+                      }
+                    }}
+                    className="px-3 py-2 bg-gray-700 bg-opacity-50 text-white rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 w-full"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      Add routine to config
+                    </option>
+                    {routines.map((routine) => (
+                      <option key={routine.id} value={routine.id}>
+                        {routine.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={() => {
+                      executeConfig(activeConfig);
+                    }}
+                  >
+                    <Play size={16} className="mr-1" /> Execute Config
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => deleteConfig(activeConfig.id)}
+                  >
+                    <Trash2 size={16} className="mr-1" /> Delete Config
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Global Variables */}
+          <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg">
+            <h2 className="text-2xl font-semibold mb-4">Global Variables</h2>
+            <div className="space-y-4">
+              {Object.entries(globalVariables).map(([key, value]) => (
+                <div key={key} className="flex items-center space-x-2">
+                  <Input
+                    value={key}
+                    onChange={(e) => {
+                      const newVariables = { ...globalVariables };
+                      delete newVariables[key];
+                      newVariables[e.target.value] = value;
+                      setGlobalVariables(newVariables);
+                    }}
+                    placeholder="Variable Name"
+                    className="w-1/3"
+                  />
+                  <Input
+                    value={value}
+                    onChange={(e) => {
+                      setGlobalVariables({
+                        ...globalVariables,
+                        [key]: e.target.value,
+                      });
+                    }}
+                    placeholder="Variable Value"
+                    className="w-1/3"
+                  />
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      const newVariables = { ...globalVariables };
+                      delete newVariables[key];
+                      setGlobalVariables(newVariables);
+                    }}
+                  >
+                    <Trash2 size={12} />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex items-center space-x-2">
+                <Input
+                  value={newVarName}
+                  onChange={(e) => setNewVarName(e.target.value)}
+                  placeholder="New Variable Name"
+                  className="w-1/3"
+                />
+                <Input
+                  value={newVarValue}
+                  onChange={(e) => setNewVarValue(e.target.value)}
+                  placeholder="New Variable Value"
+                  className="w-1/3"
+                />
+                <Button
+                  onClick={() => {
+                    if (newVarName && newVarValue) {
+                      setGlobalVariables({
+                        ...globalVariables,
+                        [newVarName]: newVarValue,
+                      });
+                      setNewVarName("");
+                      setNewVarValue("");
+                    }
+                  }}
+                >
+                  <Plus size={16} className="mr-1" /> Add Variable
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Results Panel */}
+        <div className="w-full md:w-1/4">
+          <div className="bg-gray-800 bg-opacity-50 rounded-xl p-6 backdrop-filter backdrop-blur-lg">
+            <h2 className="text-2xl font-semibold mb-4">Results</h2>
+            <div className="space-y-4 max-h-96 overflow-auto">
+              {Object.entries(results).map(([id, result]) => (
+                <div key={id} className="bg-gray-700 bg-opacity-50 p-4 rounded">
+                  <h3 className="text-lg font-semibold mb-2">
+                    {result.payload.name}
+                  </h3>
+                  <p className="text-sm text-gray-300 mb-2">
+                    URL: {result.url}
+                  </p>
+                  <JSONViewer json={result.response} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Import Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-xl w-full max-w-md">
+            <h2 className="text-2xl font-semibold mb-4">
+              Import Configuration
+            </h2>
+            <TextArea
+              value={importedConfig}
+              onChange={(e) => setImportedConfig(e.target.value)}
+              placeholder="Paste your configuration JSON here"
+              rows={10}
+              className="mb-4"
+            />
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="ghost"
+                onClick={() => setIsImportModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleImportConfig}>Import</Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+### **Explanation of `PayloadMakerUI2.jsx`:**
+
+1. **State Management:**
+   - **Payloads:** Managed via `payloads` state, fetched from MongoDB.
+   - **Active Payload:** The currently selected payload for editing.
+   - **Results:** Stores the responses from executed payloads.
+   - **Authentication:** `useAuth` and `bearerToken` manage API authentication.
+   - **Global Variables, Routines, Configs:** Managed via respective states.
+
+2. **API Integration:**
+   - **Fetching Payloads:** On component mount, payloads are fetched from `/api/payloads`.
+   - **Creating Payloads:** Sends a POST request to `/api/payloads` to create a new payload.
+   - **Updating Payloads:** Sends a PUT request to `/api/payloads/[id]` to update an existing payload.
+   - **Deleting Payloads:** Sends a DELETE request to `/api/payloads/[id]` to remove a payload.
+
+3. **UI Components:**
+   - **Buttons, Inputs, TextAreas:** Custom components styled with Tailwind CSS.
+   - **Payloads Table:** Displays payloads with options to edit or delete.
+   - **Edit Payload Section:** Allows editing payload details and subtasks.
+   - **Routines & Configs:** Similar CRUD functionalities integrated with respective API routes.
+   - **Global Variables:** Manage key-value pairs used across payloads.
+   - **Results Panel:** Displays execution results of payloads.
+
+4. **Additional Functionalities:**
+   - **Drag-and-Drop:** Allows reordering of payloads.
+   - **Search & Sort:** Enables searching payloads by name and sorting by name or date.
+   - **Import & Export Configurations:** Facilitates exporting current configurations and importing new ones.
+
+5. **Notifications:**
+   - **React Hot Toast:** Provides real-time feedback to users on various actions.
+
+6. **Modal for Importing Configurations:**
+   - Allows users to paste JSON configurations and import them into the application.
+
+---
+
+## **5. Additional API Routes for Configurations and Routines**
+
+To ensure the frontend can interact seamlessly with routines and configurations, implement the following API routes.
+
+### **a. Configurations API Routes**
+
+#### **GET All Configurations & POST Create New Configuration**
+
+```javascript
+// frontend/src/app/api/configurations/route.js
+
+import connectDB from '../../../lib/mongodb';
+import Configuration from '../../../models/Configuration';
+
+export async function GET(request) {
+  try {
+    await connectDB();
+    const configs = await Configuration.find({});
+    return new Response(JSON.stringify(configs), { status: 200 });
+  } catch (error) {
+    console.error("GET /api/configurations error:", error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch configurations' }), { status: 500 });
+  }
+}
+
+export async function POST(request) {
+  try {
+    const data = await request.json();
+    await connectDB();
+
+    // Check if config with the same ID already exists
+    const existingConfig = await Configuration.findOne({ id: data.id });
+    if (existingConfig) {
+      return new Response(JSON.stringify({ error: 'Configuration with this ID already exists' }), { status: 400 });
+    }
+
+    const config = new Configuration(data);
+    await config.save();
+    return new Response(JSON.stringify({ data: config }), { status: 201 });
+  } catch (error) {
+    console.error("POST /api/configurations error:", error);
+    return new Response(JSON.stringify({ error: 'Failed to create configuration' }), { status: 500 });
   }
 }
 ```
 
-### 12. Final Steps
+#### **GET, PUT, DELETE Configuration by ID**
 
-1. **Environment Variables:**
-   - Ensure all necessary environment variables are set, especially `MONGODB_URI` and any secrets for authentication.
-   - Create a `.env.local` file at the root of your project:
+```javascript
+// frontend/src/app/api/configurations/[id]/route.js
 
-     ```
-     MONGODB_URI=mongodb://groqyADMIN:groqyADMINlbdrDJDH4tnrRyuu@107.173.250.200:27017/admin
-     JWT_SECRET=your_jwt_secret
-     AGENT_JWT_SECRET=your_agent_jwt_secret
-     ```
+import connectDB from '../../../../lib/mongodb';
+import Configuration from '../../../../models/Configuration';
 
-2. **Installing Dependencies:**
+export async function GET(request, { params }) {
+  try {
+    const { id } = params;
+    await connectDB();
+    const config = await Configuration.findOne({ id });
+    if (!config) {
+      return new Response(JSON.stringify({ error: 'Configuration not found' }), { status: 404 });
+    }
+    return new Response(JSON.stringify(config), { status: 200 });
+  } catch (error) {
+    console.error(`GET /api/configurations/${params.id} error:`, error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch configuration' }), { status: 500 });
+  }
+}
 
-   Ensure you have all necessary dependencies installed:
+export async function PUT(request, { params }) {
+  try {
+    const { id } = params;
+    const updates = await request.json();
+    await connectDB();
+    const config = await Configuration.findOneAndUpdate({ id }, updates, { new: true });
+    if (!config) {
+      return new Response(JSON.stringify({ error: 'Configuration not found' }), { status: 404 });
+    }
+    return new Response(JSON.stringify({ data: config }), { status: 200 });
+  } catch (error) {
+    console.error(`PUT /api/configurations/${params.id} error:`, error);
+    return new Response(JSON.stringify({ error: 'Failed to update configuration' }), { status: 500 });
+  }
+}
 
-   ```bash
-   npm install mongoose axios jsonwebtoken
-   ```
+export async function DELETE(request, { params }) {
+  try {
+    const { id } = params;
+    await connectDB();
+    const config = await Configuration.findOneAndDelete({ id });
+    if (!config) {
+      return new Response(JSON.stringify({ error: 'Configuration not found' }), { status: 404 });
+    }
+    return new Response(JSON.stringify({ message: 'Configuration deleted' }), { status: 200 });
+  } catch (error) {
+    console.error(`DELETE /api/configurations/${params.id} error:`, error);
+    return new Response(JSON.stringify({ error: 'Failed to delete configuration' }), { status: 500 });
+  }
+}
+```
 
-3. **Testing:**
+### **b. Configuration Mongoose Model**
 
-   - Thoroughly test each API route to ensure it behaves as expected.
-   - Write unit tests and integration tests for critical functionalities.
+```javascript
+// frontend/src/models/Configuration.js
 
-4. **Frontend Integration:**
+import mongoose from 'mongoose';
 
-   - Ensure your React components interact with the API routes correctly.
-   - Handle authentication tokens in the frontend to interact with protected endpoints.
+const ConfigurationSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  routines: { type: [String], default: [] }, // Array of routine IDs
+  createdAt: { type: Date, default: Date.now },
+});
 
-5. **Documentation:**
+export default mongoose.models.Configuration || mongoose.model('Configuration', ConfigurationSchema);
+```
 
-   - Document your APIs using tools like **Swagger** or **Postman**.
-   - Maintain a README with clear instructions for setup, usage, and contribution.
+### **c. Routines API Routes**
 
-6. **Version Control:**
+#### **GET All Routines & POST Create New Routine**
 
-   - Commit your changes regularly with meaningful commit messages.
-   - Use branches to manage different features or fixes.
+```javascript
+// frontend/src/app/api/routines/route.js
 
-### Summary
+import connectDB from '../../../lib/mongodb';
+import Routine from '../../../models/Routine';
 
-By following the steps above, you can establish a robust backend with MongoDB, define clear and maintainable schemas, and create agent-friendly APIs that allow seamless interactions between your frontend and backend. The updated Mermaid diagram provides a comprehensive view of your system architecture, ensuring all components are well-integrated and scalable for future enhancements.
+export async function GET(request) {
+  try {
+    await connectDB();
+    const routines = await Routine.find({});
+    return new Response(JSON.stringify(routines), { status: 200 });
+  } catch (error) {
+    console.error("GET /api/routines error:", error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch routines' }), { status: 500 });
+  }
+}
 
-Feel free to reach out if you need further assistance with specific parts of your project!
+export async function POST(request) {
+  try {
+    const data = await request.json();
+    await connectDB();
+
+    // Check if routine with the same ID already exists
+    const existingRoutine = await Routine.findOne({ id: data.id });
+    if (existingRoutine) {
+      return new Response(JSON.stringify({ error: 'Routine with this ID already exists' }), { status: 400 });
+    }
+
+    const routine = new Routine(data);
+    await routine.save();
+    return new Response(JSON.stringify({ data: routine }), { status: 201 });
+  } catch (error) {
+    console.error("POST /api/routines error:", error);
+    return new Response(JSON.stringify({ error: 'Failed to create routine' }), { status: 500 });
+  }
+}
+```
+
+#### **GET, PUT, DELETE Routine by ID**
+
+```javascript
+// frontend/src/app/api/routines/[id]/route.js
+
+import connectDB from '../../../../lib/mongodb';
+import Routine from '../../../../models/Routine';
+
+export async function GET(request, { params }) {
+  try {
+    const { id } = params;
+    await connectDB();
+    const routine = await Routine.findOne({ id });
+    if (!routine) {
+      return new Response(JSON.stringify({ error: 'Routine not found' }), { status: 404 });
+    }
+    return new Response(JSON.stringify(routine), { status: 200 });
+  } catch (error) {
+    console.error(`GET /api/routines/${params.id} error:`, error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch routine' }), { status: 500 });
+  }
+}
+
+export async function PUT(request, { params }) {
+  try {
+    const { id } = params;
+    const updates = await request.json();
+    await connectDB();
+    const routine = await Routine.findOneAndUpdate({ id }, updates, { new: true });
+    if (!routine) {
+      return new Response(JSON.stringify({ error: 'Routine not found' }), { status: 404 });
+    }
+    return new Response(JSON.stringify({ data: routine }), { status: 200 });
+  } catch (error) {
+    console.error(`PUT /api/routines/${params.id} error:`, error);
+    return new Response(JSON.stringify({ error: 'Failed to update routine' }), { status: 500 });
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const { id } = params;
+    await connectDB();
+    const routine = await Routine.findOneAndDelete({ id });
+    if (!routine) {
+      return new Response(JSON.stringify({ error: 'Routine not found' }), { status: 404 });
+    }
+    return new Response(JSON.stringify({ message: 'Routine deleted' }), { status: 200 });
+  } catch (error) {
+    console.error(`DELETE /api/routines/${params.id} error:`, error);
+    return new Response(JSON.stringify({ error: 'Failed to delete routine' }), { status: 500 });
+  }
+}
+```
+
+### **d. Routine Mongoose Model**
+
+```javascript
+// frontend/src/models/Routine.js
+
+import mongoose from 'mongoose';
+
+const RoutineSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  payloads: { type: [String], default: [] }, // Array of payload IDs
+  createdAt: { type: Date, default: Date.now },
+});
+
+export default mongoose.models.Routine || mongoose.model('Routine', RoutineSchema);
+```
+
+### **e. Global Variables API Routes**
+
+#### **GET All Global Variables & POST Create New Variable**
+
+```javascript
+// frontend/src/app/api/globalVariables/route.js
+
+import connectDB from '../../../lib/mongodb';
+import GlobalVariable from '../../../models/GlobalVariable';
+
+export async function GET(request) {
+  try {
+    await connectDB();
+    const variables = await GlobalVariable.find({});
+    return new Response(JSON.stringify(variables), { status: 200 });
+  } catch (error) {
+    console.error("GET /api/globalVariables error:", error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch global variables' }), { status: 500 });
+  }
+}
+
+export async function POST(request) {
+  try {
+    const data = await request.json();
+    await connectDB();
+
+    // Check if

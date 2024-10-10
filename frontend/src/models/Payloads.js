@@ -1,16 +1,27 @@
-// models/Payloads.js
+// frontend/src/models/Payload.js
+
 import mongoose from 'mongoose';
 
-const payloadSchema = new mongoose.Schema({
+const SubtaskSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  name: { type: String, required: true },
+  description: { type: String },
+  url: { type: String, required: true },
+  method: { type: String, required: true, enum: ['GET', 'POST', 'PUT', 'DELETE'] },
+  headers: { type: Object, default: {} },
+  body: { type: Object, default: {} },
+});
+
+const PayloadSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   description: { type: String },
   url: { type: String, required: true },
-  method: { type: String, enum: ['GET', 'POST', 'PUT', 'DELETE'], required: true },
-  headers: { type: mongoose.Schema.Types.Mixed, default: {} },
-  body: { type: mongoose.Schema.Types.Mixed, default: {} },
-  subtasks: [{ type: String }], // Assuming subtasks are IDs of other Payloads or specific task identifiers
-  createdAt: { type: Date, default: Date.now }
+  method: { type: String, required: true, enum: ['GET', 'POST', 'PUT', 'DELETE'] },
+  headers: { type: Object, default: {} },
+  body: { type: Object, default: {} },
+  subtasks: { type: [SubtaskSchema], default: [] },
+  createdAt: { type: Date, default: Date.now },
 });
 
-export default mongoose.models.Payloads || mongoose.model('Payloads', payloadSchema);
+export default mongoose.models.Payload || mongoose.model('Payload', PayloadSchema);
