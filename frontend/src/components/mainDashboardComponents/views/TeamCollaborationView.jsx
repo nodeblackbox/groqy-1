@@ -2,7 +2,9 @@
 
 "use client";
 
-import React from "@components/mainDashboardComponents/Button";
+
+
+import Button from "../Button";
 
 const TeamCollaborationView = () => (
     <div className="space-y-8">

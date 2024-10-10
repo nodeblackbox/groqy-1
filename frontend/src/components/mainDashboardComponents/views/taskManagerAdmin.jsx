@@ -2,7 +2,9 @@
 
 "use client";
 
-import React, { useState } from "@/components/mainDashboardComponents/Button";
+
+import React from "react";
+import Button from "../Button";
 import { Plus, Trash, Edit } from "lucide-react";
 
 const TaskManagerAdmin = () => {

@@ -2,7 +2,8 @@
 
 "use client";
 
-import React from "@components/mainDashboardComponents/Button";
+import React from "react";
+import Button from "../Button";
 
 const GitHubIntegrationView = () => (
     <div className="space-y-8">

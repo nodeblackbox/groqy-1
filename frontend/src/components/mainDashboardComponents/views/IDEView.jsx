@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import MonacoEditor from "@monaco-editor/react";
 import { Tab } from "@headlessui/react";
 
+
 // Lucide icon imports
 import {
     Zap,
@@ -48,7 +49,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 // Dynamic Kanban Board Loading
 const DynamicKanbanBoard = dynamic(
-    () => import("../../components/KanbanBoard"),
+    () => import("@/components/KanbanBoard"),
     {
         ssr: false,
     }

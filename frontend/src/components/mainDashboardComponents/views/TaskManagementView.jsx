@@ -2,7 +2,8 @@
 
 "use client";
 
-import React from "@components/mainDashboardComponents/Button";
+
+import Button from "../Button";
 
 const AIWorkflowsView = () => (
     <div className="space-y-8">

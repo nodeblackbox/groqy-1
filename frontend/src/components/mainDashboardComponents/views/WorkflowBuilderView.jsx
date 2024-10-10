@@ -2,7 +2,9 @@
 
 "use client";
 
-import React from "@components/mainDashboardComponents/Button";
+
+
+import Button from "../Button";
 
 const WorkflowBuilderView = () => (
     <div className="space-y-8">

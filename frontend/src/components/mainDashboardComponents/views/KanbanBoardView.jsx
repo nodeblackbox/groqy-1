@@ -2,7 +2,10 @@
 
 "use client";
 
-import React, { useState } from "@components/mainDashboardComponents/Button";
+
+import React, { useState } from 'react';
+
+
 
 const KanbanBoardView = () => {
     const [tasks, setTasks] = useState({
