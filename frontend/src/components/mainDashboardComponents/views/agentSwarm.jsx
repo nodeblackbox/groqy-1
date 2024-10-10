@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState } from "@/components/mainDashboardComponents/Button";
+import React, { useState } from "../components/mainDashboardComponents/Button";
 import { Plus, Trash } from "lucide-react";
 
 const AgentSwarm = () => {
