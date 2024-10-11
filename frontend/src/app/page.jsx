@@ -265,10 +265,10 @@ export default function EnhancedHomePage() {
                         transition={{ duration: 0.8, delay: 0.4 }}
                         className="flex justify-center space-x-6"
                     >
-                        <Button variant="default" size="lg">
-                            Start Free Trial <ArrowRight className="w-5 h-5 ml-2" />
+                        <Button variant="default" size="lg" onClick={() => window.location.href = 'https://pitchdeck.ai/webappV5'}>
+                            Get Started <ArrowRight className="w-5 h-5 ml-2" />
                         </Button>
-                        <Button variant="outline" size="lg">
+                        <Button variant="outline" size="lg" onClick={() => window.location.href = 'https://pitchdeck.ai/webappV5'}>
                             Watch Demo <ChevronRight className="w-5 h-5 ml-2" />
                         </Button>
                     </motion.div>
