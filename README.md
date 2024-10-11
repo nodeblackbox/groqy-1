@@ -18,6 +18,12 @@ Welcome to the Groqy Quantum Nexus! This project aims to revolutionize the deplo
 ## Overview
 The Groqy Quantum Nexus brings agentic experts to the next level of deployment via the Gravity RAG Infinite Streaming Context and the GOD Matrix API Hub for infinite tooling deployment possibilities.
 
+## Cosmic Nexus
+
+<p align="center">
+  <img src="icons/cosmicNexus.png" alt="Groqy" width="1000"/>
+</p>
+
 ## API Tester V5
 
 <p align="center">
@@ -33,7 +39,6 @@ The Groqy Quantum Nexus brings agentic experts to the next level of deployment v
 <p align="center">
   <img src="icons/quantumApiNodebuilder.png" alt="Groqy" width="1000"/>
 </p>
-
 
 ## Getting Started
 First, download the project, setup nextjs & python.
