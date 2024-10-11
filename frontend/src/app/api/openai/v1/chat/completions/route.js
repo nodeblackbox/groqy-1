@@ -705,6 +705,8 @@ export async function POST(request) {
         const processedMessages = processMessages(selectedModel.provider, messages);
         logInfo('Processed messages', { processedMessages });
 
+        toolsDeterminer()
+
         // Convert input to provider-specific format
         const convertedInput = convertApiFormat(
             { model: selectedModel.name, messages: processedMessages, parameters },
@@ -796,3 +798,164 @@ export async function GET(request) {
         return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }
 }
+
+
+// //Determines the Tools to use:
+// async function toolsDeterminer(userMessages) {
+//     //pulls the tools from mongodb
+
+//     //sends the tools to an LLM along with the user prompt:
+
+
+
+//     //groq api to with the tools - use this model: llama-3.2-3b-preview
+//     try {
+//         // // Step 1: Pull tools from MongoDB
+//         // await connectDB(); // Ensure DB connection
+//         // const tools = await Tool.find({}); // Fetch all tools
+
+//         // // Step 2: Prepare the tools and user messages for LLM
+//         // const formattedTools = tools.map(tool => ({
+//         //     id: tool.id,
+//         //     name: tool.name,
+//         //     description: tool.description
+//         // }));
+
+//         // const llmInput = {
+//         //     tools: formattedTools,
+//         //     userMessages: userMessages
+//         // };
+
+//         // Step 3: Send the tools and user prompt to the LLM
+//         const response = await sendToLLM(userMessages);
+//         return response;
+
+//     } catch (error) {
+//         console.error("Error in toolsDeterminer:", error);
+//         throw new Error('Failed to determine tools');
+//     }
+// }
+
+
+
+// // Function to send data to Groq
+// async function sendToLLM(data) {
+//     const baseUrl = "http://127.0.0.1:8000"; // Make sure to define your actual base URL here
+
+//     // Correctly define quickToolTest as an array
+//     const quickToolTest = [
+//         {
+//             "id": "payload1",
+//             "name": "GravRAG Create Memory (WORKS)",
+//             "description": "Payload updated after the 1st task - result retrieved",
+//             "url": `${baseUrl}/gravrag/create_memory`,
+//             "method": "POST",
+//             "headers": {
+//                 "Content-Type": "application/json",
+//                 "Accept": "application/json",
+//                 "X-Custom-Header": "Custom Header Value"
+//             },
+//             "body": {
+//                 "content": "User completed the onboarding task for Project X",
+//                 "metadata": {}
+//             },
+//             "subtasks": []
+//         },
+//         {
+//             "id": "payload2",
+//             "name": "GravRAG Recall Memory (WORKS)",
+//             "description": "Recalls memories from GravRAG",
+//             "url": `${baseUrl}/gravrag/recall_memory`,
+//             "method": "POST",
+//             "headers": {
+//                 "Content-Type": "application/json"
+//             },
+//             "body": {
+//                 "query": "your_query_here",
+//                 "top_k": 5
+//             },
+//             "subtasks": []
+//         },
+//         {
+//             "id": "payload3",
+//             "name": "GravRag Prune Memories (WORKS)",
+//             "description": "Prunes memories in GravRAG",
+//             "url": `${baseUrl}/gravrag/prune_memories`,
+//             "method": "POST",
+//             "headers": {
+//                 "Content-Type": "application/json",
+//                 "Accept": "application/json",
+//                 "X-Custom-Header": "Custom Header Value"
+//             },
+//             "body": {},
+//             "subtasks": []
+//         },
+//         {
+//             "id": "1a5a58fa-1a28-4e3c-a212-80e5eb22e348",
+//             "name": "GravRAG RECALL M METADATA (WORKS)",
+//             "description": "Retrieves memories based on semantic similarity to a query",
+//             "url": `${baseUrl}/gravrag/recall_with_metadata`,
+//             "method": "POST",
+//             "headers": {
+//                 "Content-Type": "application/json"
+//             },
+//             "body": {
+//                 "query": "your_query_here",
+//                 "metadata": {
+//                     "objective_id": "project_x",
+//                     "user_id": "user_123"
+//                 }
+//             },
+//             "subtasks": []
+//         },
+//         {
+//             "id": "fae8a773-29ef-4259-8547-d249900060c9",
+//             "name": "GravRAG Purge All Memories (WORKS)",
+//             "description": "This performs a complete system reset, purging all stored memories.",
+//             "url": `${baseUrl}/gravrag/purge_memories`,
+//             "method": "POST",
+//             "headers": {
+//                 "Content-Type": "application/json",
+//                 "Accept": "application/json",
+//                 "X-Custom-Header": "Custom Header Value"
+//             },
+//             "body": {},
+//             "subtasks": []
+//         },
+//         {
+//             "id": "eb582799-300a-4972-9992-8f98e84b885c",
+//             "name": "GravRAG Delete Memory by Metadata (WORKS)",
+//             "description": "Deletes Memory by Metadata",
+//             "url": `${baseUrl}/gravrag/delete_by_metadata`,
+//             "method": "POST",
+//             "headers": {
+//                 "Content-Type": "application/json",
+//                 "Accept": "application/json",
+//                 "X-Custom-Header": "Custom Header Value"
+//             },
+//             "body": {
+//                 "metadata": {
+//                     "objective_id": "project_x"
+//                 }
+//             },
+//             "subtasks": []
+//         }
+//     ];
+
+//     // Include both quickToolTest and the passed data in the body
+//     const response = await fetch('https://api.groq.com/v1/models/llama-3.2-3b-preview', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json',
+//             'Authorization': `${GROQ_API_KEY}` // Ensure GROQ_API_KEY is defined
+//         },
+//         body: JSON.stringify({ tools: quickToolTest, ...data }) // Combine the quickToolTest and data
+//     });
+
+//     if (!response.ok) {
+//         const errorText = await response.text();
+//         throw new Error(`LLM request failed: ${errorText}`);
+//     }
+//     console.log("Small LLM response ", response)
+//     return response.json();
+// }

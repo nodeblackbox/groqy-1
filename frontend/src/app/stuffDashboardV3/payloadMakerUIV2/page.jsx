@@ -757,6 +757,29 @@ export default function PayloadMakerUI2() {
     }
   };
 
+  //send to mongodb:
+  const sendPayloadToMongoDB = async (payload) => {
+    try {
+      const response = await fetch("/api/payloads", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to send payload");
+      }
+
+      const data = await response.json();
+      alert("Payload sent successfully: " + data.message);
+    } catch (error) {
+      console.error("Error sending payload:", error);
+      alert("Failed to send payload");
+    }
+  };
+
   return (
     <div className="bg-gradient-to-br from-gray-900 to-black text-white p-4 min-h-screen font-sans">
       <Toaster position="top-right" />
@@ -1091,6 +1114,11 @@ export default function PayloadMakerUI2() {
                     onClick={() => deletePayload(activePayload.id)}
                   >
                     <Trash2 size={16} className="mr-1" /> Delete Payload
+                  </Button>
+                </div>
+                <div className="flex space-x-2">
+                  <Button onClick={() => sendPayloadToMongoDB(activePayload)}>
+                    <Play size={16} className="mr-1" /> Send Payload to MongoDB
                   </Button>
                 </div>
               </div>

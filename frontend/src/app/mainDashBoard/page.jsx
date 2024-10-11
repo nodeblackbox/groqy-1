@@ -59,6 +59,24 @@ import CosmicNexusOrchestrator from "../../components/agiBuilder";
 
 import BugTracker from "../../components/bugTracker";
 
+import LinuxIDE from "../../components/IDE";
+
+import Materialiser from "../../components/Materialiser";
+
+import NodeBuilder from "../../components/NodeBuilder";
+
+import TaskManager from "../../components/TaskManager";
+
+import VoiceCommandUI from "../../components/VoiceFeature";
+
+import GroqyDashboard from "../../components/GitHubIntegrationView";
+
+//import borches' stuff
+
+//Required for the Kanban & Bug Tracker to be appearing inside the IDE:
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+
 // import PayloadMakerUI2 from '@/components/mainDashboardComponents/views/PayloadMakerUI2';
 // import apiMaker from '@/components/mainDashboardComponents/views/apiMaker';
 // import nodebuilder from '@/components/mainDashboardComponents/views/nodebuilder';
@@ -189,24 +207,7 @@ const NavButton = ({
 // Feature Profile Component
 const FeatureProfile = () => (
   <div className="mb-8 bg-gradient-to-r from-gray-700 to-gray-700 p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300">
-    <div className="flex items-center space-x-4">
-      <div className="relative">
-        <img
-          src="https://i.ibb.co/tDxBcPq/Pitch-Deck-Logo-Asset-V7.png"
-          alt="User"
-          className="w-16 h-16 rounded-full ring-4 ring-purple-500 shadow-lg transform hover:scale-110 transition-transform duration-200"
-        />
-        <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
-          <div className="bg-green-300 rounded-full w-3 h-3"></div>
-        </div>
-      </div>
-      <div className="flex flex-col">
-        <span className="text-2xl font-bold text-white">CeeCee</span>
-        <p className="text-sm text-gray-400 bg-gray-700 px-2 py-1 rounded-full inline-block">
-          CTO
-        </p>
-      </div>
-    </div>
+    <VoiceCommandUI />
   </div>
 );
 
@@ -402,70 +403,6 @@ const AIWorkflowsView = () => (
     </div>
   </div>
 );
-
-// const BugTrackerView = () => (
-//   <div className="space-y-8">
-//     <h2 className="text-3xl font-bold mb-6">Bug Tracker</h2>
-//     <div className="overflow-x-auto">
-//       <table className="min-w-full bg-gray-800 bg-opacity-50 rounded-xl shadow-lg">
-//         <thead>
-//           <tr>
-//             <th className="p-3 text-left">ID</th>
-//             <th className="p-3 text-left">Description</th>
-//             <th className="p-3 text-left">Status</th>
-//             <th className="p-3 text-left">Severity</th>
-//             <th className="p-3 text-left">Assigned To</th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//           {[
-//             {
-//               id: "BUG-001",
-//               description: "Login page not responsive on mobile",
-//               status: "Open",
-//               severity: "High",
-//               assignedTo: "John Doe",
-//             },
-//             {
-//               id: "BUG-002",
-//               description: "Database connection timeout",
-//               status: "In Progress",
-//               severity: "Critical",
-//               assignedTo: "Jane Smith",
-//             },
-//             {
-//               id: "BUG-003",
-//               description: "Incorrect calculation in billing module",
-//               status: "Resolved",
-//               severity: "Medium",
-//               assignedTo: "Bob Johnson",
-//             },
-//           ].map((bug) => (
-//             <tr key={bug.id} className="border-t border-gray-700">
-//               <td className="p-3">{bug.id}</td>
-//               <td className="p-3">{bug.description}</td>
-//               <td className="p-3">
-//                 <span
-//                   className={`px-2 py-1 rounded-full text-xs ${
-//                     bug.status === "Open"
-//                       ? "bg-red-500"
-//                       : bug.status === "In Progress"
-//                       ? "bg-yellow-500"
-//                       : "bg-green-500"
-//                   }`}
-//                 >
-//                   {bug.status}
-//                 </span>
-//               </td>
-//               <td className="p-3">{bug.severity}</td>
-//               <td className="p-3">{bug.assignedTo}</td>
-//             </tr>
-//           ))}
-//         </tbody>
-//       </table>
-//     </div>
-//   </div>
-// );
 
 const GitHubIntegrationView = () => (
   <div className="space-y-8">
@@ -722,84 +659,6 @@ const PayloadMakerUI2View = () => (
   </div>
 );
 
-// const ChatbotView = () => (
-//   <div className="space-y-8">
-//     <h2 className="text-3xl font-bold mb-6">AI Chatbot</h2>
-//     <div className="bg-gray-800 bg-opacity-50 p-6 rounded-xl shadow-lg h-[calc(100vh-200px)] flex flex-col">
-//       <div className="flex-grow overflow-y-auto mb-4 space-y-4 scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-gray-700">
-//         {[
-//           { sender: "bot", message: "Hello! How can I assist you today?" },
-//           {
-//             sender: "user",
-//             message: "I need help with creating a new workflow.",
-//           },
-//           {
-//             sender: "bot",
-//             message:
-//               "I can guide you through the process of creating a new workflow. What type of workflow are you looking to create?",
-//           },
-//           {
-//             sender: "user",
-//             message: "I want to create an automated code review workflow.",
-//           },
-//           {
-//             sender: "bot",
-//             message:
-//               "Great choice! An automated code review workflow can significantly improve your development process. Here are the steps to create one:",
-//           },
-//           {
-//             sender: "bot",
-//             message:
-//               '1. Go to the AI Workflows section\n2. Click on "Create New Workflow"\n3. Select "Code Review" as the workflow type\n4. Configure the parameters such as programming language, review criteria, and notification settings\n5. Set up the trigger events (e.g., new pull request)\n6. Save and activate the workflow',
-//           },
-//           {
-//             sender: "user",
-//             message: "Thanks! Can you explain more about the review criteria?",
-//           },
-//           {
-//             sender: "bot",
-//             message:
-//               "The review criteria are the rules and standards that the AI will use to evaluate the code. This can include:",
-//           },
-//           {
-//             sender: "bot",
-//             message:
-//               "- Code style and formatting\n- Potential bugs or errors\n- Code complexity and maintainability\n- Security vulnerabilities\n- Performance optimizations\n\nYou can customize these criteria based on your team's specific needs and coding standards.",
-//           },
-//         ].map((chat, index) => (
-//           <div
-//             key={index}
-//             className={`flex ${
-//               chat.sender === "user" ? "justify-end" : "justify-start"
-//             }`}
-//           >
-//             <div
-//               className={`max-w-3/4 p-3 rounded-lg ${
-//                 chat.sender === "user" ? "bg-purple-600" : "bg-gray-700"
-//               }`}
-//             >
-//               {chat.message.split("\n").map((line, idx) => (
-//                 <span key={idx}>
-//                   {line}
-//                   <br />
-//                 </span>
-//               ))}
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-//       <div className="flex space-x-2">
-//         <input
-//           type="text"
-//           placeholder="Type your message..."
-//           className="flex-grow p-2 rounded-lg bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-//         />
-//         <Button variant="primary">Send</Button>
-//       </div>
-//     </div>
-//   </div>
-// );
-
 const FileUploadsView = () => (
   <div className="space-y-8">
     <h2 className="text-3xl font-bold mb-6">File Uploads</h2>
@@ -848,37 +707,37 @@ const FileUploadsView = () => (
   </div>
 );
 
-const WorkflowBuilderView = () => (
-  <div className="space-y-8">
-    <h2 className="text-3xl font-bold mb-6">Workflow Builder</h2>
-    <div className="bg-gray-800 bg-opacity-50 p-6 rounded-xl shadow-lg scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-gray-700 overflow-y-auto">
-      <h3 className="text-xl font-semibold mb-4">Create New Workflow</h3>
-      <form className="space-y-4">
-        <input
-          type="text"
-          placeholder="Workflow Name"
-          className="w-full p-2 rounded-md bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-        />
-        <select className="w-full p-2 rounded-md bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
-          <option>Select Workflow Type</option>
-          <option>Code Review</option>
-          <option>Continuous Integration</option>
-          <option>Deployment</option>
-          <option>Custom</option>
-        </select>
-        <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 min-h-[200px]">
-          {/* Placeholder for drag-and-drop workflow builder */}
-          <p className="text-center text-gray-400">
-            Drag and drop workflow components here
-          </p>
-        </div>
-        <Button variant="primary" className="w-full">
-          Save Workflow
-        </Button>
-      </form>
-    </div>
-  </div>
-);
+// const WorkflowBuilderView = () => (
+//   <div className="space-y-8">
+//     <h2 className="text-3xl font-bold mb-6">Workflow Builder</h2>
+//     <div className="bg-gray-800 bg-opacity-50 p-6 rounded-xl shadow-lg scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-gray-700 overflow-y-auto">
+//       <h3 className="text-xl font-semibold mb-4">Create New Workflow</h3>
+//       <form className="space-y-4">
+//         <input
+//           type="text"
+//           placeholder="Workflow Name"
+//           className="w-full p-2 rounded-md bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+//         />
+//         <select className="w-full p-2 rounded-md bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+//           <option>Select Workflow Type</option>
+//           <option>Code Review</option>
+//           <option>Continuous Integration</option>
+//           <option>Deployment</option>
+//           <option>Custom</option>
+//         </select>
+//         <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 min-h-[200px]">
+//           {/* Placeholder for drag-and-drop workflow builder */}
+//           <p className="text-center text-gray-400">
+//             Drag and drop workflow components here
+//           </p>
+//         </div>
+//         <Button variant="primary" className="w-full">
+//           Save Workflow
+//         </Button>
+//       </form>
+//     </div>
+//   </div>
+// );
 
 const AGIAgentBuilderView = () => (
   <div className="space-y-8">
@@ -991,77 +850,6 @@ export { initApp, exampleFunction };`}
   </div>
 );
 
-// const KanbanBoardView = () => {
-//   const [tasks, setTasks] = useState({
-//     todo: [
-//       { id: 1, title: "Design new landing page" },
-//       { id: 2, title: "Implement user authentication" },
-//     ],
-//     inProgress: [
-//       { id: 3, title: "Optimize database queries" },
-//       { id: 4, title: "Create API documentation" },
-//     ],
-//     done: [
-//       { id: 5, title: "Set up CI/CD pipeline" },
-//       { id: 6, title: "Write unit tests for core modules" },
-//     ],
-//   });
-
-//   const onDragStart = (e, id) => {
-//     e.dataTransfer.setData("text/plain", id);
-//   };
-
-//   const onDragOver = (e) => {
-//     e.preventDefault();
-//   };
-
-//   const onDrop = (e, category) => {
-//     const id = e.dataTransfer.getData("text");
-//     const allTasks = [...tasks.todo, ...tasks.inProgress, ...tasks.done];
-//     const task = allTasks.find((task) => task.id === parseInt(id));
-
-//     const newTasks = {
-//       todo: tasks.todo.filter((task) => task.id !== parseInt(id)),
-//       inProgress: tasks.inProgress.filter((task) => task.id !== parseInt(id)),
-//       done: tasks.done.filter((task) => task.id !== parseInt(id)),
-//     };
-
-//     newTasks[category] = [...newTasks[category], task];
-//     setTasks(newTasks);
-//   };
-
-//   return (
-//     <div className="space-y-8">
-//       <h2 className="text-3xl font-bold mb-6">Kanban Board</h2>
-//       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-//         {Object.keys(tasks).map((category) => (
-//           <div
-//             key={category}
-//             className="bg-gray-800 bg-opacity-50 p-6 rounded-xl shadow-lg"
-//             onDragOver={onDragOver}
-//             onDrop={(e) => onDrop(e, category)}
-//           >
-//             <h3 className="text-xl font-semibold mb-4 capitalize">
-//               {category}
-//             </h3>
-//             <ul className="space-y-2">
-//               {tasks[category].map((task) => (
-//                 <li
-//                   key={task.id}
-//                   className="bg-gray-700 p-3 rounded-lg cursor-move"
-//                   draggable
-//                   onDragStart={(e) => onDragStart(e, task.id)}
-//                 >
-//                   {task.title}
-//                 </li>
-//               ))}
-//             </ul>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
 export default function Dashboard() {
   const [activeView, setActiveView] = useState("home");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1086,7 +874,7 @@ export default function Dashboard() {
       case "home":
         return <HomeView />;
       case "chatbot":
-        return <IdeaGeneratorUI />;
+        return <ChatbotView />;
       case "fileUploads":
         return <FileUploadsView />;
       case "workflowBuilder":
@@ -1104,14 +892,12 @@ export default function Dashboard() {
 
   const TaskManagementView = () => (
     <div>
-      <h2>Task Management</h2>
-      {/* Add task management components here */}
+      <TaskManager />
     </div>
   );
 
   const AIWorkflowsView = () => (
     <div>
-      <h2>AI Workflows</h2>
       {/* Add AI workflows components here */}
       <CosmicNexusOrchestrator />
     </div>
@@ -1126,18 +912,9 @@ export default function Dashboard() {
 
   const GitHubIntegrationView = () => (
     <div>
-      <h2>GitHub Integration</h2>
-      {/* Add GitHub integration components here */}
+      <GroqyDashboard />
     </div>
   );
-
-  //tco
-  //   const TeamCollaborationView = () => (
-  //     <div>
-  //       <h2>Team Collaboration</h2>
-  //       {/* Add team collaboration components here */}
-  //     </div>
-  //   );
 
   const SettingsView = () => (
     <div>
@@ -1148,7 +925,6 @@ export default function Dashboard() {
 
   const ChatbotView = () => (
     <div>
-      <h2>Chatbot</h2>
       {/* Add chatbot components here */}
       <IdeaGeneratorUI />
     </div>
@@ -1163,22 +939,20 @@ export default function Dashboard() {
 
   const WorkflowBuilderView = () => (
     <div>
-      <h2>Workflow Builder</h2>
-      {/* Add workflow builder components here */}
+      <NodeBuilder />
     </div>
   );
 
   const AGIAgentBuilderView = () => (
     <div>
-      <h2>AGI Agent Builder</h2>
-      {/* Add AGI agent builder components here */}
+      <Materialiser />
     </div>
   );
 
   const IDEView = () => (
     <div>
-      <h2>IDE</h2>
       {/* Add IDE components here */}
+      <LinuxIDE />
     </div>
   );
 
@@ -1187,225 +961,227 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-gray-900 to-black text-white min-h-screen font-sans">
-      <div className="flex flex-col h-screen">
-        {/* Header */}
-        <header className="bg-gray-800 bg-opacity-50 p-4 backdrop-filter backdrop-blur-lg">
-          <div className="flex justify-between items-center">
-            <h1 className="text-4xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600 animate-pulse">
-              GROQY AI
-            </h1>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="w-64 bg-gray-700 bg-opacity-50 text-white rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <Search
-                  className="absolute left-3 top-2.5 text-gray-400"
-                  size={18}
-                />
-              </div>
-              <Bell className="text-gray-400 cursor-pointer" />
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <User size={20} />
+    <DndProvider backend={HTML5Backend}>
+      <div className="bg-gradient-to-br from-gray-900 to-black text-white min-h-screen font-sans">
+        <div className="flex flex-col h-screen">
+          {/* Header */}
+          <header className="bg-gray-800 bg-opacity-50 p-4 backdrop-filter backdrop-blur-lg">
+            <div className="flex justify-between items-center">
+              <h1 className="text-4xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600 animate-pulse">
+                GROQY AI
+              </h1>
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="w-64 bg-gray-700 bg-opacity-50 text-white rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <Search
+                    className="absolute left-3 top-2.5 text-gray-400"
+                    size={18}
+                  />
+                </div>
+                <Bell className="text-gray-400 cursor-pointer" />
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <User size={20} />
+                </div>
               </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        {/* Main Content */}
-        <div className="flex-grow flex overflow-hidden">
-          {/* Sidebar */}
-          <nav className="hidden md:flex flex-col w-64 bg-gray-800 bg-opacity-50 p-4 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-gray-700">
-            <FeatureProfile />
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium">AI Mode</span>
-              <button
-                onClick={toggleAIMode}
-                className={`p-1 rounded-full transition-colors duration-200 ease-in-out ${
-                  isAIMode ? "bg-purple-600" : "bg-gray-600"
-                }`}
+          {/* Main Content */}
+          <div className="flex-grow flex overflow-hidden">
+            {/* Sidebar */}
+            <nav className="hidden md:flex flex-col w-64 bg-gray-800 bg-opacity-50 p-4 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-gray-700">
+              <FeatureProfile />
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-medium">AI Mode</span>
+                <button
+                  onClick={toggleAIMode}
+                  className={`p-1 rounded-full transition-colors duration-200 ease-in-out ${
+                    isAIMode ? "bg-purple-600" : "bg-gray-600"
+                  }`}
+                >
+                  {isAIMode ? (
+                    <ToggleRight className="w-6 h-6 text-white" />
+                  ) : (
+                    <ToggleLeft className="w-6 h-6 text-white" />
+                  )}
+                </button>
+              </div>
+              <NavButton
+                icon={Briefcase}
+                onClick={() => setActiveView("home")}
+                isActive={activeView === "home"}
               >
-                {isAIMode ? (
-                  <ToggleRight className="w-6 h-6 text-white" />
-                ) : (
-                  <ToggleLeft className="w-6 h-6 text-white" />
-                )}
-              </button>
-            </div>
-            <NavButton
-              icon={Briefcase}
-              onClick={() => setActiveView("home")}
-              isActive={activeView === "home"}
-            >
-              Dashboard
-            </NavButton>
-            <NavButton
-              icon={FileText}
-              onClick={() => setActiveView("tasks")}
-              isActive={activeView === "tasks"}
-            >
-              Tasks
-            </NavButton>
-            <NavButton
-              icon={Zap}
-              onClick={() => setActiveView("aiWorkflows")}
-              isActive={activeView === "aiWorkflows"}
-            >
-              AI Workflows
-            </NavButton>
-            <NavButton
-              icon={Bug}
-              onClick={() => setActiveView("bugTracker")}
-              isActive={activeView === "bugTracker"}
-            >
-              Bug Tracker
-            </NavButton>
-            <NavButton
-              icon={GitBranch}
-              onClick={() => setActiveView("githubIntegration")}
-              isActive={activeView === "githubIntegration"}
-            >
-              GitHub Integration
-            </NavButton>
-            <NavButton
-              icon={Users}
-              onClick={() => setActiveView("teamCollaboration")}
-              isActive={activeView === "teamCollaboration"}
-            >
-              Team Collaboration
-            </NavButton>
-            <NavButton
-              icon={Trello}
-              onClick={() => setActiveView("kanban")}
-              isActive={activeView === "kanban"}
-            >
-              Kanban Board
-            </NavButton>
-            {isAIMode && (
-              <>
-                <NavButton
-                  icon={MessageSquare}
-                  onClick={() => setActiveView("chatbot")}
-                  isActive={activeView === "chatbot"}
-                >
-                  Chatbot
-                </NavButton>
-                <NavButton
-                  icon={Disc}
-                  onClick={() => setActiveView("workflowBuilder")}
-                  isActive={activeView === "workflowBuilder"}
-                >
-                  Workflow Builder
-                </NavButton>
-                <NavButton
-                  icon={Zap}
-                  onClick={() => setActiveView("agiAgentBuilder")}
-                  isActive={activeView === "agiAgentBuilder"}
-                >
-                  AGI Agent Builder
-                </NavButton>
-                <NavButton
-                  icon={Code}
-                  onClick={() => setActiveView("ide")}
-                  isActive={activeView === "ide"}
-                >
-                  IDE
-                </NavButton>
-              </>
-            )}
-            <NavButton
-              icon={Settings}
-              onClick={() => setActiveView("settings")}
-              isActive={activeView === "settings"}
-            >
-              Settings
-            </NavButton>
-          </nav>
+                Dashboard
+              </NavButton>
+              <NavButton
+                icon={FileText}
+                onClick={() => setActiveView("tasks")}
+                isActive={activeView === "tasks"}
+              >
+                Tasks
+              </NavButton>
+              <NavButton
+                icon={Zap}
+                onClick={() => setActiveView("aiWorkflows")}
+                isActive={activeView === "aiWorkflows"}
+              >
+                AI Workflows
+              </NavButton>
+              <NavButton
+                icon={Bug}
+                onClick={() => setActiveView("bugTracker")}
+                isActive={activeView === "bugTracker"}
+              >
+                Bug Tracker
+              </NavButton>
+              <NavButton
+                icon={GitBranch}
+                onClick={() => setActiveView("githubIntegration")}
+                isActive={activeView === "githubIntegration"}
+              >
+                GitHub Integration
+              </NavButton>
+              <NavButton
+                icon={Users}
+                onClick={() => setActiveView("teamCollaboration")}
+                isActive={activeView === "teamCollaboration"}
+              >
+                Team Collaboration
+              </NavButton>
+              <NavButton
+                icon={Trello}
+                onClick={() => setActiveView("kanban")}
+                isActive={activeView === "kanban"}
+              >
+                Kanban Board
+              </NavButton>
+              {isAIMode && (
+                <>
+                  <NavButton
+                    icon={MessageSquare}
+                    onClick={() => setActiveView("chatbot")}
+                    isActive={activeView === "chatbot"}
+                  >
+                    Chatbot
+                  </NavButton>
+                  <NavButton
+                    icon={Disc}
+                    onClick={() => setActiveView("workflowBuilder")}
+                    isActive={activeView === "workflowBuilder"}
+                  >
+                    Workflow Builder
+                  </NavButton>
+                  <NavButton
+                    icon={Zap}
+                    onClick={() => setActiveView("agiAgentBuilder")}
+                    isActive={activeView === "agiAgentBuilder"}
+                  >
+                    AGI Agent Builder
+                  </NavButton>
+                  <NavButton
+                    icon={Code}
+                    onClick={() => setActiveView("ide")}
+                    isActive={activeView === "ide"}
+                  >
+                    IDE
+                  </NavButton>
+                </>
+              )}
+              <NavButton
+                icon={Settings}
+                onClick={() => setActiveView("settings")}
+                isActive={activeView === "settings"}
+              >
+                Settings
+              </NavButton>
+            </nav>
 
-          {/* Content Area */}
-          <main className="flex-grow p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-gray-700">
-            <div className="bg-gray-800 bg-opacity-50 rounded-3xl shadow-lg p-6">
-              {renderView()}
-            </div>
-          </main>
-        </div>
-
-        {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-800 p-2 overflow-x-auto scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-gray-700">
-          <div className="flex space-x-4">
-            <NavButton
-              icon={Briefcase}
-              onClick={() => setActiveView("home")}
-              isActive={activeView === "home"}
-            >
-              Home
-            </NavButton>
-            <NavButton
-              icon={FileText}
-              onClick={() => setActiveView("tasks")}
-              isActive={activeView === "tasks"}
-            >
-              Tasks
-            </NavButton>
-            <NavButton
-              icon={Zap}
-              onClick={() => setActiveView("aiWorkflows")}
-              isActive={activeView === "aiWorkflows"}
-            >
-              AI
-            </NavButton>
-            <NavButton
-              icon={Bug}
-              onClick={() => setActiveView("bugTracker")}
-              isActive={activeView === "bugTracker"}
-            >
-              Bugs
-            </NavButton>
-            <NavButton
-              icon={GitBranch}
-              onClick={() => setActiveView("githubIntegration")}
-              isActive={activeView === "githubIntegration"}
-            >
-              GitHub
-            </NavButton>
-            <NavButton
-              icon={Users}
-              onClick={() => setActiveView("teamCollaboration")}
-              isActive={activeView === "teamCollaboration"}
-            >
-              Team
-            </NavButton>
-            {isAIMode && (
-              <>
-                <NavButton
-                  icon={MessageSquare}
-                  onClick={() => setActiveView("chatbot")}
-                  isActive={activeView === "chatbot"}
-                >
-                  Chat
-                </NavButton>
-                <NavButton
-                  icon={Code}
-                  onClick={() => setActiveView("ide")}
-                  isActive={activeView === "ide"}
-                >
-                  IDE
-                </NavButton>
-              </>
-            )}
-            <NavButton
-              icon={Settings}
-              onClick={() => setActiveView("settings")}
-              isActive={activeView === "settings"}
-            >
-              Settings
-            </NavButton>
+            {/* Content Area */}
+            <main className="flex-grow p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-gray-700">
+              <div className="bg-gray-800 bg-opacity-50 rounded-3xl shadow-lg p-6">
+                {renderView()}
+              </div>
+            </main>
           </div>
-        </nav>
+
+          {/* Mobile Bottom Navigation */}
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-800 p-2 overflow-x-auto scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-gray-700">
+            <div className="flex space-x-4">
+              <NavButton
+                icon={Briefcase}
+                onClick={() => setActiveView("home")}
+                isActive={activeView === "home"}
+              >
+                Home
+              </NavButton>
+              <NavButton
+                icon={FileText}
+                onClick={() => setActiveView("tasks")}
+                isActive={activeView === "tasks"}
+              >
+                Tasks
+              </NavButton>
+              <NavButton
+                icon={Zap}
+                onClick={() => setActiveView("aiWorkflows")}
+                isActive={activeView === "aiWorkflows"}
+              >
+                AI
+              </NavButton>
+              <NavButton
+                icon={Bug}
+                onClick={() => setActiveView("bugTracker")}
+                isActive={activeView === "bugTracker"}
+              >
+                Bugs
+              </NavButton>
+              <NavButton
+                icon={GitBranch}
+                onClick={() => setActiveView("githubIntegration")}
+                isActive={activeView === "githubIntegration"}
+              >
+                GitHub
+              </NavButton>
+              <NavButton
+                icon={Users}
+                onClick={() => setActiveView("teamCollaboration")}
+                isActive={activeView === "teamCollaboration"}
+              >
+                Team
+              </NavButton>
+              {isAIMode && (
+                <>
+                  <NavButton
+                    icon={MessageSquare}
+                    onClick={() => setActiveView("chatbot")}
+                    isActive={activeView === "chatbot"}
+                  >
+                    Chat
+                  </NavButton>
+                  <NavButton
+                    icon={Code}
+                    onClick={() => setActiveView("ide")}
+                    isActive={activeView === "ide"}
+                  >
+                    IDE
+                  </NavButton>
+                </>
+              )}
+              <NavButton
+                icon={Settings}
+                onClick={() => setActiveView("settings")}
+                isActive={activeView === "settings"}
+              >
+                Settings
+              </NavButton>
+            </div>
+          </nav>
+        </div>
       </div>
-    </div>
+    </DndProvider>
   );
 }

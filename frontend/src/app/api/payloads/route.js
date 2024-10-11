@@ -1,7 +1,7 @@
 // frontend/src/app/api/payloads/route.js
 
 import connectDB from '../../../lib/mongodb';
-import Payload from '../../../models/Payloads'
+import Payload from '../../../models/Payload'
 
 export async function GET(request) {
   try {
@@ -16,8 +16,11 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    console.log("request start: ",request, "request end")
+    console.log("request sent!")
     const data = await request.json();
     await connectDB();
+    console.log("Authenticated!")
 
     // Check if payload with the same ID already exists
     const existingPayload = await Payload.findOne({ id: data.id });
