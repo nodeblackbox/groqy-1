@@ -6,7 +6,7 @@
   <a href="https://discord.gg/ZU2SndazHJ"><img src="icons/Discord button.png" height="48"></a>
 </p>
 
-# Groqy Quantum Nexus
+# Groqy & the Quantum Nexus
 Welcome to the Groqy Quantum Nexus! This project aims to revolutionize the deployment of agentic experts through cutting-edge technology.
 
 [Lablab Hackathon Slides](https://docs.google.com/presentation/d/1SbhkJdPqVMvNKBs31xUrVZUNqBMJHTyogBoD8Nr-xKI/edit?usp=sharing)
