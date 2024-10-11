@@ -1,8 +1,3 @@
-# Groqy Quantum Nexus
-Welcome to the Groqy Quantum Nexus! This project aims to revolutionize the deployment of agentic experts through cutting-edge technology.
-
-[Lablab Hackathon Slides](https://docs.google.com/presentation/d/1SbhkJdPqVMvNKBs31xUrVZUNqBMJHTyogBoD8Nr-xKI/edit?usp=sharing)
-
 <p align="center">
   <img src="icons/groqyLogo.png" alt="Groqy" width="250"/>
 </p>
@@ -10,6 +5,11 @@ Welcome to the Groqy Quantum Nexus! This project aims to revolutionize the deplo
   <a href="https://groqy.com"><img src="icons/Discord button.png" height="48"></a>
   <a href="https://discord.gg/dAzSYcnpdF"><img src="icons/Discord button.png" height="48"></a>
 </p>
+
+# Groqy Quantum Nexus
+Welcome to the Groqy Quantum Nexus! This project aims to revolutionize the deployment of agentic experts through cutting-edge technology.
+
+[Lablab Hackathon Slides](https://docs.google.com/presentation/d/1SbhkJdPqVMvNKBs31xUrVZUNqBMJHTyogBoD8Nr-xKI/edit?usp=sharing)
 
 ## Overview
 The Groqy Quantum Nexus brings agentic experts to the next level of deployment via the Gravity RAG Infinite Streaming Context and the GOD Matrix API Hub for infinite tooling deployment possibilities.
