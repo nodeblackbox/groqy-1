@@ -130,7 +130,7 @@ export default function IdeaGeneratorUI() {
   const [selectedModel, setSelectedModel] = useState(
     "llama3-groq-70b-8192-tool-use-preview"
   );
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [savedResponses, setSavedResponses] = useState([]);
   const [apiKey, setApiKey] = useState("");
   const [temperature, setTemperature] = useState(0.7);
