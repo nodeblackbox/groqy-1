@@ -1,6 +1,8 @@
 # Groqy Quantum Nexus
 Welcome to the Groqy Quantum Nexus! This project aims to revolutionize the deployment of agentic experts through cutting-edge technology.
 
+[Lablab Hackathon Slides](https://docs.google.com/presentation/d/1SbhkJdPqVMvNKBs31xUrVZUNqBMJHTyogBoD8Nr-xKI/edit?usp=sharing)
+
 <img
 src="frontend/strawberry_groqy_4.png"
   style="display: inline-block; margin: 0 auto; max-width: 500px">
