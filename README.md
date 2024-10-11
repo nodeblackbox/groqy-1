@@ -12,7 +12,7 @@ Welcome to the Groqy Quantum Nexus! This project aims to revolutionize the deplo
 [Lablab Hackathon Slides](https://docs.google.com/presentation/d/1SbhkJdPqVMvNKBs31xUrVZUNqBMJHTyogBoD8Nr-xKI/edit?usp=sharing)
 
 <p align="center">
-  <img src="icons/groqyMission.png" alt="Groqy" width="700"/>
+  <img src="icons/groqyMission.png" alt="Groqy" width="1000"/>
 </p>
 
 ## Overview
