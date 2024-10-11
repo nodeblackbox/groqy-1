@@ -43,7 +43,6 @@ clone repo into your desired location
 
 cd groqy-1/frontend
 
-now start the dev server
 npm run dev
 ```
 
