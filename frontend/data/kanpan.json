@@ -253,6 +253,27 @@
           "isArchived": false,
           "createdBy": "Current User",
           "lastModifiedBy": "Current User"
+        },
+        {
+          "id": "task_1728687489597_3gghehbct",
+          "title": "New Task",
+          "description": "",
+          "assignedTo": "Unassigned",
+          "createdAt": "2024-10-11T22:58:09.597Z",
+          "updatedAt": "2024-10-11T22:58:09.597Z",
+          "dueDate": "2024-10-18",
+          "priority": "Medium",
+          "segment": "Unspecified",
+          "status": "Review",
+          "tags": [],
+          "attachments": [],
+          "comments": [],
+          "checklist": [],
+          "estimatedTime": 0,
+          "actualTime": 0,
+          "isArchived": false,
+          "createdBy": "Current User",
+          "lastModifiedBy": "Current User"
         }
       ]
     },
