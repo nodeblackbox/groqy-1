@@ -3,7 +3,7 @@
 </p>
 <p align="center">
   <a href="https://groqy.com"><img src="icons/groqyButton.png" height="48"></a>
-  <a href="https://discord.gg/dAzSYcnpdF"><img src="icons/Discord button.png" height="48"></a>
+  <a href="https://discord.gg/ZU2SndazHJ"><img src="icons/Discord button.png" height="48"></a>
 </p>
 
 # Groqy Quantum Nexus
