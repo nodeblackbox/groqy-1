@@ -2,7 +2,7 @@
   <img src="icons/groqyLogo.png" alt="Groqy" width="250"/>
 </p>
 <p align="center">
-  <a href="https://groqy.com"><img src="icons/Discord button.png" height="48"></a>
+  <a href="https://groqy.com"><img src="icons/groqyButton.png" height="48"></a>
   <a href="https://discord.gg/dAzSYcnpdF"><img src="icons/Discord button.png" height="48"></a>
 </p>
 
