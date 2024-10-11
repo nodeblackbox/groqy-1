@@ -1364,7 +1364,7 @@ const LinuxIDE = () => {
             {baseUrl ? (
               <iframe
                 key={previewKey}
-                src={`${baseUrl}/${
+                src={`http://localhost:3000/testApp/${
                   activePage === "index.js" ? "" : activePage.replace(".js", "")
                 }`}
                 className="w-full flex-grow border-2 border-gray-800 rounded-lg bg-white mt-4"

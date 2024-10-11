@@ -69,6 +69,8 @@ import TaskManager from "../../components/TaskManager";
 
 import VoiceCommandUI from "../../components/VoiceFeature";
 
+import GroqyDashboard from "../../components/GitHubIntegrationView";
+
 //import borches' stuff
 
 //Required for the Kanban & Bug Tracker to be appearing inside the IDE:
@@ -910,8 +912,7 @@ export default function Dashboard() {
 
   const GitHubIntegrationView = () => (
     <div>
-      <h2>GitHub Integration</h2>
-      {/* Add GitHub integration components here */}
+      <GroqyDashboard />
     </div>
   );
 
