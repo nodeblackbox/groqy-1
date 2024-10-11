@@ -36,16 +36,15 @@ The Groqy Quantum Nexus brings agentic experts to the next level of deployment v
 
 
 ## Getting Started
-First, run the development server:
+First, download the project, setup nextjs & python.
 
 ```bash
+clone repo into your desired location
+
+cd groqy-1/frontend
+
+now start the dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
