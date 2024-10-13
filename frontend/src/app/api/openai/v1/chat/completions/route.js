@@ -5,7 +5,7 @@ import axios from 'axios';
 
 // Retrieve configurations from environment variables
 const BASE_URL = 'http://127.0.0.1:8000'; // Use IPv4 to avoid connection issues
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
+let GROQ_API_KEY = process.env.GROQ_API_KEY;
 const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'http://127.0.0.1:11434/'; // Ensure IPv4
 const AIMLAPI_API_KEY = process.env.AIMLAPI_API_KEY;
 
@@ -306,7 +306,18 @@ async function getGroqModels() {
         }
         return [];
     } catch (error) {
-        logError('Error fetching Groq models', { error: error.message });
+        // Log the full error, especially error.response
+        if (error.response) {
+            console.error('Error fetching Groq models:', error.response.data);  // Log API error response
+            console.error('Status code:', error.response.status);              // Log status code
+            console.error('Headers:', error.response.headers);                 // Log response headers
+        } else if (error.request) {
+            // Request was made but no response received
+            console.error('No response received:', error.request);
+        } else {
+            // Other errors like setting up the request
+            console.error('Error setting up the request:', error.message);
+        }
         return [];
     }
 }
@@ -675,6 +686,23 @@ async function enhanceWithGravityRag(messages, response) {
 export async function POST(request) {
     try {
         const payload = await request.json();
+        try {
+            const headers = request.headers;
+            const authorizationHeader = headers.get('authorization');            
+            // Split the authorization header string
+            const parts = authorizationHeader.split(" ");
+            
+            if (parts.length === 2) {
+                const apiKey = parts[1];
+                GROQ_API_KEY = apiKey
+
+            } else {
+                console.error("Unexpected format:", parts);
+            }
+        } catch (error) {
+            console.error("Error processing authorization header:", error.message);
+        }
+
         logInfo('Received POST request', { payload });
 
         // Validate payload
@@ -704,8 +732,6 @@ export async function POST(request) {
         // Process messages (role mapping)
         const processedMessages = processMessages(selectedModel.provider, messages);
         logInfo('Processed messages', { processedMessages });
-
-        toolsDeterminer()
 
         // Convert input to provider-specific format
         const convertedInput = convertApiFormat(
@@ -783,6 +809,7 @@ export async function POST(request) {
  * @returns {Response} - The API response.
  */
 export async function GET(request) {
+    console.log("GET REQUEST:",request)
     try {
         // Fetch available models with caching
         const currentTime = Date.now();
